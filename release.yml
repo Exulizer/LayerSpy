@@ -1,0 +1,31 @@
+name: Release LayerSpy
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger workflow on tags starting with v (e.g. v1.0.0)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Create ZIP archive
+        run: |
+          zip -r LayerSpy-${{ github.ref_name }}.zip . -x ".git/*" ".github/*"
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: LayerSpy-${{ github.ref_name }}.zip
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
