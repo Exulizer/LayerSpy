@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page.title">LayerSpy | Kostenloser Online G-Code Viewer & 3D-Druck Analyzer</title>
+    
+    <meta name="description" content="Kostenloser Online G-Code Viewer und Simulator für 3D-Drucker. Analysiere deinen G-Code von Cura, PrusaSlicer oder Bambu Studio direkt in 3D im Browser. Prüfe Beschleunigung, Speed und Layer-Fehler.">
+    <meta name="keywords" content="G-Code Viewer, G-Code Analyzer, 3D Druck Simulator, Online GCode Viewer, LayerSpy, G-Code Heatmap, PrusaSlicer Gcode, Cura Gcode Viewer, Bambu Studio Analyzer, Gcode online betrachten, 3D Drucker Simulator, G-Code prüfen">
+    <meta name="author" content="LayerSpy">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <link rel="canonical" href="https://layerspy.de/" />
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="LayerSpy">
+    <meta property="og:url" content="https://layerspy.de/">
+    <meta property="og:title" content="LayerSpy - 3D Print G-Code Analyzer & Simulator">
+    <meta property="og:description" content="Simuliere und analysiere deinen G-Code in Echtzeit im Browser. Mit extrem flüssiger 3D Ansicht und Layer-Heatmaps. Ohne Download, 100% lokal im Browser.">
+    <meta property="og:image" content="https://layerspy.de/assets/logo.webp">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://layerspy.de/">
+    <meta name="twitter:title" content="LayerSpy | Kostenloser Online G-Code Viewer">
+    <meta name="twitter:description" content="Prüfe deine 3D-Druck Dateien direkt im Browser. G-Code Visualisierung mit Speed-Heatmaps und Feature-Typen. Keine Installation erforderlich.">
+    <meta name="twitter:image" content="https://layerspy.de/assets/logo.webp">
+    
+    <!-- Icons -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["SoftwareApplication", "WebApplication"],
+      "name": "LayerSpy",
+      "operatingSystem": "Web Browser, Windows, macOS, Linux, Android, iOS",
+      "applicationCategory": "UtilitiesApplication",
+      "description": "Ein professioneller, webbasierter 3D-Druck G-Code Analyzer und Live-Simulator. Visualisiere und optimiere G-Code aus Cura, PrusaSlicer oder Bambu Studio direkt im Browser mit detaillierten Heatmaps für Geschwindigkeit, Beschleunigung und Linienbreite.",
+      "url": "https://layerspy.de",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+      "browserRequirements": "Requires WebGL support",
+      "featureList": [
+        "Echtzeit 3D G-Code Rendering",
+        "Heatmaps für Geschwindigkeit und Extrusion",
+        "Kinematik-Simulation für Beschleunigung",
+        "100% lokal im Browser, kein Cloud-Upload"
+      ],
+      "inLanguage": "de-DE"
+    }
+    </script>
+
+    
+    <!-- Fonts & Icons (Preconnect for performance) -->
+    <link href="css/inter.min.css" rel="stylesheet">
+<!-- CSS -->
+    <link rel="stylesheet" href="css/style.css?v=2">
+    
+    <!-- Three.js (Deferred to avoid render blocking) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="js/translations.js"></script>
+</head>
+<body class="dark-mode">
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">G-Code wird analysiert...</div>
+    </div>
+
+    <div class="app-layout">
+        <!-- HEADER -->
+        <header class="top-navbar">
+            <div class="nav-left" style="display: flex; align-items: center; gap: 12px;">
+                <img src="assets/logo.webp" alt="LayerSpy Logo" style="height: 48px; width: 48px; object-fit: contain; border-radius: 8px; mix-blend-mode: lighten; filter: brightness(0.8) contrast(1.2);">
+                <h1 style="font-size: 1.6rem; margin: 0; color: #ffffff; font-weight: 700; letter-spacing: 0.5px;">layerspy<span style="color: #00bcd4;">.de</span></h1>
+            </div>
+            <div class="nav-center">
+                <label for="file-input" class="upload-btn" title="Oder ziehe eine Datei einfach per Drag & Drop in das Fenster" data-i18n-title="title.1" data-i18n="nav.upload">📁 Datei laden oder Drag & Drop</label>
+                <input type="file" id="file-input" accept=".gcode" aria-label="G-Code Datei hochladen">
+            </div>
+            
+            <div class="nav-right" style="display: flex; gap: 10px; align-items: center;">
+                <div class="lang-switcher" style="display:flex; align-items:center; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px; margin-right: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                    <button id="lang-en" style="background:var(--accent-color); color:#fff; border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">EN</button>
+                    <button id="lang-de" style="background:transparent; color:rgba(255,255,255,0.5); border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">DE</button>
+                </div>
+                <a href="https://github.com/Exulizer/LayerSpy" target="_blank" title="View Source on GitHub" data-i18n-title="title.2" style="color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; transition: background 0.2s;">
+                    <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+                </a>
+                <button class="upload-btn" id="demo-btn" style="background: var(--accent-color); color: #fff; border-color: var(--accent-color);" data-i18n="nav.demo">✨ Demo laden</button>
+                <button class="download-btn" id="download-btn" disabled data-i18n="nav.save">💾 Speichern (.gcode)</button>
+            </div>
+        </header>
+
+        <!-- WELCOME HERO FOR SEO & USER -->
+        <div id="welcome-hero" style="width: 100%; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 30px 20px; box-sizing: border-box;">
+            <div style="max-width: 900px; margin: 0 auto; text-align: center;">
+                <h2 style="color: var(--accent-color); margin-bottom: 15px; font-size: 1.5rem;" data-i18n="hero.subtitle">Willkommen bei LayerSpy - Deinem G-Code Analyzer</h2>
+                <p style="color: var(--text-color); line-height: 1.6; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
+                    <span data-i18n="hero.desc_p1">Optimiere deine 3D-Drucke, bevor sie entstehen!</span>
+                    <span data-i18n="hero.desc_p2">Lade einfach deine Datei aus Slicern wie Cura, PrusaSlicer oder OrcaSlicer</span>
+                    <span data-i18n="hero.desc_p3">(oder per Drag & Drop) hoch und analysiere Schicht für Schicht.</span>
+                    <strong data-i18n="hero.desc_p4" style="color: var(--accent-color);">Dein G-Code verlässt deinen PC nicht.</strong>
+                </p>
+            </div>
+        </div>
+
+        <main class="main-workspace">
+            <!-- LEFT PANEL: SETTINGS -->
+            <aside class="sidebar left-panel">
+                <div class="panel-header" style="display: flex; flex-direction: column; align-items: stretch; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 1.1rem;" data-i18n="tuning.title">⚙️ Parameter-Tuning</h2>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="apply-btn" class="upload-btn" style="flex: 1; padding: 8px 14px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span style="font-size: 1rem; display: flex; align-items: center; line-height: 1;">⚡</span><span data-i18n="tuning.calc">Berechnen</span>
+                        </button>
+                        <button id="reset-btn" class="icon-btn tooltip-right" data-tooltip="Auf Originalwerte zurücksetzen" data-i18n-tooltip="tooltip.1" style="padding: 8px 14px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;" aria-label="Einstellungen zurücksetzen">
+                            <span style="font-size: 1rem; display: flex; align-items: center; line-height: 1;">🔄</span><span data-i18n="tuning.reset">Reset</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="settings-grid">
+                    <!-- Düse -->
+                    <div class="widget">
+                        <div class="widget-title"><span data-tooltip="Temperatur des Hotends. Höhere Werte verbessern die Layerhaftung, zu hohe Werte verursachen Stringing." data-i18n-tooltip="tooltip.2" data-i18n="tuning.nozzle">Düse (Hotend)</span><span id="temp-val" class="accent" data-i18n="temp.nozzle">205 °C</span></div>
+                        <input type="range" class="slider" id="temp-slider" min="150" max="300" step="5" value="205" aria-label="Hotend Temperatur">
+                    </div>
+                    <!-- Druckbett -->
+                    <div class="widget">
+                        <div class="widget-title"><span data-tooltip="Beheiztes Druckbett. Verhindert das Ablösen des Objekts während des Drucks (Warping)." data-i18n-tooltip="tooltip.3" data-i18n="tuning.bed">Druckbett (Bed)</span><span id="bed-val" class="accent" data-i18n="temp.bed">60 °C</span></div>
+                        <input type="range" class="slider" id="bed-slider" min="0" max="120" step="5" value="60" aria-label="Heizbett Temperatur">
+                    </div>
+                    <!-- Retract -->
+                    <div class="widget">
+                        <div class="widget-title"><span data-tooltip="Rückzug des Filaments bei Leerfahrten. Zu wenig führt zu Fäden (Stringing), zu viel zu Verstopfungen." data-i18n-tooltip="tooltip.4" data-i18n="tuning.retract">Retract (Einzug)</span><span id="retract-val" class="accent" data-i18n="retract.val">0.8 mm</span></div>
+                        <input type="range" class="slider" id="retract-slider" min="0" max="5" step="0.1" value="0.8" aria-label="Retract Länge">
+                    </div>
+                    <!-- Lüfter -->
+                    <div class="widget">
+                        <label class="widget-title" for="fan-slider" style="display: flex; justify-content: space-between;"><span data-tooltip="Kühlung des extrudierten Materials. Wichtig für Überhänge (PLA = 100%, ABS/PETG = wenig)." data-i18n-tooltip="tooltip.5" data-i18n="widget.fan">Bauteillüfter</span><span id="fan-val" class="accent">100 %</span></label>
+                        <input type="range" class="slider" id="fan-slider" min="0" max="100" step="1" value="100" aria-label="Lüfterdrehzahl">
+                    </div>
+
+                    <!-- Speed -->
+                    <div class="widget">
+                        <label class="widget-title" for="speed-slider" style="display: flex; justify-content: space-between;"><span data-tooltip="Globale Druckgeschwindigkeit. Ein Wert unter 100% verlangsamt den Druck, darüber beschleunigt ihn." data-i18n-tooltip="tooltip.6" data-i18n="speed.label">Geschwindigkeit</span><span id="speed-val" class="accent">100 %</span></label>
+                        <input type="range" class="slider" id="speed-slider" min="50" max="200" step="5" value="100" aria-label="Druckgeschwindigkeit">
+                    </div>
+                    <!-- Z-Offset -->
+                    <div class="widget" style="grid-column: 1 / -1;" id="zoffset-widget">
+                        <label class="widget-title" for="zoffset-slider" style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span data-tooltip="Höhenkorrektur der Düse. Negativer Wert: Düse näher ans Bett. Positiver Wert: Düse weiter weg." data-i18n-tooltip="tooltip.7" data-i18n="widget.zoffset">Z-Offset</span>
+                                <span id="zoffset-val" class="accent" data-i18n="zoffset.val">0.00 mm</span>
+                            </div>
+                        </label>
+                        
+                        <div style="position: relative; margin-top: 5px; padding: 5px 0;">
+                            <!-- Minimalistisches Lock Overlay -->
+                            <div id="zoffset-overlay" style="position: absolute; top: -5px; left: -10px; right: -10px; bottom: -5px; backdrop-filter: blur(4px); background: rgba(20, 24, 34, 0.4); z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; transition: opacity 0.3s;" onclick="this.style.opacity='0'; setTimeout(() => this.style.display='none', 300);" title="Klicken zum Entsperren" data-i18n-title="title.3">
+                                <span style="font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🔒</span>
+                            </div>
+                            
+                            <div style="font-size: 0.75rem; color: #ff5252; font-weight: 500; margin-bottom: 12px; display: block;"><span data-i18n="widget.zoffset.warn">⚠️ Vorsicht: Falsche Werte können das Druckbett beschädigen!</span></div>
+                            <input type="range" class="slider" id="zoffset-slider" min="-2.0" max="2.0" step="0.05" value="0.00" aria-label="Z-Offset">
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- CENTER: CANVAS PREVIEW -->
+            <main class="center-panel">
+                <div class="stats-banner">
+                    <div class="stat-box">
+                        <span class="stat-label" data-i18n="stats.total_time">⏱️ Druckzeit</span>
+                        <span class="stat-value" id="stat-time">--:--</span>
+                    </div>
+                    <div class="stat-box highlight-box" style="display:none;" id="stat-saved-box">
+                        <span class="stat-label" data-i18n="stats.save">⚡ Du sparst</span>
+                        <span class="stat-value" id="stat-saved">--:--</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label" data-i18n="stats.filament">🧵 Filament</span>
+                        <span class="stat-value" id="stat-filament" data-i18n="stats.fil_val">-- g (-- m)</span>
+                    </div>
+                </div>
+                <div id="canvas-container" style="position: relative; flex: 1; display: flex; flex-direction: column; width: 100%; min-height: 0; overflow: hidden;">
+                
+                <canvas id="gcode-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
+                <canvas id="gcode-3d-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; display: none; cursor: grab;"></canvas>
+                
+                <button id="toggle-left-panel" class="panel-toggle-btn left" aria-label="Toggle Left Panel">◀</button>
+                <button id="toggle-right-panel" class="panel-toggle-btn right" aria-label="Toggle Right Panel">▶</button>
+
+                <!-- MOBILE CANVAS OVERLAY (Google Maps Style) -->
+                <div id="mobile-canvas-overlay" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.3); z-index: 5; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; touch-action: pan-y;">
+                    <div style="background: rgba(0,0,0,0.85); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--accent-color); color: white; text-align: center; pointer-events: auto; display: flex; flex-direction: column; gap: 6px; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
+                        <span style="font-size: 1.2rem; line-height: 1;">👆</span>
+                        <span style="font-weight: 600; font-size: 0.9rem;" data-i18n="view.interact">Ansicht interagieren</span>
+                        <button id="enable-interaction-btn" class="upload-btn" style="margin-top: 2px; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px;" data-i18n="view.activate">Aktivieren</button>
+                    </div>
+                </div>
+                
+                <!-- DISABLE INTERACTION BTN -->
+                <button id="disable-interaction-btn" class="icon-btn" style="display: none; position: absolute; top: 15px; right: 15px; z-index: 15; background: var(--error-color); color: white; border: none; padding: 8px 15px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" aria-label="3D Interaktion deaktivieren" data-i18n="view.deactivate">❌ Interaktion beenden</button>
+
+                
+                </div>
+                <!-- DOCKED CONTROL BAR -->
+                <div id="main-control-bar" class="control-bar" style="background: #111115; display: flex; flex-direction: column; gap: 12px; width: 100%; z-index: 10; max-height: 0; opacity: 0; transform: translateY(50px); transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); overflow: hidden; padding: 0 25px; border-top: none;">
+                    
+                    <!-- Top Row: Toggles & Heatmap -->
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <!-- 2D / 3D Toggle -->
+                        <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 2px; border: 1px solid var(--border-color);">
+                            <button id="view-2d-btn" class="icon-btn active" style="padding: 4px 12px; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.1);" aria-label="2D Ansicht umschalten">2D</button>
+                            <button id="view-3d-btn" class="icon-btn" style="padding: 4px 12px; border-radius: 4px; font-weight: bold;" aria-label="3D Ansicht umschalten">3D</button>
+                        </div>
+                        
+                        <select id="view-mode-select" class="theme-select" style="display: none; padding: 4px 8px; font-size: 0.85rem; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-color);">
+                            <option value="lines" data-i18n="view.lines">Lines (Fast)</option>
+                            <option value="solid" data-i18n="view.solid">Solid (Tubes)</option>
+                        </select>
+
+                        <div id="color-mode-group" style="display: flex; background: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid var(--border-color); overflow: hidden;">
+                            <button class="mode-btn active" data-mode="normal" style="padding: 4px 8px; font-size: 0.8rem; background: var(--accent-color); color: white; border: none; cursor: pointer;" data-i18n="view.normal">Normal</button>
+                            <button class="mode-btn" data-mode="feature" style="padding: 4px 8px; font-size: 0.8rem; background: transparent; color: var(--text-color); border: none; border-left: 1px solid var(--border-color); cursor: pointer;" data-i18n="view.feature">Feature</button>
+                            <button class="mode-btn" data-mode="heatmap" style="padding: 4px 8px; font-size: 0.8rem; background: transparent; color: var(--text-color); border: none; border-left: 1px solid var(--border-color); cursor: pointer;" data-i18n="view.speed_mode">Speed</button>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;"><input type="checkbox" id="show-travel-btn" data-i18n="view.travels">Leerfahrten</label>
+                        <div id="heatmap-legend" style="display: none; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                            <span id="legend-low" data-i18n="view.speed_low">10 mm/s</span>
+                            <div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(120, 100%, 50%), hsl(0, 100%, 50%));"></div>
+                            <span id="legend-high" data-i18n="view.speed_high">50+ mm/s</span>
+                        </div>
+                    </div>
+
+                    <!-- Middle Row: Layer Slider -->
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span id="layer-val" style="min-width: 140px; text-align: left; color: var(--accent-color); font-weight: 600;" data-i18n="view.layer0">Layer: 0</span>
+                        <input type="range" class="slider" id="layer-slider" min="0" max="0" value="0" style="flex: 1;" aria-label="Schicht auswählen">
+                    </div>
+
+                    <!-- Bottom Row: Playback -->
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="display: flex; gap: 8px;">
+                            <button id="play-step-back" class="icon-btn" style="padding: 4px 10px;" aria-label="Vorheriger Schritt">⏮️</button>
+                            <button id="play-toggle" class="icon-btn" style="font-size: 1.2rem; padding: 4px 15px;" aria-label="Abspielen oder Pausieren">▶️</button>
+                            <button id="play-step-fwd" class="icon-btn" style="padding: 4px 10px;" aria-label="Nächster Schritt">⏭️</button>
+                        </div>
+                        <input type="range" class="slider" id="playback-slider" min="0" max="100" value="100" style="flex: 1;" aria-label="Wiedergabeposition">
+                    </div>
+                </div>
+            </main>
+
+            <!-- RIGHT PANEL: G-CODE LIST -->
+            <aside class="sidebar right-panel">
+                <div class="panel-header" style="flex-direction: column; align-items: stretch; gap: 15px; padding-bottom: 0;">
+                    <h2 data-i18n="tab.inspector">🔎 G-Code Inspektor</h2>
+                    <div class="tabs-nav">
+                        <button class="tab-btn active" data-tab="tab-list" data-i18n="tab.explorer">G-Code Explorer</button>
+                        <button class="tab-btn" data-tab="tab-mods" data-i18n="tab.mods">Modifikationen</button>
+                        <button class="tab-btn" data-tab="tab-analyse" data-i18n="tab.tuning">Tuning & Analyse</button>
+                    </div>
+                </div>
+                
+                <!-- TAB: G-CODE LIST -->
+                <div id="tab-list" class="tab-content active" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                    
+                    <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="gcode-view-mode" aria-label="Anzeigemodus für G-Code" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                                <option value="layer" data-i18n="tab.current_layer">Aktueller Layer</option>
+                                <option value="all" data-i18n="select.file.entire">Gesamte Datei</option>
+                            </select>
+                            <select id="gcode-page-size" aria-label="Zeilen pro Seite" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                                <option value="50" data-i18n="select.lines.50">50 Zeilen</option>
+                                <option value="100" data-i18n="select.lines.100">100 Zeilen</option>
+                                <option value="500" data-i18n="select.lines.500">500 Zeilen</option>
+                                <option value="all" data-i18n="filter.all">Alle</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="gcode-page-prev" class="icon-btn" style="padding: 4px 12px; font-size: 11px;" disabled aria-label="Vorherige G-Code Seite">◀</button>
+                            <span id="gcode-page-info" style="font-size: 11px; color: var(--text-muted); min-width: 40px; text-align: center;">1 / 1</span>
+                            <button id="gcode-page-next" class="icon-btn" style="padding: 4px 12px; font-size: 11px;" disabled aria-label="Nächste G-Code Seite">▶</button>
+                        </div>
+                    </div>
+
+                    <ul class="gcode-list" id="gcode-view" style="margin-top: 0; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
+                        <li style="color: var(--text-muted); padding: 20px; text-align: center;" data-i18n="msg.upload">Bitte lade eine G-Code-Datei hoch.<br><br>
+                            👉 Nutze <code>gcode/example.gcode</code> zum Testen!
+                        </li>
+                    </ul>
+
+                    <div style="padding: 10px 20px 10px 20px; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2);">
+                        <span style="background: rgba(255, 179, 0, 0.15); border-left: 2px solid var(--color-modified); width: 16px; height: 10px; display: inline-block;"></span>
+                        <span data-i18n="msg.modified">Markierte Zeilen wurden durch deine Slider modifiziert</span>
+                    </div>
+
+                    <div class="explanation-box" id="explanation-output">
+                        <span data-i18n="msg.explanation">💡 <strong>Erklärung:</strong> Klicke auf eine Zeile oder einen Pfad in der Vorschau, um Details zu sehen.</span>
+                    </div>
+                </div>
+
+                <!-- TAB: MODIFIKATIONEN -->
+                <div id="tab-mods" class="tab-content" style="display: none; flex-direction: column; flex: 1; overflow: hidden;">
+                    <div style="background: rgba(255, 179, 0, 0.1); border: 1px solid rgba(255, 179, 0, 0.3); border-radius: 6px; padding: 10px 15px; margin: 15px 20px 15px 20px; font-size: 12px; display: flex; align-items: center; gap: 10px;">
+                        <span data-i18n="mods.info">Hier siehst du ausschließlich Zeilen, die durch deine Slider verändert wurden. Nutze die Filter, um Änderungen gezielt zu finden.</span>
+                    </div>
+
+                    <div class="mod-filters" id="mod-filter-bar">
+                        <button class="filter-btn active" data-filter="all" data-i18n="filter.all">Alle</button>
+                        <button class="filter-btn" data-filter="temp" data-i18n="filter.hotend">Hotend</button>
+                        <button class="filter-btn" data-filter="bed" data-i18n="filter.bed">Bed</button>
+                        <button class="filter-btn" data-filter="fan" data-i18n="filter.fan">Fan</button>
+                        <button class="filter-btn" data-filter="retract" data-i18n="filter.retract">Retract</button>
+    
+                        <button class="filter-btn" data-filter="speed" data-i18n="view.speed_mode" data-i18n="filter.speed">Speed</button>
+                        <button class="filter-btn" data-filter="offset" data-i18n="filter.offset">Offset</button>
+                    </div>
+
+                    <ul class="gcode-list" id="mod-view">
+                        <li style="color: var(--text-muted); padding: 20px; text-align: center;" data-i18n="mods.none">Keine Modifikationen vorhanden.</li>
+                    </ul>
+                </div>
+
+                <!-- TAB: ANALYSE -->
+                <div id="tab-analyse" class="tab-content" style="display: none; padding: 20px; overflow-y: auto; flex-direction: column; width: 100%;">
+                    <div class="analyse-grid">
+                        
+                        <!-- STATISTIK -->
+                        <div class="analyse-card">
+                            <h3 data-tooltip="Zusammenfassung der Bauteilgröße und des Materialverbrauchs" data-i18n-tooltip="tooltip.8">📊 Statistik</h3>
+                            <div class="prop-row"><span data-tooltip="Breite des Modells auf der X-Achse" data-i18n-tooltip="tooltip.9">X-Range:</span> <strong id="ana-x">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Tiefe des Modells auf der Y-Achse" data-i18n-tooltip="tooltip.10">Y-Range:</span> <strong id="ana-y">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Höhe des höchsten Punktes im Modell" data-i18n-tooltip="tooltip.11">Z-Max:</span> <strong id="ana-z">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Gesamtlänge des geförderten Filaments" data-i18n-tooltip="tooltip.12" data-i18n="stats.total_e">Gesamt E:</span> <strong id="ana-e">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Geschätztes Volumen des gedruckten Objekts" data-i18n-tooltip="tooltip.13" data-i18n="stats.volume">Objekt-Volumen:</span> <strong id="ana-vol">-- cm³</strong></div>
+                        </div>
+
+                        <!-- HISTOGRAMM -->
+                        <div class="analyse-card" style="grid-column: 1 / -1;">
+                            <h3 data-tooltip="Verteilung der Druckgeschwindigkeiten" data-i18n-tooltip="tooltip.speed_dist" data-i18n="stats.speed_dist">📊 Geschwindigkeits-Verteilung</h3>
+                            <div id="speed-histogram" style="display: flex; align-items: flex-end; justify-content: space-between; gap: 2px; height: 120px; margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">
+                                <!-- Bars will be injected here -->
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 5px;">
+                                <span data-i18n="stats.speed_slow">Langsam (0 mm/s)</span>
+                                <span data-i18n="stats.speed_fast">Schnell</span>
+                            </div>
+                        </div>
+
+                        <!-- OFFSETS -->
+                        <div class="analyse-card">
+                            <h3 data-tooltip="Verschiebt das gesamte Bauteil virtuell auf dem Druckbett" data-i18n-tooltip="tooltip.14">📐 Geometrie-Offsets</h3>
+                            <div class="offset-group" style="margin-top: 10px;">
+                                <div class="widget-title"><span data-tooltip="Verschiebung nach links/rechts" data-i18n-tooltip="tooltip.15" data-i18n="offset.x">X-Verschiebung</span><span id="xoffset-val" class="accent">0.0 mm</span></div>
+                                <input type="range" class="slider" id="xoffset-slider" min="-100" max="100" step="1" value="0" aria-label="X-Offset">
+                            </div>
+                            <div class="offset-group" style="margin-top: 15px;">
+                                <div class="widget-title"><span data-tooltip="Verschiebung nach vorne/hinten" data-i18n-tooltip="tooltip.16" data-i18n="offset.y">Y-Verschiebung</span><span id="yoffset-val" class="accent">0.0 mm</span></div>
+                                <input type="range" class="slider" id="yoffset-slider" min="-100" max="100" step="1" value="0" aria-label="Y-Offset">
+                            </div>
+                        </div>
+
+                        <!-- KINEMATIK MATRIX -->
+                        <div class="analyse-card kinematics-card" style="grid-column: 1 / -1;">
+                            
+                            <details>
+                                <summary style="cursor: pointer; font-weight: 600; font-size: 1.1rem; color: var(--accent-color);" data-i18n="kinematics.heading">🚀 Drucker-Kinematik (Erweitert)</summary>
+                                <div style="margin-top: 15px; overflow-x: auto;">
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;" data-i18n="kinematics.info">Wird für die exakte Druckzeitberechnung genutzt.</p>
+
+                            
+                            <table class="kinematics-table">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th data-tooltip="Links/Rechts Achse" data-i18n-tooltip="tooltip.17">X</th>
+                                        <th data-tooltip="Vorne/Hinten Achse" data-i18n-tooltip="tooltip.18">Y</th>
+                                        <th data-tooltip="Hoch/Runter Achse" data-i18n-tooltip="tooltip.19">Z</th>
+                                        <th data-tooltip="Extruder (Filamentvorschub)" data-i18n-tooltip="tooltip.20">E</th>
+                                        <th>Unit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td data-tooltip="Das absolute Geschwindigkeitslimit der Achse (M203)" data-i18n-tooltip="tooltip.21">Max Speed</td>
+                                        <td><input type="number" class="k-input" id="k-vmax-x" value="500" aria-label="Max Velocity X"></td>
+                                        <td><input type="number" class="k-input" id="k-vmax-y" value="500" aria-label="Max Velocity Y"></td>
+                                        <td><input type="number" class="k-input" id="k-vmax-z" value="10" aria-label="Max Velocity Z"></td>
+                                        <td><input type="number" class="k-input" id="k-vmax-e" value="50" aria-label="Max Velocity Extruder"></td>
+                                        <td class="k-unit">mm/s</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-tooltip="Beschleunigung während Filament gefördert wird (M201)" data-i18n-tooltip="tooltip.22">Print Accel</td>
+                                        <td><input type="number" class="k-input" id="k-accel-x" value="1000" aria-label="Acceleration X"></td>
+                                        <td><input type="number" class="k-input" id="k-accel-y" value="1000" aria-label="Acceleration Y"></td>
+                                        <td><input type="number" class="k-input" id="k-accel-z" value="100" aria-label="Acceleration Z"></td>
+                                        <td><input type="number" class="k-input" id="k-accel-e" value="5000" aria-label="Acceleration Extruder"></td>
+                                        <td class="k-unit">mm/s²</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-tooltip="Beschleunigung bei Leerfahrten ohne Extrusion (M204)" data-i18n-tooltip="tooltip.23">Travel Accel</td>
+                                        <td><input type="number" class="k-input" id="k-taccel-x" value="1500" aria-label="Travel Accel X"></td>
+                                        <td><input type="number" class="k-input" id="k-taccel-y" value="1500" aria-label="Travel Accel Y"></td>
+                                        <td><input type="number" class="k-input" id="k-taccel-z" value="100" aria-label="Travel Accel Z"></td>
+                                        <td><input type="number" class="k-input" id="k-taccel-e" value="5000" aria-label="Travel Accel Extruder"></td>
+                                        <td class="k-unit">mm/s²</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-tooltip="Ruck/Richtungswechsel-Geschwindigkeit, ab der sofort ohne Rampe gebremst wird (M205)" data-i18n-tooltip="tooltip.24">Jerk</td>
+                                        <td><input type="number" class="k-input" id="k-jerk-x" value="8" aria-label="Jerk X"></td>
+                                        <td><input type="number" class="k-input" id="k-jerk-y" value="8" aria-label="Jerk Y"></td>
+                                        <td><input type="number" class="k-input" id="k-jerk-z" value="0.4" aria-label="Jerk Z"></td>
+                                        <td><input type="number" class="k-input" id="k-jerk-e" value="5" aria-label="Jerk Extruder"></td>
+                                        <td class="k-unit">mm/s</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                <button id="recalc-time-btn" class="upload-btn" style="flex: 1;" data-i18n="kinematics.recalc">Druckzeit neu berechnen</button>
+                                <button id="reset-kinematics-btn" class="upload-btn" style="background-color: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 0 15px;" title="Zurücksetzen" data-i18n-title="title.4">🔄</button>
+                            </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    
+        <!-- SEO SECTION -->
+        <section class="seo-content" style="max-width: 1200px; margin: 0 auto; padding: 20px; color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;">
+            <details style="cursor: pointer; background: var(--panel-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <summary style="color: var(--accent-color); font-weight: 600; outline: none;" data-i18n="info.more">Mehr über LayerSpy & G-Code Analyse erfahren...</summary>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <h2 style="color: var(--text-color); margin-bottom: 10px; font-size: 1.2rem;" data-i18n="info.title1">Die ultimative G-Code Analyse für deinen 3D-Druck</h2>
+                    <p style="margin-bottom: 15px;" data-i18n="info.desc1">LayerSpy ist ein hochmoderner, browserbasierter<strong>G-Code Editor und Analyzer</strong>, der speziell für 3D-Druck Enthusiasten entwickelt wurde. Egal ob du <strong>Marlin</strong>, <strong>Klipper-Firmware</strong> oder RepRap nutzt, mit LayerSpy kannst du den generierten Code von Slicern wie <em>Cura</em>, <em>PrusaSlicer</em> oder <em>OrcaSlicer</em> direkt im Browser visualisieren und tunen.</p>
+                    
+                    <h3 style="color: var(--text-color); margin-bottom: 10px; font-size: 1.1rem;" data-i18n="info.title2">Warum G-Code live analysieren?</h3>
+                    <p data-i18n="info.desc2">Die Analyse von G-Code ermöglicht es dir, Fehler vor dem Druck zu erkennen. LayerSpy bietet eine interaktive 2D und 3D Vorschau mittels WebGL, mit der du Layer für Layer (Schicht für Schicht) durch dein Modell scrollen kannst. Die integrierte Heatmap-Funktion zeigt dir kritische Druckgeschwindigkeiten und Flussraten (Flow) an, um Stringing, Warping oder Under-Extrusion effektiv zu verhindern.</p>
+                </div>
+            </details>
+        </section>
+
+        <!-- FOOTER -->
+        <footer style="background-color: var(--panel-bg); padding: 30px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto;">
+            <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; line-height: 1.5;">
+                <button onclick="openModal('modal-datenschutz')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.privacy">Datenschutz</button>
+                <span style="color: var(--border-color);">|</span>
+                <button onclick="openModal('modal-impressum')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.imprint">Impressum</button>
+                <span style="color: var(--border-color);">|</span>
+                <button onclick="openModal('modal-kontakt')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.contact">Kontaktformular</button>
+                <span style="color: var(--border-color);">|</span>
+                <button onclick="openModal('modal-update')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.updates">Updates (Neu)</button>
+                <span style="color: var(--border-color);">|</span>
+                <button onclick="document.getElementById('cookie-banner').style.display='flex'" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.cookies">Cookie-Einstellungen</button>
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 10px; line-height: 1.6;">
+                <span data-i18n="footer.project">Ein Projekt von</span> <a href="https://www.svender3d.de" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold;">Svender3D</a><br>
+                &copy; 2026 LayerSpy - Professional 3D Printing Tools. <span data-i18n="footer.rights">All rights reserved.</span>
+            </div>
+        </footer>
+</div>
+
+    <!-- Main App Logic -->
+    <script src="js/demo_gcode.js" defer></script>
+<script src="js/app_v5.js" defer></script>
+    
+    <!-- Bottom Menu -->
+    <div id="modal-overlay" class="modal-overlay" onclick="closeAllModals()"></div>
+
+    <div id="modal-datenschutz" class="custom-modal">
+        <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
+        <div class="modal-content-scroll">
+<div class="lang-de">
+
+            <h1>Datenschutzerklärung</h1>
+        
+        <h2>1. Datenschutz auf einen Blick</h2>
+        <h3>Allgemeine Hinweise</h3>
+        <p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen. Personenbezogene Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können. Ausführliche Informationen entnehmen Sie dieser Datenschutzerklärung.</p>
+        
+        <h3>Datenerfassung auf dieser Website</h3>
+        <p><strong>Wer ist verantwortlich?</strong><br>
+        Die Datenverarbeitung erfolgt durch den Websitebetreiber. Details stehen im Abschnitt „Hinweis zur verantwortlichen Stelle“.</p>
+        
+        <p><strong>Wie erfassen wir Ihre Daten?</strong><br>
+        Ihre Daten werden zum einen erhoben, indem Sie uns diese mitteilen (z. B. im Kontaktformular). Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website durch unsere IT‑Systeme erfasst (z. B. Browser, Betriebssystem, Zeitpunkt des Seitenaufrufs).</p>
+        
+        <p><strong>Wofür nutzen wir Ihre Daten?</strong><br>
+        Zur fehlerfreien Bereitstellung der Website, zur Analyse des Nutzerverhaltens sowie – sofern Vertragsbeziehungen über die Website angebahnt oder geschlossen werden – für Angebote, Bestellungen oder Auftragsanfragen.</p>
+        
+        <p><strong>Ihre Rechte</strong><br>
+        Sie haben jederzeit das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerruf erteilter Einwilligungen sowie ein Beschwerderecht bei der zuständigen Aufsichtsbehörde.</p>
+        
+        <h2>2. Hosting</h2>
+        <p>Wir hosten die Inhalte unserer Website bei folgendem Anbieter:<br>
+        Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen.<br>
+        Details: <a href="https://www.hetzner.com/de/legal/privacy-policy/" target="_blank">https://www.hetzner.com/de/legal/privacy-policy/</a></p>
+        
+        <p>Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an zuverlässiger Darstellung). Bei abgefragter Einwilligung: Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG (Speicherung von Cookies/Endgeräte‑Infos). Einwilligungen sind jederzeit widerrufbar.</p>
+        
+        <p><strong>Auftragsverarbeitung</strong><br>
+        Es besteht ein Vertrag über Auftragsverarbeitung (AVV) mit Hetzner.</p>
+
+        <h2>3. Allgemeine Hinweise und Pflichtinformationen</h2>
+        <p><strong>Datenschutz</strong><br>
+        Wir behandeln personenbezogene Daten vertraulich und gemäß den gesetzlichen Vorschriften sowie dieser Datenschutzerklärung. Die Datenübertragung im Internet kann Sicherheitslücken aufweisen.</p>
+        
+        <p><strong>Hinweis zur verantwortlichen Stelle</strong><br>
+        Verantwortlich:<br>
+        Sven Harzer · Wriezenerstrasse 19 · 13055 Berlin<br>
+        Telefon: 0151 29675764 · E-Mail: <a href="mailto:info@layerspy.de">info@layerspy.de</a></p>
+        <p>Verantwortliche Stelle ist die natürliche oder juristische Person, die über Zwecke und Mittel der Verarbeitung entscheidet.</p>
+        
+        <p><strong>Speicherdauer</strong><br>
+        Sofern keine speziellere Frist genannt ist, werden personenbezogene Daten gelöscht, sobald der Verarbeitungszweck entfällt. Gesetzliche Aufbewahrungsfristen bleiben unberührt.</p>
+        
+        <p><strong>Rechtsgrundlagen</strong><br>
+        Je nach Zweck: Art. 6 Abs. 1 lit. a (Einwilligung), Art. 6 Abs. 1 lit. b (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. c (rechtliche Pflicht), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse); bei besonderen Kategorien Art. 9 Abs. 2 lit. a DSGVO; bei Drittstaatenübertragung Art. 49 Abs. 1 lit. a DSGVO; bei Endgerätezugriff zusätzlich § 25 Abs. 1 TDDDG.</p>
+
+        <p><strong>Empfänger von personenbezogenen Daten</strong><br>
+        Eine Weitergabe erfolgt nur bei Erforderlichkeit zur Vertragserfüllung, gesetzlicher Pflicht, berechtigtem Interesse oder anderer Rechtsgrundlage. Bei Auftragsverarbeitung besteht ein AVV; bei gemeinsamer Verarbeitung ein Vertrag über gemeinsame Verantwortlichkeit.</p>
+        
+        <p><strong>Widerruf Ihrer Einwilligung</strong><br>
+        Einwilligungen können jederzeit mit Wirkung für die Zukunft widerrufen werden.</p>
+        
+        <p><strong>Widerspruchsrecht (Art. 21 DSGVO)</strong><br>
+        Sie können aus Gründen Ihrer besonderen Situation der Verarbeitung aufgrund Art. 6 Abs. 1 lit. e/f DSGVO widersprechen; dies gilt auch für Profiling. Bei Direktwerbung besteht ein jederzeitiges Widerspruchsrecht; danach werden Daten nicht mehr für Werbung verwendet.</p>
+        
+        <p><strong>Beschwerderecht</strong><br>
+        Sie haben das Recht auf Beschwerde bei der zuständigen Aufsichtsbehörde.</p>
+        
+        <p><strong>Recht auf Datenübertragbarkeit</strong><br>
+        Sie können Daten, die wir automatisiert auf Grundlage von Einwilligung oder Vertrag verarbeiten, in einem gängigen, maschinenlesbaren Format erhalten oder an Dritte übertragen lassen, soweit technisch machbar.</p>
+        
+        <p><strong>Auskunft, Berichtigung und Löschung</strong><br>
+        Sie haben das Recht auf Auskunft, Berichtigung oder Löschung Ihrer personenbezogenen Daten.</p>
+        
+        <p><strong>Recht auf Einschränkung der Verarbeitung</strong><br>
+        Sie können die Einschränkung der Verarbeitung verlangen, insbesondere in folgenden Fällen:<br>
+        - Bestreiten der Richtigkeit bis zur Klärung<br>
+        - Unrechtmäßige Verarbeitung statt Löschung<br>
+        - Keine Erforderlichkeit mehr, aber Bedarf zur Rechtsverfolgung<br>
+        - Widerspruch nach Art. 21 Abs. 1 bis zur Interessenabwägung</p>
+        
+        <p><strong>SSL‑/TLS‑Verschlüsselung</strong><br>
+        Bei aktivierter Verschlüsselung sind übermittelte Daten für Dritte nicht lesbar.</p>
+        
+        <p><strong>Widerspruch gegen Werbe-E-Mails</strong><br>
+        Der Nutzung von im Impressum veröffentlichten Kontaktdaten für unverlangte Werbung wird widersprochen.</p>
+        
+        <h2>4. Datenerfassung auf dieser Website</h2>
+        <p><strong>Cookies</strong><br>
+        Wir verwenden Session‑ und permanente Cookies sowie ggf. Third‑Party‑Cookies. Notwendige Cookies beruhen auf Art. 6 Abs. 1 lit. f DSGVO; bei Einwilligung Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG. Sie können Ihren Browser entsprechend konfigurieren; die Funktionalität kann bei Deaktivierung eingeschränkt sein.<br>
+        Welche Cookies und Dienste eingesetzt werden, ist dieser Datenschutzerklärung zu entnehmen.</p>
+        
+        <p><strong>Kontaktformular</strong><br>
+        Angaben aus dem Kontaktformular werden zur Bearbeitung Ihrer Anfrage und für Anschlussfragen gespeichert und ohne Einwilligung nicht weitergegeben. Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effektiver Bearbeitung) oder Art. 6 Abs. 1 lit. a DSGVO (Einwilligung, jederzeit widerrufbar). Daten werden gelöscht, wenn der Zweck entfällt oder Sie zur Löschung auffordern; gesetzliche Pflichten bleiben unberührt.</p>
+   
+</div>
+<div class="lang-en">
+<h1>Privacy Policy</h1>
+        
+        <h2>1. Privacy at a Glance</h2>
+        <h3>General Notes</h3>
+        <p>The following notes provide a simple overview of what happens to your personal data when you visit this website. Personal data is all data with which you can be personally identified. Detailed information can be found in this privacy policy.</p>
+        
+        <h3>Data Collection on this Website</h3>
+        <p><strong>Who is responsible?</strong><br>
+        Data processing is carried out by the website operator. Details can be found in the section "Note on the responsible party".</p>
+        
+        <p><strong>How do we collect your data?</strong><br>
+        Ihre Daten werden zum einen erhoben, indem Sie uns diese mitteilen (z. B. im Kontaktformular). Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website durch unsere IT‑Systeme erfasst (z. B. Browser, Betriebssystem, Zeitpunkt des Seitenaufrufs).</p>
+        
+        <p><strong>What do we use your data for?</strong><br>
+        To ensure the error-free provision of the website, to analyze user behavior and - if contractual relationships are initiated or concluded via the website - for offers, orders or order requests.</p>
+        
+        <p><strong>Your Rights</strong><br>
+        You have the right at any time to obtain information, rectification, deletion, restriction of processing, revocation of given consent and the right to lodge a complaint with the competent supervisory authority.</p>
+        
+        <h2>2. Hosting</h2>
+        <p>We host the contents of our website with the following provider:<br>
+        Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen.<br>
+        Details: <a href="https://www.hetzner.com/de/legal/privacy-policy/" target="_blank">https://www.hetzner.com/de/legal/privacy-policy/</a></p>
+        
+        <p>Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an zuverlässiger Darstellung). Bei abgefragter Einwilligung: Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG (Speicherung von Cookies/Endgeräte‑Infos). Einwilligungen sind jederzeit widerrufbar.</p>
+        
+        <p><strong>Auftragsverarbeitung</strong><br>
+        Es besteht ein Vertrag über Auftragsverarbeitung (AVV) mit Hetzner.</p>
+
+        <h2>3. General Notes and Mandatory Information</h2>
+        <p><strong>Privacy</strong><br>
+        Wir behandeln personenbezogene Daten vertraulich und gemäß den gesetzlichen Vorschriften sowie dieser Datenschutzerklärung. Die Datenübertragung im Internet kann Sicherheitslücken aufweisen.</p>
+        
+        <p><strong>Note on the responsible party</strong><br>
+        Verantwortlich:<br>
+        Sven Harzer · Wriezenerstrasse 19 · 13055 Berlin<br>
+        Telefon: 0151 29675764 · E-Mail: <a href="mailto:info@layerspy.de">info@layerspy.de</a></p>
+        <p>Verantwortliche Stelle ist die natürliche oder juristische Person, die über Zwecke und Mittel der Verarbeitung entscheidet.</p>
+        
+        <p><strong>Storage Duration</strong><br>
+        Sofern keine speziellere Frist genannt ist, werden personenbezogene Daten gelöscht, sobald der Verarbeitungszweck entfällt. Gesetzliche Aufbewahrungsfristen bleiben unberührt.</p>
+        
+        <p><strong>Rechtsgrundlagen</strong><br>
+        Je nach Zweck: Art. 6 Abs. 1 lit. a (Einwilligung), Art. 6 Abs. 1 lit. b (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. c (rechtliche Pflicht), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse); bei besonderen Kategorien Art. 9 Abs. 2 lit. a DSGVO; bei Drittstaatenübertragung Art. 49 Abs. 1 lit. a DSGVO; bei Endgerätezugriff zusätzlich § 25 Abs. 1 TDDDG.</p>
+
+        <p><strong>Empfänger von personenbezogenen Daten</strong><br>
+        Eine Weitergabe erfolgt nur bei Erforderlichkeit zur Vertragserfüllung, gesetzlicher Pflicht, berechtigtem Interesse oder anderer Rechtsgrundlage. Bei Auftragsverarbeitung besteht ein AVV; bei gemeinsamer Verarbeitung ein Vertrag über gemeinsame Verantwortlichkeit.</p>
+        
+        <p><strong>Widerruf Ihrer Einwilligung</strong><br>
+        Einwilligungen können jederzeit mit Wirkung für die Zukunft widerrufen werden.</p>
+        
+        <p><strong>Widerspruchsrecht (Art. 21 DSGVO)</strong><br>
+        Sie können aus Gründen Ihrer besonderen Situation der Verarbeitung aufgrund Art. 6 Abs. 1 lit. e/f DSGVO widersprechen; dies gilt auch für Profiling. Bei Direktwerbung besteht ein jederzeitiges Widerspruchsrecht; danach werden Daten nicht mehr für Werbung verwendet.</p>
+        
+        <p><strong>Beschwerderecht</strong><br>
+        Sie haben das Recht auf Beschwerde bei der zuständigen Aufsichtsbehörde.</p>
+        
+        <p><strong>Recht auf Datenübertragbarkeit</strong><br>
+        Sie können Daten, die wir automatisiert auf Grundlage von Einwilligung oder Vertrag verarbeiten, in einem gängigen, maschinenlesbaren Format erhalten oder an Dritte übertragen lassen, soweit technisch machbar.</p>
+        
+        <p><strong>Auskunft, Berichtigung und Löschung</strong><br>
+        Sie haben das Recht auf Auskunft, Berichtigung oder Löschung Ihrer personenbezogenen Daten.</p>
+        
+        <p><strong>Recht auf Einschränkung der Verarbeitung</strong><br>
+        Sie können die Einschränkung der Verarbeitung verlangen, insbesondere in folgenden Fällen:<br>
+        - Bestreiten der Richtigkeit bis zur Klärung<br>
+        - Unrechtmäßige Verarbeitung statt Löschung<br>
+        - Keine Erforderlichkeit mehr, aber Bedarf zur Rechtsverfolgung<br>
+        - Widerspruch nach Art. 21 Abs. 1 bis zur Interessenabwägung</p>
+        
+        <p><strong>SSL‑/TLS‑Verschlüsselung</strong><br>
+        Bei aktivierter Verschlüsselung sind übermittelte Daten für Dritte nicht lesbar.</p>
+        
+        <p><strong>Widerspruch gegen Werbe-E-Mails</strong><br>
+        Der Nutzung von im Impressum veröffentlichten Kontaktdaten für unverlangte Werbung wird widersprochen.</p>
+        
+        <h2>4. Datenerfassung auf dieser Website</h2>
+        <p><strong>Cookies</strong><br>
+        Wir verwenden Session‑ und permanente Cookies sowie ggf. Third‑Party‑Cookies. Notwendige Cookies beruhen auf Art. 6 Abs. 1 lit. f DSGVO; bei Einwilligung Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG. Sie können Ihren Browser entsprechend konfigurieren; die Funktionalität kann bei Deaktivierung eingeschränkt sein.<br>
+        Welche Cookies und Dienste eingesetzt werden, ist dieser Datenschutzerklärung zu entnehmen.</p>
+        
+        <p><strong>Kontaktformular</strong><br>
+        Angaben aus dem Kontaktformular werden zur Bearbeitung Ihrer Anfrage und für Anschlussfragen gespeichert und ohne Einwilligung nicht weitergegeben. Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effektiver Bearbeitung) oder Art. 6 Abs. 1 lit. a DSGVO (Einwilligung, jederzeit widerrufbar). Daten werden gelöscht, wenn der Zweck entfällt oder Sie zur Löschung auffordern; gesetzliche Pflichten bleiben unberührt.</p>
+    
+</div>
+     </div>
+    </div>
+
+    <div id="modal-impressum" class="custom-modal">
+        <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
+        <div class="modal-content-scroll">
+<div class="lang-de">
+
+            <h1>Impressum</h1>
+        <p><strong>Angaben gemäß § 5 DDG:</strong><br>
+        Sven Harzer<br>
+        Wriezenerstrasse 19<br>
+        13055 Berlin</p>
+        
+        <p><strong>Vertreten durch:</strong><br>
+        Sven Harzer</p>
+        
+        <p><strong>Kontakt:</strong><br>
+        Telefon: 0151-29675764<br>
+        E-Mail: <a href="mailto:info@layerspy.de">info@layerspy.de</a></p>
+        
+        <p><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:</strong><br>
+        Sven Harzer<br>
+        Wriezenerstrasse 19<br>
+        13055 Berlin</p>
+        
+        <h2>Streitschlichtung</h2>
+        <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr" target="_blank">https://ec.europa.eu/consumers/odr</a>.<br>
+        Unsere E-Mail-Adresse finden Sie oben im Impressum.</p>
+        <p>Wir nehmen nicht an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teil und sind dazu auch nicht verpflichtet.</p>
+        
+        <h2>Haftung für Inhalte</h2>
+        <p>Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.</p>
+        <p>Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.</p>
+        
+        <h2>Haftung für Links</h2>
+        <p>Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.</p>
+        <p>Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.</p>
+        
+        <h2>Urheberrecht</h2>
+        <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet.</p>
+        <p>Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.</p>
+   
+</div>
+<div class="lang-en">
+<h1>Imprint</h1>
+        <p><strong>Information according to § 5 DDG:</strong><br>
+        Sven Harzer<br>
+        Wriezenerstrasse 19<br>
+        13055 Berlin</p>
+        
+        <p><strong>Represented by:</strong><br>
+        Sven Harzer</p>
+        
+        <p><strong>Contact:</strong><br>
+        Phone: 0151-29675764<br>
+        E-Mail: <a href="mailto:info@layerspy.de">info@layerspy.de</a></p>
+        
+        <p><strong>Responsible for content according to § 55 Abs. 2 RStV:</strong><br>
+        Sven Harzer<br>
+        Wriezenerstrasse 19<br>
+        13055 Berlin</p>
+        
+        <h2>Dispute Resolution</h2>
+        <p>The European Commission provides a platform for online dispute resolution (OS): <a href="https://ec.europa.eu/consumers/odr" target="_blank">https://ec.europa.eu/consumers/odr</a>.<br>
+        You can find our email address in the imprint above.</p>
+        <p>We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board.</p>
+        
+        <h2>Liability for Content</h2>
+        <p>As a service provider, we are responsible for our own content on these pages in accordance with general legislation pursuant to § 7 Abs. 1 TMG. According to §§ 8 to 10 TMG, however, we as a service provider are not obliged to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity.</p>
+        <p>Obligations to remove or block the use of information in accordance with general laws remain unaffected by this. However, liability in this respect is only possible from the time of knowledge of a concrete infringement. If we become aware of such infringements, we will remove this content immediately.</p>
+        
+        <h2>Liability for Links</h2>
+        <p>Our offer contains links to external websites of third parties, on whose contents we have no influence. Therefore, we cannot assume any liability for these external contents. The respective provider or operator of the pages is always responsible for the content of the linked pages. The linked pages were checked for possible legal violations at the time of linking. Illegal contents were not recognizable at the time of linking.</p>
+        <p>A permanent control of the contents of the linked pages is not reasonable without concrete evidence of a violation of the law. If we become aware of any infringements, we will remove such links immediately.</p>
+        
+        <h2>Copyright</h2>
+        <p>The content and works created by the site operators on these pages are subject to German copyright law. The duplication, processing, distribution and any kind of exploitation outside the limits of copyright require the written consent of the respective author or creator. Downloads and copies of this site are only permitted for private, non-commercial use.</p>
+        <p>Insofar as the content on this site was not created by the operator, the copyrights of third parties are respected. In particular, third-party content is identified as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. If we become aware of any infringements, we will remove such content immediately.</p>
+    
+</div>
+     </div>
+    </div>
+
+    <!-- UPDATE MODAL -->
+    <div id="modal-update" class="custom-modal">
+        <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
+        <div class="modal-content-scroll">
+<div class="lang-de">
+
+            <h1 style="color: var(--accent-color); margin-bottom: 5px;">🚀 Was ist neu in LayerSpy?</h1>
+            <p id="update-version" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">Lade Updates von GitHub...</p>
+            
+            <div style="text-align: left; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div id="update-notes" style="line-height: 1.6; color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;">
+                    Verbinde mit Server...
+                </div>
+                <a id="update-link" href="#" target="_blank" style="display: none; text-decoration: none;">
+                    <button class="upload-btn" style="width: 100%; margin-top: 10px;">Release auf GitHub ansehen</button>
+                </a>
+            </div>
+   
+</div>
+<div class="lang-en">
+
+            <h1 style="color: var(--accent-color); margin-bottom: 5px;">🚀 What's new in LayerSpy?</h1>
+            <p id="update-version" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">Loading updates from GitHub...</p>
+            
+            <div style="text-align: left; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div id="update-notes" style="line-height: 1.6; color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;">
+                    Verbinde mit Server...
+                </div>
+                <a id="update-link" href="#" target="_blank" style="display: none; text-decoration: none;">
+                    <button class="upload-btn" style="width: 100%; margin-top: 10px;">Release auf GitHub ansehen</button>
+                </a>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div id="modal-kontakt" class="custom-modal">
+        <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
+        <div class="modal-content-scroll">
+
+            <h1 data-i18n="kontakt.title">Sicheres Kontaktformular</h1>
+            <p data-i18n="kontakt.subtitle">Ihre Nachricht wird SSL-verschlüsselt übertragen.</p>
+            
+            <form id="contact-form" action="#" method="POST">
+                <div class="form-group" style="display: none; visibility: hidden; opacity: 0;" aria-hidden="true">
+                    <label for="website_url">Bitte dieses Feld frei lassen</label>
+                    <input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off" aria-label="Website URL (Spam Protection)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="name" data-i18n="kontakt.name">Name</label>
+                    <input type="text" id="name" name="name" required placeholder="Ihr Name" aria-label="Ihr Name" data-i18n-placeholder="kontakt.namePlaceholder">
+                </div>
+                <div class="form-group">
+                    <label for="email" data-i18n="kontakt.email">E-Mail Adresse</label>
+                    <input type="email" id="email" name="email" required placeholder="ihre.adresse@beispiel.de" aria-label="Ihre E-Mail" data-i18n-placeholder="kontakt.emailPlaceholder">
+                </div>
+                <div class="form-group">
+                    <label for="message" data-i18n="kontakt.message">Ihre Nachricht</label>
+                    <textarea id="message" name="message" rows="5" required placeholder="Wie können wir helfen?" maxlength="500" data-i18n-placeholder="kontakt.messagePlaceholder"></textarea>
+                    <div id="char-counter" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">0 / 500 Zeichen</div>
+                </div>
+                <button type="submit" data-i18n="kontakt.send">Nachricht sicher senden ✉️</button>
+                <div id="form-status" style="display: none; margin-top: 10px; text-align: center; font-size: 0.9rem; font-weight: 500;"></div>
+            </form>
+        </div>
+    </div>
+        
+        <script>
+            document.getElementById('contact-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const form = this;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const formData = new FormData(form);
+                
+                const statusDiv = document.getElementById('form-status');
+                statusDiv.style.display = 'none';
+                
+                // Check honeypot
+                if (document.getElementById('website_url').value !== '') {
+                    console.warn('Spam submission blocked by Honeypot.');
+                    form.reset();
+                    return false;
+                }
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Wird gesendet... ⏳';
+
+                fetch('send_mail.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    statusDiv.style.display = 'block';
+                    if (data.status === 'success') {
+                        statusDiv.style.color = '#00c853';
+                        statusDiv.innerHTML = '✅ Nachricht gesendet!';
+                        form.reset();
+                        const charCounter = document.getElementById('char-counter');
+                        if (charCounter) charCounter.innerText = '0 / 500 Zeichen';
+                    } else {
+                        statusDiv.style.color = '#ff3d00';
+                        statusDiv.innerHTML = '❌ Fehler: ' + data.message;
+                    }
+                    setTimeout(() => statusDiv.style.display = 'none', 5000);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.color = '#ff3d00';
+                    statusDiv.innerHTML = '❌ Ein Fehler ist aufgetreten.';
+                    setTimeout(() => statusDiv.style.display = 'none', 5000);
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Nachricht sicher senden ✉️';
+                });
+            });
+
+            // Live Counter Initialization
+            document.addEventListener('DOMContentLoaded', () => {
+                const messageInput = document.getElementById('message');
+                const charCounter = document.getElementById('char-counter');
+                if (messageInput && charCounter) {
+                    messageInput.addEventListener('input', function() {
+                        charCounter.innerText = `${this.value.length} / 500 Zeichen`;
+                    });
+                }
+            });
+            
+        // Google Analytics Logic
+        function loadGoogleAnalytics() {
+            const gaMeasurementId = 'G-7MJSHSL5PB'; 
+
+            if (document.getElementById('ga-script')) return;
+
+            const script = document.createElement('script');
+            script.id = 'ga-script';
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`;
+            script.async = true;
+            document.head.appendChild(script);
+
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', gaMeasurementId, { 'anonymize_ip': true });
+            console.log('Google Analytics loaded.');
+        }
+
+        // Cookie Banner Logic
+        function acceptAllCookies() {
+            localStorage.setItem('layerSpyCookies', 'all');
+            document.getElementById('cookie-banner').style.display = 'none';
+            loadGoogleAnalytics();
+        }
+
+        function acceptEssentialCookies() {
+            localStorage.setItem('layerSpyCookies', 'essential');
+            document.getElementById('cookie-banner').style.display = 'none';
+        }
+        
+        function checkCookieConsent() {
+            const cookieStatus = localStorage.getItem('layerSpyCookies');
+            if (!cookieStatus || cookieStatus === 'accepted') {
+                document.getElementById('cookie-banner').style.display = 'flex';
+            } else if (cookieStatus === 'all') {
+                loadGoogleAnalytics();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkCookieConsent();
+        });
+        </script>
+    </div>
+
+    <!-- COOKIE BANNER -->
+    <div id="cookie-banner" style="display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 450px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10000; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex-direction: column; gap: 15px;">
+        <div>
+            <strong style="color: var(--text-color); font-size: 1rem; display: block; margin-bottom: 5px;" data-i18n="cookie.title">Ihre Privatsphäre ist uns wichtig! 🍪</strong>
+            Wir nutzen essenzielle Speichertechnologien, damit diese Webseite funktioniert. Wenn Sie auf "Alles akzeptieren" klicken, stimmen Sie zusätzlich der Nutzung von <strong>Google Analytics</strong> zu, mit dem wir anonymisierte Daten zur Verbesserung unserer Webseite erfassen.
+            <button onclick="openModal('modal-datenschutz')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none;">Mehr Infos</button>.
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="acceptAllCookies()" class="upload-btn" style="flex: 1; padding: 10px; font-size: 0.9rem;" data-i18n="cookie.accept">Alles akzeptieren</button>
+            <button onclick="acceptEssentialCookies()" style="flex: 1; padding: 10px; font-size: 0.9rem; background: transparent; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'" data-i18n="cookie.essential">Nur essenzielle</button>
+        </div>
+    </div>
+
+    <script>
+
+        // GitHub Sync für Updates
+        async function fetchGitHubUpdates() {
+            // HIER GITHUB REPO EINTRAGEN (z.B. "username/repo"):
+            const githubRepo = "Exulizer/LayerSpy"; 
+            
+            try {
+                const response = await fetch(`https://api.github.com/repos/${githubRepo}/releases/latest`);
+                if (response.ok) {
+                    const release = await response.json();
+                    document.getElementById('update-version').innerText = `Neueste Version: ${release.tag_name} (${new Date(release.published_at).toLocaleDateString('de-DE')})`;
+                    
+                    // Besserer Parser für Release-Notes
+                    let bodyText = release.body || "*Keine Release-Notes angegeben.*";
+                    let notesHTML = bodyText
+                        .replace(/</g, '&lt;').replace(/>/g, '&gt;') // Prevent HTML injection
+                        .replace(/\r\n/g, '<br>').replace(/\n/g, '<br>'); // Handle newlines
+                    // Convert basic markdown headers
+                    notesHTML = notesHTML.replace(/### (.*?)(<br>|$)/g, '<h4 style="margin-top: 10px; margin-bottom: 5px; color: var(--accent-color);">$1</h4>');
+                    notesHTML = notesHTML.replace(/## (.*?)(<br>|$)/g, '<h3 style="margin-top: 15px; margin-bottom: 5px; color: var(--accent-color);">$1</h3>');
+                    notesHTML = notesHTML.replace(/# (.*?)(<br>|$)/g, '<h2 style="margin-top: 5px; margin-bottom: 10px; color: var(--text-color);">$1</h2>');
+                    
+                    // Bold
+                    notesHTML = notesHTML.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    // Inline code
+                    notesHTML = notesHTML.replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
+                    
+                    // Convert markdown bullet points
+                    notesHTML = notesHTML.replace(/- (.*?)(<br>|$)/g, '<li style="margin-bottom: 5px; line-height: 1.4; margin-left: 20px;">$1</li>');
+                    // Wrap lists in <ul>
+                    notesHTML = notesHTML.replace(/(<li.*?>.*?<\/li>(?:<br>)*)+/g, match => {
+                        return `<ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 0;">${match.replace(/<br>/g, '')}</ul>`;
+                    });
+                    
+                    // Cleanup extra brs around headers and lists
+                    notesHTML = notesHTML.replace(/(<\/h[2-4]>|<\/ul>)<br>/g, '$1');
+                    notesHTML = notesHTML.replace(/<br>(<h[2-4].*?>|<ul.*?>)/g, '$1');
+                    
+                    document.getElementById('update-notes').innerHTML = notesHTML;
+                    
+                    const updateLink = document.getElementById('update-link');
+                    updateLink.href = release.html_url;
+                    updateLink.style.display = 'block';
+                } else if (response.status === 404) {
+                    document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
+                    document.getElementById('update-notes').innerHTML = "Es wurden noch keine Releases auf GitHub veröffentlicht.<br><br>Sobald ein Release erstellt wird, erscheint es hier automatisch.";
+                } else if (response.status === 403) {
+                    document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
+                    document.getElementById('update-notes').innerHTML = "<b>GitHub-Abfragelimit erreicht!</b><br><br>Da die Seite sehr oft neu geladen wurde, hat GitHub die Verbindung vorübergehend blockiert (max. 60 Abfragen pro Stunde).<br>Dies ist ein temporärer Schutz von GitHub.<br><br>Bitte warte ein paar Minuten, dann funktioniert die Update-Prüfung wieder ganz von alleine.<br><br><a href=\"https://github.com/Exulizer/LayerSpy/releases\" target=\"_blank\" class=\"btn\" style=\"display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;\">Releases auf GitHub ansehen</a>";
+                } else {
+                    document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
+                    document.getElementById('update-notes').innerHTML = "Fehler beim Abrufen der GitHub-Releases (Status: " + response.status + ").<br><br><a href=\"https://github.com/Exulizer/LayerSpy/releases\" target=\"_blank\" class=\"btn\" style=\"display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;\">Releases auf GitHub ansehen</a>";
+                }
+            } catch (err) {
+                console.error("GitHub Sync Fehler:", err);
+                document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
+                document.getElementById('update-notes').innerHTML = "Es konnte keine Verbindung zu GitHub hergestellt werden. Bitte prüfe deine Internetverbindung.<br><br><a href=\"https://github.com/Exulizer/LayerSpy/releases\" target=\"_blank\" class=\"btn\" style=\"display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;\">Releases auf GitHub ansehen</a>";
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchGitHubUpdates();
+            checkCookieConsent();
+        });
+    </script>
+
+<script>
+window.modalTranslations = {"Impressum":"Imprint","Angaben gemäß § 5 DDG:":"Information according to § 5 DDG:","Vertreten durch:":"Represented by:","Kontakt:":"Contact:","Telefon:":"Phone:","Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:":"Responsible for content according to § 55 Abs. 2 RStV:","Streitschlichtung":"Dispute Resolution","Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:":"The European Commission provides a platform for online dispute resolution (OS):","Unsere E-Mail-Adresse finden Sie oben im Impressum.":"You can find our email address in the imprint above.","Wir nehmen nicht an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teil und sind dazu auch nicht verpflichtet.":"We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board.","Haftung für Inhalte":"Liability for Content","Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.":"As a service provider, we are responsible for our own content on these pages in accordance with general legislation pursuant to § 7 Abs. 1 TMG. According to §§ 8 to 10 TMG, however, we as a service provider are not obliged to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity.","Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.":"Obligations to remove or block the use of information in accordance with general laws remain unaffected by this. However, liability in this respect is only possible from the time of knowledge of a concrete infringement. If we become aware of such infringements, we will remove this content immediately.","Haftung für Links":"Liability for Links","Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.":"Our offer contains links to external websites of third parties, on whose contents we have no influence. Therefore, we cannot assume any liability for these external contents. The respective provider or operator of the pages is always responsible for the content of the linked pages. The linked pages were checked for possible legal violations at the time of linking. Illegal contents were not recognizable at the time of linking.","Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.":"A permanent control of the contents of the linked pages is not reasonable without concrete evidence of a violation of the law. If we become aware of any infringements, we will remove such links immediately.","Urheberrecht":"Copyright","Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet.":"The content and works created by the site operators on these pages are subject to German copyright law. The duplication, processing, distribution and any kind of exploitation outside the limits of copyright require the written consent of the respective author or creator. Downloads and copies of this site are only permitted for private, non-commercial use.","Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.":"Insofar as the content on this site was not created by the operator, the copyrights of third parties are respected. In particular, third-party content is identified as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. If we become aware of any infringements, we will remove such content immediately.","Sicheres Kontaktformular":"Secure Contact Form","Ihre Nachricht wird SSL-verschlüsselt übertragen.":"Your message is transmitted with SSL encryption.","Bitte dieses Feld frei lassen":"Please leave this field empty",">Name<":">Name<","Ihr Name":"Your Name","E-Mail Adresse":"Email Address","ihre.adresse@beispiel.de":"your.address@example.com","Ihre Nachricht":"Your Message","Wie können wir helfen?":"How can we help?","Zeichen":"characters","Nachricht sicher senden ✉️":"Send message securely ✉️","Lade Updates von GitHub...":"Loading updates from GitHub...","Verbinde mit Server...":"Connecting to server...","Release auf GitHub ansehen":"View Release on GitHub","Datenschutzerklärung":"Privacy Policy","Datenschutz auf einen Blick":"Privacy at a Glance","Allgemeine Hinweise":"General Notes","Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen. Personenbezogene Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können. Ausführliche Informationen entnehmen Sie dieser Datenschutzerklärung.":"The following notes provide a simple overview of what happens to your personal data when you visit this website. Personal data is all data with which you can be personally identified. Detailed information can be found in this privacy policy.","Datenerfassung auf dieser Website":"Data collection on this website","Wer ist verantwortlich?":"Who is responsible?","Die Datenverarbeitung erfolgt durch den Websitebetreiber. Details stehen im Abschnitt „Hinweis zur verantwortlichen Stelle“.":"Data processing is carried out by the website operator. Details can be found in the section \"Note on the responsible party\".","Wie erfassen wir Ihre Daten?":"How do we collect your data?","Ihre Daten werden zum einen erhoben, indem Sie uns diese mitteilen (z. B. im Kontaktformular). Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website durch unsere IT-Systeme erfasst (z. B. Browser, Betriebssystem, Zeitpunkt des Seitenaufrufs).":"On the one hand, your data is collected when you provide it to us (e.g. in the contact form). Other data is collected automatically or with your consent when you visit the website by our IT systems (e.g. browser, operating system, time of page view).","Wofür nutzen wir Ihre Daten?":"What do we use your data for?","Zur fehlerfreien Bereitstellung der Website, zur Analyse des Nutzerverhaltens sowie – sofern Vertragsbeziehungen über die Website angebahnt oder geschlossen werden – für Angebote, Bestellungen oder Auftragsanfragen.":"To ensure the error-free provision of the website, to analyze user behavior and - if contractual relationships are initiated or concluded via the website - for offers, orders or order requests.","Ihre Rechte":"Your Rights","Sie haben jederzeit das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerruf erteilter Einwilligungen sowie ein Beschwerderecht bei der zuständigen Aufsichtsbehörde.":"You have the right at any time to obtain information, rectification, deletion, restriction of processing, revocation of given consent and the right to lodge a complaint with the competent supervisory authority.","Hosting":"Hosting","Wir hosten die Inhalte unserer Website bei folgendem Anbieter:":"We host the contents of our website with the following provider:","Externes Hosting":"External Hosting","Diese Website wird extern gehostet. Personenbezogene Daten, die auf dieser Website erfasst werden, werden auf den Servern des Hosters gespeichert. Hierbei kann es sich v. a. um IP-Adressen, Kontaktanfragen, Meta- und Kommunikationsdaten, Vertragsdaten, Kontaktdaten, Namen, Websitezugriffe und sonstige Daten handeln.":"This website is hosted externally. Personal data collected on this website is stored on the hoster's servers. This may include IP addresses, contact requests, meta and communication data, contract data, contact data, names, website accesses and other data.","Der Einsatz des Hosters erfolgt zum Zwecke der Vertragserfüllung gegenüber unseren potenziellen und bestehenden Kunden (Art. 6 Abs. 1 lit. b DSGVO) und im Interesse einer sicheren, schnellen und effizienten Bereitstellung unseres Online-Angebots durch einen professionellen Anbieter (Art. 6 Abs. 1 lit. f DSGVO). Unser Hoster wird Ihre Daten nur insoweit verarbeiten, wie dies zur Erfüllung seiner Leistungspflichten erforderlich ist.":"The use of the hoster is for the purpose of fulfilling the contract with our potential and existing customers (Art. 6 Para. 1 lit. b GDPR) and in the interest of a secure, fast and efficient provision of our online offer by a professional provider (Art. 6 Para. 1 lit. f GDPR). Our hoster will only process your data to the extent necessary to fulfill its performance obligations.","Allgemeine Hinweise und Pflichtinformationen":"General Notes and Mandatory Information","Datenschutz":"Privacy","Die Betreiber dieser Seiten nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.":"The operators of these pages take the protection of your personal data very seriously. We treat your personal data confidentially and in accordance with the statutory data protection regulations and this privacy policy.","Wir behandeln personenbezogene Daten vertraulich und gemäß den gesetzlichen Vorschriften sowie dieser Datenschutzerklärung. Die Datenübertragung im Internet kann Sicherheitslücken aufweisen.":"We treat personal data confidentially and in accordance with the statutory regulations and this privacy policy. Data transmission on the Internet can have security gaps.","Hinweis zur verantwortlichen Stelle":"Note on the responsible party","Verantwortlich:":"Responsible:","Verantwortliche Stelle ist die natürliche oder juristische Person, die über Zwecke und Mittel der Verarbeitung entscheidet.":"The responsible party is the natural or legal person who decides on the purposes and means of processing.","Speicherdauer":"Storage Duration","Soweit nicht eine spezifischere Speicherdauer genannt wurde, verbleiben Ihre Daten bei uns, bis der Zweck für die Datenverarbeitung entfällt.":"Unless a more specific storage period has been stated, your data will remain with us until the purpose for data processing no longer applies.","Sofern keine speziellere Frist genannt ist, werden personenbezogene Daten gelöscht, sobald der Verarbeitungszweck entfällt. Gesetzliche Aufbewahrungsfristen bleiben unberührt.":"Unless a more specific period is specified, personal data will be deleted as soon as the purpose of processing ceases to apply. Statutory retention periods remain unaffected.","Rechtsgrundlagen":"Legal Bases","Je nach Zweck: Art. 6 Abs. 1 lit. a (Einwilligung), Art. 6 Abs. 1 lit. b (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. c (rechtliche Pflicht), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse); bei besonderen Kategorien Art. 9 Abs. 2 lit. a DSGVO; bei Drittstaatenübertragung Art. 49 Abs. 1 lit. a DSGVO; bei Endgerätezugriff zusätzlich § 25 Abs. 1 TDDDG.":"Depending on the purpose: Art. 6 Para. 1 lit. a (Consent), Art. 6 Para. 1 lit. b (Contract/Pre-contract), Art. 6 Para. 1 lit. c (Legal obligation), Art. 6 Para. 1 lit. f GDPR (Legitimate interest); for special categories Art. 9 Para. 2 lit. a GDPR; for third-country transfers Art. 49 Para. 1 lit. a GDPR; for terminal equipment access additionally § 25 Para. 1 TDDDG.","Empfänger von personenbezogenen Daten":"Recipients of personal data","Eine Weitergabe erfolgt nur bei Erforderlichkeit zur Vertragserfüllung, gesetzlicher Pflicht, berechtigtem Interesse oder anderer Rechtsgrundlage. Bei Auftragsverarbeitung besteht ein AVV; bei gemeinsamer Verarbeitung ein Vertrag über gemeinsame Verantwortlichkeit.":"A disclosure only takes place if necessary for contract fulfillment, legal obligation, legitimate interest or other legal basis. For order processing, an AVV exists; for joint processing, a joint responsibility contract.","Widerruf Ihrer Einwilligung":"Revocation of your consent","Einwilligungen können jederzeit mit Wirkung für die Zukunft widerrufen werden.":"Consents can be revoked at any time with effect for the future.","Widerspruchsrecht (Art. 21 DSGVO)":"Right to object (Art. 21 GDPR)","Sie können aus Gründen Ihrer besonderen Situation der Verarbeitung aufgrund Art. 6 Abs. 1 lit. e/f DSGVO widersprechen; dies gilt auch für Profiling. Bei Direktwerbung besteht ein jederzeitiges Widerspruchsrecht; danach werden Daten nicht mehr für Werbung verwendet.":"You can object to processing based on Art. 6 Para. 1 lit. e/f GDPR for reasons arising from your particular situation; this also applies to profiling. In the case of direct advertising, there is a right of objection at any time; after this, data will no longer be used for advertising.","Beschwerderecht":"Right to lodge a complaint","Sie haben das Recht auf Beschwerde bei der zuständigen Aufsichtsbehörde.":"You have the right to lodge a complaint with the competent supervisory authority.","Recht auf Datenübertragbarkeit":"Right to data portability","Sie können Daten, die wir automatisiert auf Grundlage von Einwilligung oder Vertrag verarbeiten, in einem gängigen, maschinenlesbaren Format erhalten oder an Dritte übertragen lassen, soweit technisch machbar.":"You can receive data that we process automatically on the basis of consent or contract in a common, machine-readable format or have it transferred to third parties, as far as technically feasible.","Auskunft, Berichtigung und Löschung":"Information, correction and deletion","Sie haben das Recht auf Auskunft, Berichtigung oder Löschung Ihrer personenbezogenen Daten.":"You have the right to information, correction or deletion of your personal data.","Recht auf Einschränkung der Verarbeitung":"Right to restriction of processing","Sie können die Einschränkung der Verarbeitung verlangen, insbesondere in folgenden Fällen:":"You can request the restriction of processing, in particular in the following cases:","- Bestreiten der Richtigkeit bis zur Klärung":"- Disputing the accuracy until clarified","- Unrechtmäßige Verarbeitung statt Löschung":"- Unlawful processing instead of deletion","- Keine Erforderlichkeit mehr, aber Bedarf zur Rechtsverfolgung":"- No longer required, but needed for legal claims","- Widerspruch nach Art. 21 Abs. 1 bis zur Interessenabwägung":"- Objection according to Art. 21 Para. 1 until interests are weighed","SSL-/TLS-Verschlüsselung":"SSL/TLS Encryption","Bei aktivierter Verschlüsselung sind übermittelte Daten für Dritte nicht lesbar.":"When encryption is active, transmitted data cannot be read by third parties.","Widerspruch gegen Werbe-E-Mails":"Objection to promotional emails","Der Nutzung von im Impressum veröffentlichten Kontaktdaten für unverlangte Werbung wird widersprochen.":"The use of contact data published in the imprint for unsolicited advertising is objected to.","Cookies":"Cookies","Wir verwenden Session- und permanente Cookies sowie ggf. Third-Party-Cookies. Notwendige Cookies beruhen auf Art. 6 Abs. 1 lit. f DSGVO; bei Einwilligung Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG. Sie können Ihren Browser entsprechend konfigurieren; die Funktionalität kann bei Deaktivierung eingeschränkt sein.":"We use session and permanent cookies as well as third-party cookies if applicable. Necessary cookies are based on Art. 6 Para. 1 lit. f GDPR; with consent Art. 6 Para. 1 lit. a GDPR and § 25 Para. 1 TDDDG. You can configure your browser accordingly; functionality may be restricted if deactivated.","Welche Cookies und Dienste eingesetzt werden, ist dieser Datenschutzerklärung zu entnehmen.":"Which cookies and services are used can be found in this privacy policy.","Kontaktformular":"Contact Form","Angaben aus dem Kontaktformular werden zur Bearbeitung Ihrer Anfrage und für Anschlussfragen gespeichert und ohne Einwilligung nicht weitergegeben. Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effektiver Bearbeitung) oder Art. 6 Abs. 1 lit. a DSGVO (Einwilligung, jederzeit widerrufbar). Daten werden gelöscht, wenn der Zweck entfällt oder Sie zur Löschung auffordern; gesetzliche Pflichten bleiben unberührt.":"Information from the contact form is stored to process your request and for follow-up questions and is not passed on without consent. Legal bases: Art. 6 Para. 1 lit. b GDPR (Contract/Pre-contract), Art. 6 Para. 1 lit. f GDPR (legitimate interest in effective processing) or Art. 6 Para. 1 lit. a GDPR (Consent, revocable at any time). Data is deleted when the purpose ceases to apply or you request deletion; statutory obligations remain unaffected."};
+window.translateModals = function() {
+    const isEn = localStorage.getItem('layerspy_lang') === 'en';
+    const modals = document.querySelectorAll('.custom-modal');
+    modals.forEach(modal => {
+        const walker = document.createTreeWalker(modal, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        while(node = walker.nextNode()) {
+            let text = node.nodeValue.trim();
+            if(!text) continue;
+            
+            if(!node.originalDe) {
+                node.originalDe = text;
+            }
+            
+            if(isEn && window.modalTranslations[node.originalDe]) {
+                node.nodeValue = node.nodeValue.replace(node.originalDe, window.modalTranslations[node.originalDe]);
+            } else if (!isEn && node.originalDe) {
+                if (window.modalTranslations[node.originalDe]) {
+                    node.nodeValue = node.nodeValue.replace(window.modalTranslations[node.originalDe], node.originalDe);
+                }
+            }
+        }
+        
+        const inputs = modal.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            if(!input.originalDePlaceholder && input.placeholder) {
+                input.originalDePlaceholder = input.placeholder;
+            }
+            if(isEn && window.modalTranslations[input.originalDePlaceholder]) {
+                input.placeholder = window.modalTranslations[input.originalDePlaceholder];
+            } else if (!isEn && input.originalDePlaceholder) {
+                input.placeholder = input.originalDePlaceholder;
+            }
+        });
+    });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.translateModals();
+    
+    const origSetItem = localStorage.setItem;
+    localStorage.setItem = function(key, value) {
+        origSetItem.apply(this, arguments);
+        if(key === 'layerspy_lang') {
+            window.translateModals();
+        }
+    };
+});
+</script>
+
+</body>
+</html>

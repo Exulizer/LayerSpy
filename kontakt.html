@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kontaktiere das LayerSpy Team. Wir helfen dir gerne bei Fragen zu unserem G-Code Analyzer.">
+    <title>Kontakt - LayerSpy</title>
+
+    <!-- SEO & Social Media -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <meta property="og:url" content="https://layerspy.de/">
+    <meta property="og:image" content="https://layerspy.de/assets/logo.webp">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="LayerSpy - G-Code Analyzer">
+    <meta name="twitter:description" content="Simuliere und analysiere deinen G-Code in Echtzeit im Browser. Mit 2D/3D Ansicht und Layer-Heatmaps.">
+
+    <link href="css/inter.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style.css?v=1784393461000">
+</head>
+<body>
+<div class="lang-switcher" style="display:flex; align-items:center; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px; border: 1px solid rgba(255,255,255,0.1); position: absolute; top: 20px; right: 20px;">
+                    <button onclick="localStorage.setItem('layerspy_lang', 'en'); window.location.href=window.location.pathname.replace('.html', '_en.html')" style="background:transparent; color:rgba(255,255,255,0.5); border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">EN</button>
+                    <button style="background:var(--accent-color); color:#fff; border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">DE</button>
+                </div>
+    <div class="container">
+        <a href="index.html" class="back-link">← Zurück zur App</a>
+        <h1>Sicheres Kontaktformular</h1>
+        <p>Ihre Nachricht wird SSL-verschlüsselt übertragen.</p>
+        
+        <form id="contact-form" action="#" method="POST">
+            <!-- Honeypot field (hidden from real users, filled by spam bots) -->
+            <div class="form-group" style="display: none; visibility: hidden; opacity: 0;" aria-hidden="true">
+                <label for="website_url">Bitte dieses Feld frei lassen</label>
+                <input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off" aria-label="Website URL">
+            </div>
+            
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required placeholder="Ihr Name" aria-label="Ihr Name">
+            </div>
+            <div class="form-group">
+                <label for="email">E-Mail Adresse</label>
+                <input type="email" id="email" name="email" required placeholder="ihre.adresse@beispiel.de" aria-label="Ihre E-Mail">
+            </div>
+            <div class="form-group">
+                <label for="message">Ihre Nachricht</label>
+                <textarea id="message" name="message" rows="5" required placeholder="Wie können wir helfen?" maxlength="500"></textarea>
+                <div id="char-counter" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">0 / 500 Zeichen</div>
+            </div>
+            <button type="submit">Nachricht sicher senden ✉️</button>
+            <div id="form-status" style="display: none; margin-top: 10px; text-align: center; font-size: 0.9rem; font-weight: 500;"></div>
+        </form>
+        
+        <script>
+            document.getElementById('contact-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const form = this;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const formData = new FormData(form);
+                
+                const statusDiv = document.getElementById('form-status');
+                statusDiv.style.display = 'none';
+                
+                // Check honeypot
+                if (document.getElementById('website_url').value !== '') {
+                    console.warn('Spam submission blocked by Honeypot.');
+                    form.reset();
+                    return false;
+                }
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Wird gesendet... ⏳';
+
+                fetch('send_mail.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    statusDiv.style.display = 'block';
+                    if (data.status === 'success') {
+                        statusDiv.style.color = '#00c853';
+                        statusDiv.innerHTML = '✅ Nachricht gesendet!';
+                        form.reset();
+                        const charCounter = document.getElementById('char-counter');
+                        if (charCounter) charCounter.innerText = '0 / 500 Zeichen';
+                    } else {
+                        statusDiv.style.color = '#ff3d00';
+                        statusDiv.innerHTML = '❌ Fehler: ' + data.message;
+                    }
+                    setTimeout(() => statusDiv.style.display = 'none', 5000);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.color = '#ff3d00';
+                    statusDiv.innerHTML = '❌ Ein Fehler ist aufgetreten.';
+                    setTimeout(() => statusDiv.style.display = 'none', 5000);
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Nachricht sicher senden ✉️';
+                });
+            });
+
+            // Live Counter Initialization
+            document.addEventListener('DOMContentLoaded', () => {
+                const messageInput = document.getElementById('message');
+                const charCounter = document.getElementById('char-counter');
+                if (messageInput && charCounter) {
+                    messageInput.addEventListener('input', function() {
+                        charCounter.innerText = `${this.value.length} / 500 Zeichen`;
+                    });
+                }
+            });
+            
+        // Google Analytics Logic
+        function loadGoogleAnalytics() {
+            const gaMeasurementId = 'G-7MJSHSL5PB'; 
+
+            if (document.getElementById('ga-script')) return;
+
+            const script = document.createElement('script');
+            script.id = 'ga-script';
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`;
+            script.async = true;
+            document.head.appendChild(script);
+
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', gaMeasurementId, { 'anonymize_ip': true });
+            console.log('Google Analytics loaded.');
+        }
+
+        // Cookie Banner Logic
+        function acceptAllCookies() {
+            localStorage.setItem('layerSpyCookies', 'all');
+            document.getElementById('cookie-banner').style.display = 'none';
+            loadGoogleAnalytics();
+        }
+
+        function acceptEssentialCookies() {
+            localStorage.setItem('layerSpyCookies', 'essential');
+            document.getElementById('cookie-banner').style.display = 'none';
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const cookieStatus = localStorage.getItem('layerSpyCookies');
+            if (!cookieStatus || cookieStatus === 'accepted') {
+                document.getElementById('cookie-banner').style.display = 'flex';
+            } else if (cookieStatus === 'all') {
+                loadGoogleAnalytics();
+            }
+        });
+        </script>
+    </div>
+
+    <!-- COOKIE BANNER -->
+    <div id="cookie-banner" style="display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 450px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10000; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex-direction: column; gap: 15px;">
+        <div>
+            <strong style="color: var(--text-color); font-size: 1rem; display: block; margin-bottom: 5px;">Ihre Privatsphäre ist uns wichtig! 🍪</strong>
+            Wir nutzen essenzielle Speichertechnologien, damit diese Webseite funktioniert. Wenn Sie auf "Alles akzeptieren" klicken, stimmen Sie zusätzlich der Nutzung von <strong>Google Analytics</strong> zu, mit dem wir anonymisierte Daten zur Verbesserung unserer Webseite erfassen.
+            <a href="datenschutz.html" style="color: var(--accent-color); text-decoration: none;">Mehr Infos</a>.
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="acceptAllCookies()" style="flex: 1; padding: 10px; font-size: 0.9rem; background: linear-gradient(135deg, rgba(0, 188, 212, 0.15), rgba(0, 188, 212, 0.05)); border: 1px solid rgba(0, 188, 212, 0.3); color: var(--accent-color); border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='linear-gradient(135deg, rgba(0, 188, 212, 0.25), rgba(0, 188, 212, 0.1))'; this.style.color='#fff';" onmouseout="this.style.background='linear-gradient(135deg, rgba(0, 188, 212, 0.15), rgba(0, 188, 212, 0.05))'; this.style.color='var(--accent-color)';">Alles akzeptieren</button>
+            <button onclick="acceptEssentialCookies()" style="flex: 1; padding: 10px; font-size: 0.9rem; background: transparent; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">Nur essenzielle</button>
+        </div>
+    </div>
+</body>
+</html>

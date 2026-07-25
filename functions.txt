@@ -1,0 +1,457 @@
+5: function setLanguage(lang) {
+8: ['datenschutz', 'impressum', 'kontakt'].forEach(page => {
+9: document.querySelectorAll('a[href^="' + page + '"]').forEach(a => {
+22: if (langEnBtn && langDeBtn) {
+30: document.querySelectorAll('[data-i18n]').forEach(el => {
+32: if (window.i18n[lang][key]) {
+38: document.querySelectorAll('[data-i18n-title]').forEach(el => {
+40: if (window.i18n[lang][key]) {
+46: document.querySelectorAll('[data-i18n-tooltip]').forEach(el => {
+48: if (window.i18n[lang][key]) {
+55: window.t = function(key) {
+60: document.addEventListener('DOMContentLoaded', () => {
+71: class GCodeViewer {
+72: constructor() {
+87: this.layerList = []; // Array of layer objects: { z: height, paths: [] }
+133: saveAppliedState() {
+134: this.appliedState = {
+148: checkPendingUpdates() {
+151: const checkWidget = (inputId, valId, stateKey, currentVal) => {
+161: if (isDifferent) {
+164: } else {
+166: if (!widget.querySelector('.is-modified')) {
+182: liveUpdateDebounced() {
+184: this.liveUpdateTimer = setTimeout(() => {
+190: debounce(func, wait) {
+192: return (...args) => {
+198: init3D() {
+229: const animate = () => {
+231: if (this.is3DMode) {
+239: toggle3DMode(enable3D) {
+247: if (enable3D) {
+261: } else {
+273: initEvents() {
+278: document.querySelectorAll('.slider, .k-input').forEach(input => {
+279: input.addEventListener('wheel', (e) => {
+287: if (e.deltaY < 0) {
+289: } else {
+295: }, { passive: false });
+311: document.addEventListener('dragover', (e) => {
+313: if (uploadBtnLabel) {
+318: document.addEventListener('dragleave', (e) => {
+320: if (uploadBtnLabel) {
+325: document.addEventListener('drop', (e) => {
+327: if (uploadBtnLabel) {
+331: if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+338: if (demoBtn) {
+339: demoBtn.addEventListener('click', () => {
+344: document.getElementById('layer-slider').addEventListener('input', (e) => {
+358: document.getElementById('view-mode-select').addEventListener('change', (e) => {
+366: document.getElementById('view-mode-select').addEventListener('change', (e) => {
+377: if(modeSelect) modeSelect.addEventListener('change', (e) => {
+382: if(sizeSelect) sizeSelect.addEventListener('change', (e) => {
+387: if(prevBtn) prevBtn.addEventListener('click', () => {
+388: if(this.gcodeCurrentPage > 1) {
+393: if(nextBtn) nextBtn.addEventListener('click', () => {
+394: if(this.gcodeCurrentPage < this.gcodeTotalPages) {
+401: document.getElementById('play-toggle').addEventListener('click', () => {
+405: document.getElementById('play-step-fwd').addEventListener('click', () => {
+409: document.getElementById('play-step-back').addEventListener('click', () => {
+413: document.getElementById('playback-slider').addEventListener('input', (e) => {
+419: document.getElementById('temp-slider').addEventListener('input', (e) => {
+424: document.getElementById('bed-slider').addEventListener('input', (e) => {
+431: document.getElementById('retract-slider').addEventListener('input', (e) => {
+438: document.getElementById('fan-slider').addEventListener('input', (e) => {
+447: document.getElementById('speed-slider').addEventListener('input', (e) => {
+454: document.getElementById('zoffset-slider').addEventListener('input', (e) => {
+461: document.getElementById('xoffset-slider').addEventListener('input', (e) => {
+468: document.getElementById('yoffset-slider').addEventListener('input', (e) => {
+476: document.querySelectorAll('.k-input').forEach(input => {
+477: input.addEventListener('input', () => {
+480: input.addEventListener('change', () => {
+489: document.querySelectorAll('.slider').forEach(slider => {
+490: slider.addEventListener('wheel', (e) => {
+508: document.querySelectorAll('input[type="number"]').forEach(input => {
+509: input.addEventListener('wheel', (e) => {
+523: document.querySelectorAll('.widget-title .accent').forEach(badge => {
+527: badge.addEventListener('click', (e) => {
+544: const finishEdit = () => {
+549: if (newVal !== null && newVal.trim() !== '' && !isNaN(newVal)) {
+557: } else {
+563: input.addEventListener('keydown', (e) => {
+571: document.getElementById('gcode-view').addEventListener('click', (e) => {
+573: if (li) {
+580: document.querySelectorAll('.slider, .k-input').forEach(input => {
+581: const handler = (e) => {
+589: document.getElementById('apply-btn').addEventListener('click', () => {
+595: document.querySelectorAll('.pending-update').forEach(w => {
+600: this.updateGcodeListAsync().then(() => {
+614: if (recalcBtn) {
+615: recalcBtn.addEventListener('click', async () => {
+618: document.querySelectorAll('.k-input').forEach(input => {
+629: if (resetKBtn) {
+630: resetKBtn.addEventListener('click', async () => {
+631: if (this.initialKinematicsInputs) {
+632: for (const [id, val] of Object.entries(this.initialKinematicsInputs)) {
+634: if (el) {
+639: if (this.originalLines && this.originalLines.length > 0) {
+648: document.querySelectorAll('.tab-btn').forEach(btn => {
+649: btn.addEventListener('click', (e) => {
+659: document.querySelectorAll('.filter-btn').forEach(btn => {
+660: btn.addEventListener('click', (e) => {
+670: if (filter !== 'all') {
+679: if (colorModeGroup) {
+681: btns.forEach(btn => {
+682: btn.addEventListener('click', (e) => {
+683: btns.forEach(b => {
+700: if (showTravelBtn) {
+701: showTravelBtn.addEventListener('change', (e) => {
+709: resetSettings(skipUpdate = false) {
+749: if (!skipUpdate) {
+751: } else {
+757: resizeCanvas() {
+764: if (this.renderer) {
+766: if (c3d && c3d.parentElement) {
+778: onMouseDown(e) {
+785: onMouseMove(e) {
+793: onMouseUp(e) {
+797: onMouseLeave(e) {
+802: onWheel(e) {
+805: if (e.deltaY < 0) {
+807: } else {
+814: onClick(e) {
+815: if (this.wasDragging) {
+831: if (this.layerList.length > 0) {
+834: for (const path of paths) {
+836: if (d <= threshold && d < minDistance) {
+843: if (closestPath) {
+848: distanceToSegment(px, py, x1, y1, x2, y2) {
+859: async loadDemo() {
+919: if (controlBar) {
+931: setTimeout(async () => {
+932: try {
+943: } catch(err) {
+951: onFileLoad(e) {
+953: if (e.dataTransfer && e.dataTransfer.files) {
+955: } else if (e.target && e.target.files) {
+961: if (!file.name.toLowerCase().endsWith('.gcode')) {
+973: if (controlBar) {
+990: reader.onload = async (event) => {
+991: try {
+1005: } catch(err) {
+1014: async parseGcodeAsync(forceRecalc = false) {
+1021: return new Promise((resolve, reject) => {
+1022: const k = {
+1023: vmax: {
+1029: accel: {
+1035: jerk: {
+1044: const workerBlob = new Blob([`self.onmessage = function(e) {
+1045: const { lines, k, halfBed, forceRecalc } = e.data;
+1053: let foundK = {
+1054: vmax: {x: null, y: null, z: null, e: null},
+1055: accel: {x: null, y: null, z: null, e: null},
+1056: jerk: {x: null, y: null, z: null, e: null},
+1061: for (let i = 0; i < lines.length; i++) {
+1070: if (lowerLine.includes('time') && lowerLine.startsWith(';')) {
+1071: if (lowerLine.includes('estimated printing time (normal mode) =')) {
+1073: if (match) {
+1087: if (c1 === ';') {
+1088: if (lowerLine.startsWith('; machine_max_acceleration_x = ')) {
+1091: } else if (lowerLine.startsWith('; machine_max_acceleration_y = ')) {
+1093: } else if (lowerLine.startsWith('; machine_max_acceleration_z = ')) {
+1095: } else if (lowerLine.startsWith('; machine_max_acceleration_e = ')) {
+1097: } else if (lowerLine.startsWith('; machine_max_feedrate_x = ')) {
+1099: } else if (lowerLine.startsWith('; machine_max_feedrate_y = ')) {
+1101: } else if (lowerLine.startsWith('; machine_max_feedrate_z = ')) {
+1103: } else if (lowerLine.startsWith('; machine_max_feedrate_e = ')) {
+1105: } else if (lowerLine.startsWith('; machine_max_jerk_x = ')) {
+1107: } else if (lowerLine.startsWith('; machine_max_jerk_y = ')) {
+1109: } else if (lowerLine.startsWith('; machine_max_jerk_z = ')) {
+1111: } else if (lowerLine.startsWith('; machine_max_jerk_e = ')) {
+1117: if (foundTemp === null && (cleanLine.startsWith('M104') || cleanLine.startsWith('M109'))) {
+1121: if (foundBed === null && (cleanLine.startsWith('M140') || cleanLine.startsWith('M190'))) {
+1125: if (foundFan === null && cleanLine.startsWith('M106')) {
+1129: if (foundRetract === null && cleanLine.match(/E-[0-9.]+/)) {
+1135: if (cleanLine.startsWith('M203 ')) {
+1141: if (cleanLine.startsWith('M201 ')) {
+1147: if (cleanLine.startsWith('M204 ')) {
+1151: if(p) { foundK.accel.x = parseFloat(p[1]); foundK.accel.y = parseFloat(p[1]); }
+1152: if(s) { foundK.accel.x = parseFloat(s[1]); foundK.accel.y = parseFloat(s[1]); }
+1155: if (cleanLine.startsWith('M205 ')) {
+1164: if (!forceRecalc) {
+1200: let processChunk = function(startIndex) {
+1202: for(let j = startIndex; j < chunkEnd; j++) {
+1204: if (cleanLine.startsWith(';')) {
+1205: if (cleanLine.toUpperCase().startsWith(';TYPE:')) {
+1207: } else if (cleanLine.toUpperCase().startsWith('; TYPE:')) {
+1215: if (cleanLine.startsWith('G92') && cleanLine.includes('E')) {
+1229: if (zMatch) {
+1237: if (cleanLine.startsWith('G1') || cleanLine.startsWith('G0')) {
+1242: if (zMatch) {
+1247: if (currentF > 0 && lineDist > 0) {
+1252: if (zMatch && dx === 0 && dy === 0) {
+1255: } else {
+1260: if (lineDist > 0 && lastLineDist > 0) {
+1276: if (d_accel_decel > lineDist) {
+1279: } else {
+1286: if (xMatch) {
+1291: if (yMatch) {
+1297: if (eMatch) {
+1299: if (isRelativeE) {
+1302: } else {
+1311: if (isExtruding && Math.abs(currentZ - lastExtrusionZ) > 0.001) {
+1313: if (layerList.length === 1 && !layerList[0].paths.some(p => p.type === 'extrude')) {
+1315: } else {
+1325: if (!isExtruding || !isZeroLength) {
+1343: if (chunkEnd < totalLines) {
+1345: } else {
+1350: let finalize = function() {
+1354: if (slicerBaseTime > 0 && estimatedPrintTimeSeconds > 0 && !forceRecalc) {
+1358: const stats = {
+1370: const defaults = {
+1385: `], { type: 'application/javascript' });
+1389: worker.onmessage = (e) => {
+1391: if (msg.type === 'progress') {
+1393: } else if (msg.type === 'done') {
+1396: if (!forceRecalc) {
+1397: const kDefaults = {
+1403: for (const [id, val] of Object.entries(kDefaults)) {
+1405: if (el) { el.value = val; el.classList.remove('modified-value'); }
+1413: if (foundK.accel.x !== null) {
+1417: if (foundK.accel.y !== null) {
+1421: if (foundK.accel.z !== null) {
+1425: if (foundK.accel.e !== null) {
+1435: if (!forceRecalc) {
+1457: if (!forceRecalc) {
+1459: this.initialKinematicsInputs = {};
+1460: document.querySelectorAll('.k-input').forEach(input => {
+1485: worker.onerror = (err) => {
+1499: modifyLine(originalLine, flowFactor, speedFactor) {
+1503: if (tempLine.trim() === '' || tempLine.trim().startsWith(';')) return { text: tempLine, types: [] };
+1505: if (this.currentTemp !== this.defaultTemp && (tempLine.match(/\bM104\b/) || tempLine.match(/\bM109\b/))) {
+1510: if (this.currentBed !== this.defaultBed && (tempLine.match(/\bM140\b/) || tempLine.match(/\bM190\b/))) {
+1515: if (this.currentFan !== this.defaultFan && tempLine.match(/\bM106\b/)) {
+1516: if (tempLine.includes('S')) {
+1518: } else {
+1525: if (this.currentRetract !== this.defaultRetract && tempLine.match(/E\s*-[0-9.]+/)) {
+1529: else if (this.currentFlow !== 100 && tempLine.match(/E([0-9.]+)/)) {
+1530: tempLine = tempLine.replace(/E([0-9.]+)/, (match, p1) => {
+1536: if (this.currentSpeed !== 100 && tempLine.match(/F([0-9.]+)/)) {
+1537: tempLine = tempLine.replace(/F([0-9.]+)/, (match, p1) => {
+1544: if (this.currentXOffset !== 0.0) {
+1546: if (xMatch) {
+1552: if (this.currentYOffset !== 0.0) {
+1554: if (yMatch) {
+1560: if (this.currentZOffset !== 0.0) {
+1562: if (zMatch) {
+1569: return { text: modified, types: modTypes };
+1572: async updateGcodeListAsync() {
+1573: if (this.originalLines.length === 0) {
+1585: if (controlBar) {
+1598: if (!isInitialLoad && this.lastActiveWidget) {
+1600: if (!loaderSpan) {
+1608: if (titleEl) {
+1611: } else {
+1637: if (this.gcodeViewMode === 'layer' && this.layerList && this.layerList.length > 0) {
+1639: if (currentLayer && currentLayer.paths && currentLayer.paths.length > 0) {
+1640: if (this.currentLayerIdx === 0) {
+1642: } else {
+1644: if (prevLayer && prevLayer.paths && prevLayer.paths.length > 0) {
+1646: } else {
+1656: if (this.gcodePageSize !== 'all') {
+1677: for(let i = 0; i < totalLines; i += chunkSize) {
+1679: for(let j = i; j < chunkEnd; j++) {
+1687: )) {
+1706: if (modTypes.length > 0) {
+1711: if (isChanged && modTypes.length > 0) {
+1712: modTypes.forEach(t => {
+1723: } else if (isChanged) {
+1739: if (isInitialLoad && overlayText) {
+1741: } else if (activeLoaderText) {
+1748: if (this.currentTemp !== this.defaultTemp && !this.originalTempFound) {
+1758: if (this.currentBed !== this.defaultBed && !this.originalBedFound) {
+1767: if (this.currentFan !== this.defaultFan && !this.originalFanFound) {
+1777: if (this.currentRetract !== this.defaultRetract && !this.originalRetractFound) {
+1787: if (isKinematicsModified) {
+1799: if (this.gcodePageSize !== 'all') {
+1801: } else {
+1805: if (modChunks.length > 0) {
+1807: } else {
+1813: document.querySelectorAll('.widget-updating').forEach(w => {
+1823: updateLayerIndicator() {
+1825: if (val) {
+1826: if (this.layerList && this.layerList.length > 0) {
+1829: } else {
+1836: play() {
+1842: if (this.playbackIndex >= currentLayer.paths.length - 1 || this.playbackIndex === -1) {
+1851: pause() {
+1857: stepForward() {
+1862: if (this.playbackIndex < currentLayer.paths.length - 1) {
+1869: stepBackward() {
+1874: if (this.playbackIndex > 0) {
+1881: playbackLoop() {
+1890: if (this.playbackIndex >= currentLayer.paths.length - 1) {
+1898: if (this.isPlaying) {
+1903: syncPlaybackUI() {
+1906: if (!this.layerList || !this.layerList.length) {
+1918: if (this.playbackIndex !== -1 && currentLayer.paths[this.playbackIndex]) {
+1923: if (prevActive) {
+1929: if (lineEl) {
+1936: safeScrollToLine(lineEl, behavior, block) {
+1943: if (block === 'nearest') {
+1944: if (lRect.top < cRect.top) {
+1946: } else if (lRect.bottom > cRect.bottom) {
+1949: } else {
+1955: selectLine(index) {
+1964: if (lineEl) {
+1967: } else if (this.gcodePageSize !== 'all') {
+1970: if (this.gcodeViewMode === 'layer' && this.layerList && this.layerList.length > 0) {
+1973: for(let i=0; i<this.layerList.length; i++) {
+1975: if(l.paths.length > 0) {
+1976: if (index <= l.paths[l.paths.length - 1].lineIndex) {
+1982: if (targetLayerIdx !== -1 && targetLayerIdx !== this.currentLayerIdx) {
+1989: if (this.currentLayerIdx === 0) {
+1991: } else {
+1993: if (prevLayer && prevLayer.paths && prevLayer.paths.length > 0) {
+1995: } else {
+2002: if (relativeLine >= 0) {
+2006: if (targetPage !== this.gcodeCurrentPage || !document.getElementById(`line-${index}`)) {
+2008: this.updateGcodeListAsync().then(() => {
+2010: if (newEl) {
+2019: if (this.originalLines[index]) {
+2027: interpretLine(line) {
+2031: if (cleanLine.startsWith("G28")) {
+2035: else if (cleanLine.startsWith("G1") || cleanLine.startsWith("G0")) {
+2043: else if (cleanLine.includes("E-") || (cleanLine.startsWith("G1") && cleanLine.match(/E-([0-9.]+)/))) {
+2049: else if (cleanLine.startsWith("M104") || cleanLine.startsWith("M109")) {
+2056: else if (cleanLine.startsWith("M140") || cleanLine.startsWith("M190")) {
+2062: else if (cleanLine.startsWith("M106")) {
+2068: else if (cleanLine.startsWith("M107")) {
+2072: else if (cleanLine.includes("SET_VELOCITY_LIMIT")) {
+2076: else if (cleanLine.includes("SET_PRESSURE_ADVANCE")) {
+2080: else if (cleanLine.startsWith("G90")) {
+2084: else if (cleanLine.startsWith("G91")) {
+2088: else if (cleanLine.startsWith("M82")) {
+2092: else if (cleanLine.startsWith("M83")) {
+2096: else if (cleanLine.startsWith("G92")) {
+2100: else if (cleanLine.startsWith("M20") || cleanLine.startsWith("M201") || cleanLine.startsWith("M203") || cleanLine.startsWith("M204") || cleanLine.startsWith("M205")) {
+2104: else if (cleanLine.startsWith("M84")) {
+2108: else if (cleanLine.startsWith("M") || cleanLine.startsWith("G")) {
+2112: } else {
+2119: updateStatsUI() {
+2145: updateTimeUI() {
+2157: if (this.originalJsTime) {
+2159: if (savedSec > 60) {
+2164: } else if (savedSec < -60) {
+2169: } else {
+2172: } else {
+2173: if (speedFactor > 1.0) {
+2179: } else {
+2185: formatTime(seconds) {
+2194: rebuild3DScene() {
+2198: if (this.gcode3DObject) {
+2205: if (this.instancedMesh) {
+2211: if (this.sphereInstancedMesh) {
+2224: this.layerList.forEach(layer => {
+2225: layer.paths.forEach(p => {
+2233: if (this.showTravelMoves) {
+2235: this.layerList.forEach(layer => {
+2236: layer.paths.forEach(p => { if (p.type === 'travel') travelCount++; });
+2239: if (travelCount > 0) {
+2246: this.layerList.forEach((layer, lIdx) => {
+2247: layer.paths.forEach(p => {
+2248: if (p.type === 'travel' && lIdx <= this.currentLayerIdx) {
+2255: if (activePoints.length > 0) {
+2265: } else if (this.travelLinesObj) {
+2272: if (useSolid) {
+2296: this.layerList.forEach((layer, lIdx) => {
+2297: layer.paths.forEach(path => {
+2325: if (this.colorMode === 'heatmap') {
+2329: } else if (this.colorMode === 'feature') {
+2337: } else {
+2359: } else {
+2366: this.layerList.forEach((layer) => {
+2367: layer.paths.forEach(path => {
+2378: if (this.colorMode === 'heatmap') {
+2382: } else if (this.colorMode === 'feature') {
+2390: } else {
+2418: if (!this.nozzle3D) {
+2426: if (!this.highlight3D) {
+2437: if (this.bed3D) {
+2440: if (this.gcode3DObject) {
+2443: if (this.instancedMesh) {
+2450: update3DPlayback() {
+2466: for (let l = 0; l <= this.currentLayerIdx; l++) {
+2470: if (l === this.currentLayerIdx) {
+2474: for (let p = 0; p < pathsToCount; p++) {
+2476: if (path.type === 'extrude') {
+2486: if (this.gcode3DObject) {
+2489: if (this.instancedMesh) {
+2492: if (this.sphereInstancedMesh) {
+2496: if (this.nozzle3D) {
+2497: if (foundPath) {
+2500: } else {
+2506: if (this.selectedLineIndex !== -1) {
+2508: for (let l = 0; l < this.layerList.length; l++) {
+2510: for (let p = 0; p < layer.paths.length; p++) {
+2512: if (path.lineIndex === this.selectedLineIndex && (path.type === 'extrude' || path.type === 'travel')) {
+2513: if (this.highlight3D) {
+2533: if (!foundHighlight && this.highlight3D) {
+2538: draw() {
+2539: if (this.is3DMode) {
+2558: for (let i = -this.halfBed; i <= this.halfBed; i += 20) {
+2563: if (this.layerList.length > 0) {
+2580: if (this.currentLayerIdx > 0) {
+2583: prevLayer.paths.forEach(path => {
+2584: if (path.type === 'extrude') {
+2605: if (this.showTravelMoves) {
+2607: activePaths.forEach(path => {
+2608: if (path.lineIndex === this.selectedLineIndex) { highlightedPath = path; return; }
+2609: if (path.type === 'travel') {
+2617: } else {
+2619: activePaths.forEach(path => {
+2627: if (this.colorMode === 'heatmap' || this.colorMode === 'feature') {
+2630: if (this.scale > 1.2) {
+2632: activePaths.forEach(path => {
+2634: if (path.type === 'extrude') {
+2647: activePaths.forEach(path => {
+2649: if (path.type === 'extrude') {
+2654: if (this.colorMode === 'heatmap') {
+2658: } else {
+2674: } else {
+2677: activePaths.forEach(path => {
+2679: if (path.type === 'extrude') {
+2686: if (this.scale > 1.2) {
+2703: if (this.playbackIndex !== -1 && activePaths.length > 0) {
+2715: if (highlightedPath) {
+2731: exportGCode() {
+2738: if (this.initialKinematicsInputs) {
+2739: for (const [id, originalVal] of Object.entries(this.initialKinematicsInputs)) {
+2741: if (el && el.value !== originalVal) {
+2748: let modified = this.originalLines.map(line => {
+2750: if (isKinematicsModified) {
+2752: if (upper.startsWith('M201 ') || upper.startsWith('M203 ') || upper.startsWith('M204 ') || upper.startsWith('M205 ')) {
+2760: if (this.currentFan !== this.defaultFan && !this.originalFanFound) {
+2764: if (isKinematicsModified) {
+2765: const kParams = {
+2766: vmax: { x: document.getElementById('k-vmax-x').value || 500, y: document.getElementById('k-vmax-y').value || 500, z: document.getElementById('k-vmax-z').value || 10, e: document.getElementById('k-vmax-e').value || 50 },
+2767: accel: { x: document.getElementById('k-accel-x').value || 1000, y: document.getElementById('k-accel-y').value || 1000, z: document.getElementById('k-accel-z').value || 100, e: document.getElementById('k-accel-e').value || 5000 },
+2768: taccel: { x: document.getElementById('k-taccel-x').value || 1500 },
+2769: jerk: { x: document.getElementById('k-jerk-x').value || 8, y: document.getElementById('k-jerk-y').value || 8, z: document.getElementById('k-jerk-z').value || 0.4, e: document.getElementById('k-jerk-e').value || 5 }
+2782: const blob = new Blob([modified.join('\n')], { type: 'text/plain' });
+2791: window.addEventListener('DOMContentLoaded', () => {
+2797: document.addEventListener('DOMContentLoaded', () => {
+2803: if (window.innerWidth <= 1024) {
+2807: window.addEventListener('resize', () => {
+2808: if (window.innerWidth <= 1024) {
+2809: if (overlay && !document.body.classList.contains('canvas-interaction-locked')) {
+2812: } else {
+2819: if (enableBtn) {
+2820: enableBtn.addEventListener('click', () => {
+2825: if (disableBtn) {
+2826: disableBtn.addEventListener('click', () => {
+2834: window.openModal = function(id) {
+2840: window.closeAllModals = function() {
+2847: document.addEventListener('DOMContentLoaded', () => {
+2848: const updateSliderColor = (slider) => {
+2859: document.querySelectorAll('input[type="range"].slider').forEach(slider => {
