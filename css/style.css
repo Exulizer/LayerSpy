@@ -370,10 +370,23 @@ select.upload-btn option, select.theme-select option {
     cursor: pointer;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 2px;
+    border-left: 3px solid transparent;
 }
 .gcode-line:hover {
     background-color: rgba(255, 255, 255, 0.05);
+}
+.gcode-line.is-child {
+    position: relative;
+    padding-left: 42px; /* 10px original padding + 32px indent */
+}
+.gcode-line.is-child::before {
+    content: '';
+    position: absolute;
+    left: 21px; /* 10px + 11px (center of fold-btn) */
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 .gcode-line.active {
     background-color: rgba(255, 255, 255, 0.05); /* subtle background instead of yellow */
