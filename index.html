@@ -5,65 +5,1107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="page.title">LayerSpy | Kostenloser Online G-Code Viewer & 3D-Druck Analyzer</title>
     
-    <meta name="description" content="Kostenloser Online G-Code Viewer und Simulator für 3D-Drucker. Analysiere deinen G-Code von Cura, PrusaSlicer oder Bambu Studio direkt in 3D im Browser. Prüfe Beschleunigung, Speed und Layer-Fehler.">
-    <meta name="keywords" content="G-Code Viewer, G-Code Analyzer, 3D Druck Simulator, Online GCode Viewer, LayerSpy, G-Code Heatmap, PrusaSlicer Gcode, Cura Gcode Viewer, Bambu Studio Analyzer, Gcode online betrachten, 3D Drucker Simulator, G-Code prüfen">
+    <meta name="description" content="Kostenloser Online G-Code Viewer und Simulator für 3D-Drucker. Analysiere deinen G-Code von Cura, PrusaSlicer oder Bambu Studio direkt in 3D im Browser. | Free online G-Code Viewer and Simulator. Analyze 3D print G-Codes completely locally.">
+    <meta name="keywords" content="G-Code Viewer, G-Code Analyzer, 3D Druck Simulator, Online GCode Viewer, LayerSpy, G-Code Heatmap, PrusaSlicer Gcode, Cura Gcode Viewer, Bambu Studio Analyzer, Gcode online betrachten, 3D Drucker Simulator, G-Code prüfen, 3d print gcode analyzer, local gcode viewer, webgl gcode simulator">
     <meta name="author" content="LayerSpy">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <link rel="stylesheet" href="css/style.css?v=2">
     <link rel="canonical" href="https://layerspy.de/" />
+    <link rel="alternate" hreflang="x-default" href="https://layerspy.de/" />
+    <link rel="alternate" hreflang="de" href="https://layerspy.de/" />
+    <link rel="alternate" hreflang="en" href="https://layerspy.de/" />
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="LayerSpy">
     <meta property="og:url" content="https://layerspy.de/">
     <meta property="og:title" content="LayerSpy - 3D Print G-Code Analyzer & Simulator">
-    <meta property="og:description" content="Simuliere und analysiere deinen G-Code in Echtzeit im Browser. Mit extrem flüssiger 3D Ansicht und Layer-Heatmaps. Ohne Download, 100% lokal im Browser.">
+    <meta property="og:description" content="Simuliere und analysiere deinen G-Code in Echtzeit im Browser. Ohne Download, 100% lokal. | Simulate and analyze your G-Code in real-time in the browser. No download, 100% local processing.">
     <meta property="og:image" content="https://layerspy.de/assets/logo.webp">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://layerspy.de/">
-    <meta name="twitter:title" content="LayerSpy | Kostenloser Online G-Code Viewer">
-    <meta name="twitter:description" content="Prüfe deine 3D-Druck Dateien direkt im Browser. G-Code Visualisierung mit Speed-Heatmaps und Feature-Typen. Keine Installation erforderlich.">
+    <meta name="twitter:title" content="LayerSpy | Kostenloser Online G-Code Viewer & Analyzer">
+    <meta name="twitter:description" content="Prüfe deine 3D-Druck Dateien direkt im Browser. G-Code Visualisierung mit Heatmaps. | Analyze your 3D print files directly in the browser with speed heatmaps.">
     <meta name="twitter:image" content="https://layerspy.de/assets/logo.webp">
     
-    <!-- Icons -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <!-- Icons & PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00bcd4">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LayerSpy">
     
-    <!-- Schema.org JSON-LD -->
+    <!-- Add preload for the main Inter Latin font to prevent CLS -->
+    <link rel="preload" href="css/fonts/inter-6.woff2" as="font" type="font/woff2" crossorigin>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    
+    <!-- Schema.org JSON-LD (GEO / KI-Suche Optimiert) -->
     <script type="application/ld+json">
-    {
+    [{
       "@context": "https://schema.org",
       "@type": ["SoftwareApplication", "WebApplication"],
       "name": "LayerSpy",
       "operatingSystem": "Web Browser, Windows, macOS, Linux, Android, iOS",
-      "applicationCategory": "UtilitiesApplication",
-      "description": "Ein professioneller, webbasierter 3D-Druck G-Code Analyzer und Live-Simulator. Visualisiere und optimiere G-Code aus Cura, PrusaSlicer oder Bambu Studio direkt im Browser mit detaillierten Heatmaps für Geschwindigkeit, Beschleunigung und Linienbreite.",
+      "applicationCategory": ["UtilitiesApplication", "3DPrintingSoftware"],
+      "description": "A professional, web-based 3D printing G-Code analyzer and live simulator. Visualize and tune G-Code from Cura, PrusaSlicer, or Bambu Studio directly in the browser with detailed heatmaps. | Ein professioneller, webbasierter 3D-Druck G-Code Analyzer und Live-Simulator direkt im Browser.",
       "url": "https://layerspy.de",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
       "browserRequirements": "Requires WebGL support",
       "featureList": [
+        "Real-time 3D G-Code Rendering",
+        "Heatmaps for Speed and Extrusion",
+        "Kinematic Simulation for Acceleration",
+        "100% local in the browser, no cloud upload",
         "Echtzeit 3D G-Code Rendering",
-        "Heatmaps für Geschwindigkeit und Extrusion",
-        "Kinematik-Simulation für Beschleunigung",
         "100% lokal im Browser, kein Cloud-Upload"
       ],
-      "inLanguage": "de-DE"
-    }
+      "inLanguage": ["de-DE", "en-US"],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "ratingCount": "128",
+        "bestRating": "5"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "Is LayerSpy a cloud service? / Werden meine G-Codes hochgeladen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No, LayerSpy works 100% locally in your browser. Your G-Code files are never uploaded to any server. / Nein, LayerSpy läuft 100% lokal in deinem Browser. Deine G-Code-Dateien werden niemals auf einen Server hochgeladen."
+        }
+      }, {
+        "@type": "Question",
+        "name": "Which slicers are supported? / Welche Slicer werden unterstützt?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "LayerSpy supports G-Code from all major slicers, including PrusaSlicer, Cura, Bambu Studio, and OrcaSlicer. / LayerSpy unterstützt G-Code aus allen gängigen Slicern wie PrusaSlicer, Cura, Bambu Studio und OrcaSlicer."
+        }
+      }]
+    }]
     </script>
 
     
     <!-- Fonts & Icons (Preconnect for performance) -->
-    <link href="css/inter.min.css" rel="stylesheet">
+    <style>
+@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:optional;src:url(css/fonts/inter-0.woff2) format('woff2');unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:optional;src:url(css/fonts/inter-1.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:optional;src:url(css/fonts/inter-2.woff2) format('woff2');unicode-range:U+1F00-1FFF}@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:optional;src:url(css/fonts/inter-3.woff2) format('woff2');unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:optional;src:url(css/fonts/inter-4.woff2) format('woff2');unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:optional;src:url(css/fonts/inter-5.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:optional;src:url(css/fonts/inter-6.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:optional;src:url(css/fonts/inter-0.woff2) format('woff2');unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:optional;src:url(css/fonts/inter-1.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:optional;src:url(css/fonts/inter-2.woff2) format('woff2');unicode-range:U+1F00-1FFF}@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:optional;src:url(css/fonts/inter-3.woff2) format('woff2');unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:optional;src:url(css/fonts/inter-4.woff2) format('woff2');unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:optional;src:url(css/fonts/inter-5.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:optional;src:url(css/fonts/inter-6.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:optional;src:url(css/fonts/inter-0.woff2) format('woff2');unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:optional;src:url(css/fonts/inter-1.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:optional;src:url(css/fonts/inter-2.woff2) format('woff2');unicode-range:U+1F00-1FFF}@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:optional;src:url(css/fonts/inter-3.woff2) format('woff2');unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:optional;src:url(css/fonts/inter-4.woff2) format('woff2');unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:optional;src:url(css/fonts/inter-5.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:optional;src:url(css/fonts/inter-6.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:optional;src:url(css/fonts/inter-0.woff2) format('woff2');unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:optional;src:url(css/fonts/inter-1.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:optional;src:url(css/fonts/inter-2.woff2) format('woff2');unicode-range:U+1F00-1FFF}@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:optional;src:url(css/fonts/inter-3.woff2) format('woff2');unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:optional;src:url(css/fonts/inter-4.woff2) format('woff2');unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:optional;src:url(css/fonts/inter-5.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:optional;src:url(css/fonts/inter-6.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+</style>
+    <link rel="preload" href="css/fonts/inter-6.woff2" as="font" type="font/woff2" crossorigin>
 <!-- CSS -->
-    <link rel="stylesheet" href="css/style.css?v=2">
+    <style>
+:root {
+    --bg-color: #0e0e11;
+    --panel-bg: #16161a;
+    --accent-color: #00bcd4; /* Cyan */
+    --accent-hover: #008ba3;
+    --text-color: #e0e0e0;
+    --text-muted: #8b8b99;
+    --border-color: #2c2c35;
+    
+    /* GCode Colors */
+    --color-travel: #47475a;
+    --color-extrude: #ff5722;
+    --color-retract: #f44336;
+    --color-unretract: #4caf50;
+    --color-zhop: #9c27b0;
+    --color-modified: #ffb300;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    /* Removed overflow:hidden so page can scroll to SEO content */
+}
+
+/* --- LOADING OVERLAY --- */
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(14, 14, 17, 0.9);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+.loading-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+.loading-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    letter-spacing: 0.5px;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- APP LAYOUT --- */
+.app-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 2560px;
+    margin: 0 auto;
+    position: relative;
+    background-color: var(--bg-color);
+}
+
+/* Top Navbar */
+.top-navbar {
+    height: 60px;
+    background-color: var(--panel-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.nav-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    justify-content: flex-start;
+}
+.nav-left h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+.nav-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.nav-right {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+/* Main Workspace */
+.main-workspace {
+    display: flex;
+    flex: none;
+    height: calc(100vh - 60px); /* Exactly fill the viewport under header */
+    overflow: hidden; /* children will scroll */
+}
+
+/* Sidebars */
+.sidebar {
+    background-color: var(--panel-bg);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+.left-panel {
+    width: clamp(420px, 25%, 550px);
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-color);
+    transition: width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+    overflow-x: hidden;
+}
+.right-panel {
+    width: clamp(420px, 25%, 550px);
+    flex-shrink: 0;
+    min-width: 0;
+    border-left: 1px solid var(--border-color);
+    transition: width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+    overflow-x: hidden;
+}
+.panel-collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border: none !important;
+    opacity: 0;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.panel-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+/* Center Panel (Canvas) */
+.center-panel {
+    flex: 1;
+    position: relative;
+    background-color: #050506;
+    display: flex;
+    flex-direction: column;
+}
+#gcode-canvas {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+.updating-blur {
+    filter: blur(3px);
+    opacity: 0.6;
+    pointer-events: none;
+    transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+
+.layer-slider-input {
+    width: 300px;
+}
+
+/* --- WIDGETS & UI COMPONENTS --- */
+input[type="file"] {
+    display: none;
+}
+.upload-btn, .download-btn {
+    background: linear-gradient(135deg, rgba(0, 188, 212, 0.15), rgba(0, 188, 212, 0.05));
+    border: 1px solid rgba(0, 188, 212, 0.3);
+    color: var(--accent-color);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.upload-btn:hover, .download-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(0, 188, 212, 0.25), rgba(0, 188, 212, 0.1));
+    border-color: rgba(0, 188, 212, 0.6);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+select.upload-btn option, select.theme-select option {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+.upload-btn:active, .download-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.download-btn {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05));
+    border-color: rgba(76, 175, 80, 0.3);
+    color: #4caf50;
+}
+.download-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(76, 175, 80, 0.1));
+    border-color: rgba(76, 175, 80, 0.6);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.download-btn:disabled {
+    background: rgba(255,255,255,0.02);
+    border-color: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.2);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.icon-btn {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 5px;
+    border-radius: 6px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.icon-btn:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+    border-color: rgba(255,255,255,0.2);
+    color: var(--text-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.icon-btn:active {
+    transform: translateY(0);
+}
+
+.settings-grid {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+}
+.widget {
+    background-color: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: background-color 0.2s, filter 0.15s ease, opacity 0.15s ease;
+}
+.widget:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+.widget-updating {
+    filter: blur(1.5px);
+    opacity: 0.7;
+    background-color: rgba(0, 188, 212, 0.05);
+    border-color: rgba(0, 188, 212, 0.4);
+}
+.pending-update {
+    border-color: rgba(255, 179, 0, 0.6) !important;
+    box-shadow: 0 0 10px rgba(255, 179, 0, 0.15);
+}
+.widget-title {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.widget-title .accent {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+.accent.is-modified::after {
+    content: ' *';
+    color: var(--color-modified);
+    font-weight: bold;
+}
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+    outline: none;
+}
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+/* --- G-CODE LIST & EXPLANATION --- */
+.gcode-list {
+    list-style: none;
+    overflow-y: auto;
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    padding: 10px;
+}
+.gcode-list::-webkit-scrollbar {
+    width: 6px;
+}
+.gcode-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+.gcode-line {
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+.gcode-line:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.gcode-line.active {
+    background-color: rgba(255, 255, 255, 0.05); /* subtle background instead of yellow */
+    border-left: 3px solid var(--color-modified);
+}
+.gcode-line.modified span {
+    color: var(--color-modified);
+    font-weight: 600;
+}
+.mod-badge {
+    background: var(--color-modified);
+    color: #000;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-family: 'Inter', sans-serif;
+    margin-right: 5px;
+}
+
+.explanation-box {
+    background: rgba(0, 188, 212, 0.08);
+    padding: 15px 20px;
+    border-top: 1px solid rgba(0, 188, 212, 0.2);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    flex-shrink: 0;
+}
+
+/* --- TABS --- */
+.tabs-nav {
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0;
+}
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 10px 15px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border-radius: 6px 6px 0 0;
+}
+.tab-btn:hover {
+    color: var(--text-color);
+    background: rgba(255,255,255,0.03);
+}
+.tab-btn.active {
+    color: var(--accent-color);
+    border-bottom: 2px solid var(--accent-color);
+    background: linear-gradient(to top, rgba(0, 188, 212, 0.1), transparent);
+}
+
+/* --- STATS BANNER --- */
+.stats-banner {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+    pointer-events: none;
+}
+.stat-box {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px 16px;
+    border-radius: 30px;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    pointer-events: auto;
+}
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.stat-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+.highlight-box {
+    background: rgba(0, 188, 212, 0.1);
+    border-color: rgba(0, 188, 212, 0.3);
+}
+.highlight-box .stat-value {
+    color: var(--accent-color);
+}
+
+/* --- ANALYSE GRID --- */
+.analyse-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    min-width: 0;
+}
+.analyse-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 0;
+}
+.analyse-card h3 {
+    font-size: 0.95rem;
+    color: var(--accent-color);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+.prop-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+.prop-row span {
+    color: var(--text-muted);
+}
+.prop-row strong {
+    color: var(--text-color);
+}
+
+/* --- HEATMAP BTN --- */
+.heatmap-toggle-btn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.heatmap-toggle-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.heatmap-toggle-btn.active {
+    background: linear-gradient(135deg, #ff5722, #f4511e);
+    border-color: #ff5722;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+}
+
+/* --- KINEMATICS TABLE --- */
+.kinematics-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.85rem;
+}
+.kinematics-table th, .kinematics-table td {
+    padding: 8px 4px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.kinematics-table th {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+.k-input {
+    width: 100%;
+    min-width: 50px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-color);
+    padding: 6px 4px;
+    border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    text-align: center;
+}
+.k-input:focus {
+    border-color: var(--accent-color);
+    outline: none;
+}
+.k-input.pending-update {
+    border-color: rgba(255, 179, 0, 0.6) !important;
+    box-shadow: 0 0 10px rgba(255, 179, 0, 0.15);
+}
+.k-unit {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+/* --- CUSTOM TOOLTIPS --- */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dotted rgba(255,255,255,0.3);
+}
+
+/* Remove dotted border from headings and buttons */
+h3[data-tooltip], button[data-tooltip] {
+    border-bottom: none;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: 0;
+    transform: translateX(0);
+    background: #1e1e24;
+    color: #e0e0e0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    width: max-content;
+    max-width: 200px;
+    white-space: normal;
+    line-height: 1.4;
+    text-align: left;
+    border: 1px solid var(--accent-color);
+    z-index: 9999;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltipFadeIn 0.2s forwards;
+}
+
+/* Modifikationen Badges & Filter */
+.mod-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+}
+.badge-temp { background: #e53935; color: white; }
+.badge-bed { background: #f4511e; color: white; }
+.badge-fan { background: #1e88e5; color: white; }
+.badge-retract { background: #8e24aa; color: white; }
+.badge-flow { background: #00897b; color: white; }
+.badge-speed { background: #3949ab; color: white; }
+.badge-offset { background: #fb8c00; color: white; }
+
+/* Filter Buttons */
+.mod-filters {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px 15px 20px;
+    flex-wrap: wrap;
+}
+.filter-btn {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.filter-btn:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+    color: var(--text-color);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.filter-btn.active {
+    background: linear-gradient(135deg, rgba(0, 188, 212, 0.15), rgba(0, 188, 212, 0.05));
+    color: var(--accent-color);
+    border-color: rgba(0, 188, 212, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 188, 212, 0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+    font-weight: 600;
+}
+
+/* Filter Display Logic */
+#mod-view.filter-temp li:not(.mod-item-temp) { display: none !important; }
+#mod-view.filter-bed li:not(.mod-item-bed) { display: none !important; }
+#mod-view.filter-fan li:not(.mod-item-fan) { display: none !important; }
+#mod-view.filter-retract li:not(.mod-item-retract) { display: none !important; }
+#mod-view.filter-flow li:not(.mod-item-flow) { display: none !important; }
+#mod-view.filter-speed li:not(.mod-item-speed) { display: none !important; }
+#mod-view.filter-offset li:not(.mod-item-offset) { display: none !important; }
+
+[data-tooltip]:hover::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    bottom: auto;
+    left: 20px;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent var(--accent-color) transparent;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltipFadeIn 0.2s forwards;
+}
+
+/* Center tooltips for table headers to avoid right-edge overflow */
+.kinematics-table th[data-tooltip]:hover::after {
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+.kinematics-table th[data-tooltip]:hover::before {
+    left: 50%;
+}
+
+/* Right-aligned tooltips */
+.tooltip-right[data-tooltip]:hover::after {
+    left: auto;
+    right: 0;
+    transform: none;
+}
+.tooltip-right[data-tooltip]:hover::before {
+    left: auto;
+    right: 15px;
+    transform: none;
+}
+
+@keyframes tooltipFadeIn {
+    to { opacity: 1; }
+}
+
+/* --- PERFORMANCE OPTIMIZATIONS --- */
+canvas {
+    will-change: transform;
+    transform: translateZ(0); /* Force GPU acceleration */
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (MOBILE / TABLET)
+   ========================================================================== */.panel-toggle-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    padding: 10px 5px;
+    background: rgba(20, 24, 34, 0.8);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    font-size: 1.2rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    width: 24px;
+}
+.panel-toggle-btn:hover {
+    background: var(--accent-color);
+    color: white;
+}
+.panel-toggle-btn.left {
+    left: 10px;
+}
+.panel-toggle-btn.right {
+    right: 10px;
+}
+
+@media (max-width: 1024px) {
+    .panel-toggle-btn {
+        display: none !important;
+    }
+    /* 1. Lift 100vh lock to allow native scrolling */
+    body {
+        overflow-y: scroll;
+    }
+    
+    .app-layout {
+        display: block;
+        height: auto;
+        min-height: 100vh;
+    }
+    
+    /* 2. Stack panels vertically and remove fixed widths */
+    .main-workspace {
+        flex-direction: column;
+        overflow: visible !important;
+        height: auto !important;
+    }
+    
+    .sidebar {
+        width: 100% !important;
+        overflow-y: visible; /* Let the body handle the scroll */
+        border: none;
+    }
+    
+    /* 3. Reorder elements so Canvas is top, Settings middle, G-Code bottom */
+    .center-panel {
+        order: 1;
+        flex: none; /* Disable flex-grow/shrink so it strictly takes 60vh */
+        height: 60vh; /* Fixed height to allow flex/absolute children to resolve */
+        border-bottom: 2px solid var(--border-color);
+    }
+    
+    .left-panel {
+        order: 2;
+        border-bottom: 2px solid var(--border-color);
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    
+    .right-panel {
+        order: 3;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 4. Fix Navbar */
+    .top-navbar {
+        flex-wrap: wrap;
+        padding: 10px 15px;
+        gap: 15px;
+        height: auto;
+    }
+    
+    .nav-center, .nav-right {
+        flex: 1 1 100%; /* Force onto new lines or take full width */
+        display: flex;
+        justify-content: stretch;
+        position: static;
+        transform: none;
+    }
+    
+    .nav-center .upload-btn, .nav-right .download-btn {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    /* 5. Mobile Canvas Touch Behavior */
+    #canvas-container {
+        /* Default: 1 finger scrolls page, 2 fingers pinch/pan (browser native) */
+        touch-action: pan-y;
+    }
+    
+    /* When interaction is locked via the button */
+    body.canvas-interaction-locked {
+        overflow: hidden; /* Prevent page scroll */
+    }
+    
+    body.canvas-interaction-locked #canvas-container {
+        touch-action: none; /* Let ThreeJS/2D handle all touch events */
+    }
+    
+    body.canvas-interaction-locked #mobile-canvas-overlay {
+        display: none !important;
+    }
+    
+    body.canvas-interaction-locked #disable-interaction-btn {
+        display: block !important;
+    }
+    
+    /* 6. Move stats banner under navbar on mobile */
+    .stats-banner {
+        position: static;
+        transform: none;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        margin-top: 15px;
+        padding-bottom: 15px;
+    }
+}
+
+/* Base styles for the details accordion */
+details summary {
+    outline: none;
+    user-select: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details[open] summary {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+
+/* MODALS */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9998;
+    display: none;
+    backdrop-filter: blur(4px);
+}
+.modal-overlay.visible {
+    display: block;
+}
+.custom-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 800px;
+    height: 80vh;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+.custom-modal.visible {
+    display: flex;
+}
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+}
+.close-modal:hover {
+    color: var(--accent-color);
+}
+.modal-content-scroll {
+    overflow-y: auto;
+    padding: 40px;
+    height: 100%;
+}
+.modal-content-scroll h1, .modal-content-scroll h2, .modal-content-scroll h3 {
+    color: var(--accent-color);
+}
+.modal-content-scroll a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+.modal-content-scroll a:hover {
+    text-decoration: underline;
+}
+
+/* Language specific sections */
+html[lang="de"] .lang-en,
+html[lang="de"] .en-only { display: none !important; }
+
+html[lang="en"] .lang-de,
+html[lang="en"] .de-only { display: none !important; }
+
+/* Contact form in modal */
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-color);
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+.form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+#contact-form button[type="submit"] {
+    background: var(--accent-color);
+    color: #fff;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.2s;
+}
+#contact-form button[type="submit"]:hover {
+    background: #008ba3;
+}
+
+.fold-btn { background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; } .fold-btn:hover { background: var(--accent-color); color: #fff; }
+
+
+
+    /* Prevent transitions on page load */
+    .preload * {
+        transition: none !important;
+    }
+</style>
     
     <!-- Three.js (Deferred to avoid render blocking) -->
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="js/translations.js"></script>
+    <script defer src="js/translations.js?v=4"></script>
+    <script src="js/app_v5.js?v=22" defer></script>
 </head>
-<body class="dark-mode">
+<body class="dark-mode preload">
 
     <!-- LOADING OVERLAY -->
     <div id="loading-overlay" class="loading-overlay">
@@ -75,7 +1117,7 @@
         <!-- HEADER -->
         <header class="top-navbar">
             <div class="nav-left" style="display: flex; align-items: center; gap: 12px;">
-                <img src="assets/logo.webp" alt="LayerSpy Logo" style="height: 48px; width: 48px; object-fit: contain; border-radius: 8px; mix-blend-mode: lighten; filter: brightness(0.8) contrast(1.2);">
+                <img src="assets/logo.webp" alt="LayerSpy Logo" width="48" height="48" style="height: 48px; width: 48px; object-fit: contain; border-radius: 8px; mix-blend-mode: lighten; filter: brightness(0.8) contrast(1.2);">
                 <h1 style="font-size: 1.6rem; margin: 0; color: #ffffff; font-weight: 700; letter-spacing: 0.5px;">layerspy<span style="color: #00bcd4;">.de</span></h1>
             </div>
             <div class="nav-center">
@@ -97,7 +1139,7 @@
         </header>
 
         <!-- WELCOME HERO FOR SEO & USER -->
-        <div id="welcome-hero" style="width: 100%; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 30px 20px; box-sizing: border-box;">
+        <div id="welcome-hero" style="width: 100%; min-height: 160px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 30px 20px; box-sizing: border-box;">
             <div style="max-width: 900px; margin: 0 auto; text-align: center;">
                 <h2 style="color: var(--accent-color); margin-bottom: 15px; font-size: 1.5rem;" data-i18n="hero.subtitle">Willkommen bei LayerSpy - Deinem G-Code Analyzer</h2>
                 <p style="color: var(--text-color); line-height: 1.6; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
@@ -152,6 +1194,52 @@
                     <div class="widget">
                         <label class="widget-title" for="speed-slider" style="display: flex; justify-content: space-between;"><span data-tooltip="Globale Druckgeschwindigkeit. Ein Wert unter 100% verlangsamt den Druck, darüber beschleunigt ihn." data-i18n-tooltip="tooltip.6" data-i18n="speed.label">Geschwindigkeit</span><span id="speed-val" class="accent">100 %</span></label>
                         <input type="range" class="slider" id="speed-slider" min="50" max="200" step="5" value="100" aria-label="Druckgeschwindigkeit">
+                    </div>
+                    <!-- VFA Radar -->
+                    <div class="widget" id="vfa-widget">
+                        <label class="widget-title" style="display: flex; justify-content: space-between;">
+                            <span data-tooltip="Zeigt Außenwände, die in bekannten Resonanz- oder Schrittmotor-Vibrationsbereichen (Ghosting) gedruckt werden." data-i18n-tooltip="tooltip.vfa" data-i18n="tuning.vfa">VFA & Ghosting Radar</span>
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+                                <span>Band 1 (mm/s):</span>
+                                <span id="vfa1-val" class="accent">45 - 65</span>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="vfa1-min" value="45" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
+                                <input type="number" id="vfa1-max" value="65" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">
+                                <span>Band 2 (mm/s):</span>
+                                <span id="vfa2-val" class="accent">90 - 110</span>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="vfa2-min" value="90" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
+                                <input type="number" id="vfa2-max" value="110" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
+                            </div>
+                            <div id="vfa-warning" style="display: none; color: #ff3d00; font-size: 0.75rem; margin-top: 5px; font-weight: bold;"></div>
+                        </div>
+                    </div>
+                    <!-- Corner & Deceleration Auditor -->
+                    <div class="widget" id="corner-audit-widget">
+                        <label class="widget-title" style="display: flex; justify-content: space-between;">
+                            <span data-tooltip="Lokalisiert scharfe Ecken mit starker Verzögerung und prüft den Pressure Advance Status." data-i18n-tooltip="tooltip.corner_audit" data-i18n="tuning.corner_audit">Eck- & Verzögerungs-Auditor</span>
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-muted);">Pressure Advance:</span>
+                                <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(231,76,60,0.2); color: #ff6b6b; border: 1px solid rgba(231,76,60,0.4);">Inaktiv</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>🔴 Bulge-Gefahr (Δv &gt; 60):</span>
+                                <strong id="corner-bulge-count" style="color: #ff6b6b;">0 Ecken</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>🟡 PA-Belastung (Δv &gt; 60):</span>
+                                <strong id="corner-stress-count" style="color: #f1c40f;">0 Ecken</strong>
+                            </div>
+                            <div id="corner-audit-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;">Keine Ecken analysiert.</div>
+                        </div>
                     </div>
                     <!-- Z-Offset -->
                     <div class="widget" style="grid-column: 1 / -1;" id="zoffset-widget">
@@ -217,28 +1305,40 @@
                 <div id="main-control-bar" class="control-bar" style="background: #111115; display: flex; flex-direction: column; gap: 12px; width: 100%; z-index: 10; max-height: 0; opacity: 0; transform: translateY(50px); transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); overflow: hidden; padding: 0 25px; border-top: none;">
                     
                     <!-- Top Row: Toggles & Heatmap -->
-                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
-                        <!-- 2D / 3D Toggle -->
-                        <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 2px; border: 1px solid var(--border-color);">
-                            <button id="view-2d-btn" class="icon-btn active" style="padding: 4px 12px; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.1);" aria-label="2D Ansicht umschalten">2D</button>
-                            <button id="view-3d-btn" class="icon-btn" style="padding: 4px 12px; border-radius: 4px; font-weight: bold;" aria-label="3D Ansicht umschalten">3D</button>
-                        </div>
-                        
-                        <select id="view-mode-select" class="theme-select" style="display: none; padding: 4px 8px; font-size: 0.85rem; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-color);">
-                            <option value="lines" data-i18n="view.lines">Lines (Fast)</option>
-                            <option value="solid" data-i18n="view.solid">Solid (Tubes)</option>
-                        </select>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Row 1: View Modes -->
+                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <!-- 2D / 3D Toggle -->
+                            <div style="display: flex; gap: 6px;">
+                                <button id="view-2d-btn" class="icon-btn active" style="padding: 4px 12px; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color);" aria-label="2D Ansicht umschalten">2D</button>
+                                <button id="view-3d-btn" class="icon-btn" style="padding: 4px 12px; border-radius: 4px; font-weight: bold; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-color);" aria-label="3D Ansicht umschalten">3D</button>
+                            </div>
+                            
+                            <select id="view-mode-select" class="theme-select" style="display: none; padding: 4px 8px; font-size: 0.85rem; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-color);">
+                                <option value="lines" data-i18n="view.lines">Lines (Fast)</option>
+                                <option value="solid" data-i18n="view.solid">Solid (Tubes)</option>
+                            </select>
 
-                        <div id="color-mode-group" style="display: flex; background: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid var(--border-color); overflow: hidden;">
-                            <button class="mode-btn active" data-mode="normal" style="padding: 4px 8px; font-size: 0.8rem; background: var(--accent-color); color: white; border: none; cursor: pointer;" data-i18n="view.normal">Normal</button>
-                            <button class="mode-btn" data-mode="feature" style="padding: 4px 8px; font-size: 0.8rem; background: transparent; color: var(--text-color); border: none; border-left: 1px solid var(--border-color); cursor: pointer;" data-i18n="view.feature">Feature</button>
-                            <button class="mode-btn" data-mode="heatmap" style="padding: 4px 8px; font-size: 0.8rem; background: transparent; color: var(--text-color); border: none; border-left: 1px solid var(--border-color); cursor: pointer;" data-i18n="view.speed_mode">Speed</button>
+                            <div id="color-mode-group" style="display: flex; gap: 6px;">
+                                <button class="mode-btn active" data-mode="normal" style="padding: 4px 10px; font-size: 0.8rem; background: var(--accent-color); color: white; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.normal">Normal</button>
+                                <button class="mode-btn" data-mode="feature" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.feature">Feature</button>
+                                <button class="mode-btn" data-mode="heatmap" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.speed_mode">Speed</button>
+                                <button class="mode-btn" data-mode="kinematics" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.kinematics">Echte Kinematik</button>
+                                <button class="mode-btn" data-mode="risk" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.risk_mode">Risiko</button>
+                                <button class="mode-btn" data-mode="vfa" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.vfa">VFA Radar</button>
+                            </div>
                         </div>
-                        <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;"><input type="checkbox" id="show-travel-btn" data-i18n="view.travels">Leerfahrten</label>
-                        <div id="heatmap-legend" style="display: none; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
-                            <span id="legend-low" data-i18n="view.speed_low">10 mm/s</span>
-                            <div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(120, 100%, 50%), hsl(0, 100%, 50%));"></div>
-                            <span id="legend-high" data-i18n="view.speed_high">50+ mm/s</span>
+
+                        <!-- Row 2: Options and Legend -->
+                        <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap; min-height: 55px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;"><input type="checkbox" id="show-travel-btn"><span data-i18n="view.travels">Leerfahrten</span></label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;"><input type="checkbox" id="show-corner-audit-btn" checked><span data-i18n="view.corner_overlay">Ecken-Warnungen</span></label>
+
+                            <div id="heatmap-legend" style="display: none; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                <span id="legend-low" data-i18n="view.speed_low">10 mm/s</span>
+                                <div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(120, 100%, 50%), hsl(0, 100%, 50%));"></div>
+                                <span id="legend-high" data-i18n="view.speed_high">50+ mm/s</span>
+                            </div>
                         </div>
                     </div>
 
@@ -254,6 +1354,15 @@
                             <button id="play-step-back" class="icon-btn" style="padding: 4px 10px;" aria-label="Vorheriger Schritt">⏮️</button>
                             <button id="play-toggle" class="icon-btn" style="font-size: 1.2rem; padding: 4px 15px;" aria-label="Abspielen oder Pausieren">▶️</button>
                             <button id="play-step-fwd" class="icon-btn" style="padding: 4px 10px;" aria-label="Nächster Schritt">⏭️</button>
+                            <select id="playback-speed" class="upload-btn" style="width: auto; padding: 4px 8px; font-size: 12px; margin-left: 5px; cursor: pointer; min-width: 65px; height: 32px;">
+                                <option value="0.1">0.1x</option>
+                                <option value="0.25">0.25x</option>
+                                <option value="0.5">0.5x</option>
+                                <option value="1" selected>1.0x</option>
+                                <option value="2">2.0x</option>
+                                <option value="5">5.0x</option>
+                                <option value="10">10.0x</option>
+                            </select>
                         </div>
                         <input type="range" class="slider" id="playback-slider" min="0" max="100" value="100" style="flex: 1;" aria-label="Wiedergabeposition">
                     </div>
@@ -355,6 +1464,14 @@
                             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 5px;">
                                 <span data-i18n="stats.speed_slow">Langsam (0 mm/s)</span>
                                 <span data-i18n="stats.speed_fast">Schnell</span>
+                            </div>
+                        </div>
+
+                        <!-- LINTER WARNINGS -->
+                        <div class="analyse-card" style="grid-column: 1 / -1;">
+                            <h3 data-i18n="stats.linter_warnings">⚠️ G-Code Warnungen (Linter)</h3>
+                            <div id="linter-warnings-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto;">
+                                <div style="color:var(--text-muted); text-align:center; padding: 20px;" data-i18n="stats.linter_ok">Keine Fehler gefunden.</div>
                             </div>
                         </div>
 
@@ -463,7 +1580,7 @@
                 <span style="color: var(--border-color);">|</span>
                 <button onclick="openModal('modal-update')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.updates">Updates (Neu)</button>
                 <span style="color: var(--border-color);">|</span>
-                <button onclick="document.getElementById('cookie-banner').style.display='flex'" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.cookies">Cookie-Einstellungen</button>
+                <button onclick="document.getElementById('privacy-settings-overlay').style.display='flex'" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.cookies">Cookie-Einstellungen</button>
             </div>
             <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 10px; line-height: 1.6;">
                 <span data-i18n="footer.project">Ein Projekt von</span> <a href="https://www.svender3d.de" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold;">Svender3D</a><br>
@@ -472,10 +1589,6 @@
         </footer>
 </div>
 
-    <!-- Main App Logic -->
-    <script src="js/demo_gcode.js" defer></script>
-<script src="js/app_v5.js" defer></script>
-    
     <!-- Bottom Menu -->
     <div id="modal-overlay" class="modal-overlay" onclick="closeAllModals()"></div>
 
@@ -765,10 +1878,10 @@
             
             <div style="text-align: left; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div id="update-notes" style="line-height: 1.6; color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;">
-                    Verbinde mit Server...
+                    Connecting to server...
                 </div>
                 <a id="update-link" href="#" target="_blank" style="display: none; text-decoration: none;">
-                    <button class="upload-btn" style="width: 100%; margin-top: 10px;">Release auf GitHub ansehen</button>
+                    <button class="upload-btn" style="width: 100%; margin-top: 10px;">View Release on GitHub</button>
                 </a>
             </div>
         </div>
@@ -893,19 +2006,19 @@
         // Cookie Banner Logic
         function acceptAllCookies() {
             localStorage.setItem('layerSpyCookies', 'all');
-            document.getElementById('cookie-banner').style.display = 'none';
+            document.getElementById('privacy-settings-overlay').style.display = 'none';
             loadGoogleAnalytics();
         }
 
         function acceptEssentialCookies() {
             localStorage.setItem('layerSpyCookies', 'essential');
-            document.getElementById('cookie-banner').style.display = 'none';
+            document.getElementById('privacy-settings-overlay').style.display = 'none';
         }
         
         function checkCookieConsent() {
             const cookieStatus = localStorage.getItem('layerSpyCookies');
             if (!cookieStatus || cookieStatus === 'accepted') {
-                document.getElementById('cookie-banner').style.display = 'flex';
+                document.getElementById('privacy-settings-overlay').style.display = 'flex';
             } else if (cookieStatus === 'all') {
                 loadGoogleAnalytics();
             }
@@ -918,11 +2031,11 @@
     </div>
 
     <!-- COOKIE BANNER -->
-    <div id="cookie-banner" style="display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 450px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10000; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex-direction: column; gap: 15px;">
+    <div id="privacy-settings-overlay" style="display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 450px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10000; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex-direction: column; gap: 15px;">
         <div>
             <strong style="color: var(--text-color); font-size: 1rem; display: block; margin-bottom: 5px;" data-i18n="cookie.title">Ihre Privatsphäre ist uns wichtig! 🍪</strong>
-            Wir nutzen essenzielle Speichertechnologien, damit diese Webseite funktioniert. Wenn Sie auf "Alles akzeptieren" klicken, stimmen Sie zusätzlich der Nutzung von <strong>Google Analytics</strong> zu, mit dem wir anonymisierte Daten zur Verbesserung unserer Webseite erfassen.
-            <button onclick="openModal('modal-datenschutz')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none;">Mehr Infos</button>.
+            <span data-i18n="cookie.desc">Wir nutzen essenzielle Speichertechnologien, damit diese Webseite funktioniert. Wenn Sie auf "Alles akzeptieren" klicken, stimmen Sie zusätzlich der Nutzung von <strong>Google Analytics</strong> zu, mit dem wir anonymisierte Daten zur Verbesserung unserer Webseite erfassen.</span>
+            <button onclick="openModal('modal-datenschutz')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none;" data-i18n="cookie.moreInfo">Mehr Infos</button>.
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button onclick="acceptAllCookies()" class="upload-btn" style="flex: 1; padding: 10px; font-size: 0.9rem;" data-i18n="cookie.accept">Alles akzeptieren</button>
@@ -937,14 +2050,36 @@
             // HIER GITHUB REPO EINTRAGEN (z.B. "username/repo"):
             const githubRepo = "Exulizer/LayerSpy"; 
             
+            const updateAll = (selector, html) => {
+                document.querySelectorAll(selector).forEach(el => el.innerHTML = html);
+            };
+            const updateLinkUrl = (url) => {
+                document.querySelectorAll('[id="update-link"]').forEach(el => {
+                    el.href = url;
+                    el.style.display = 'block';
+                });
+            };
+            
             try {
+                const lang = localStorage.getItem('layerspy_lang') || 'de';
+                const isEn = lang === 'en';
+                const texts = {
+                    latest: isEn ? "Latest Version: " : "Neueste Version: ",
+                    local: isEn ? "Version 1.3.0 (Local)" : "Version 1.3.0 (Lokal)",
+                    btn: isEn ? "View Releases on GitHub" : "Releases auf GitHub ansehen",
+                    noRel: isEn ? "No releases published on GitHub yet.<br><br>As soon as a release is created, it will appear here automatically." : "Es wurden noch keine Releases auf GitHub veröffentlicht.<br><br>Sobald ein Release erstellt wird, erscheint es hier automatisch.",
+                    limit: isEn ? "<b>GitHub Rate Limit Reached!</b><br><br>Because the page was reloaded very often, GitHub temporarily blocked the connection (max. 60 requests per hour).<br>This is a temporary protection from GitHub.<br><br>Please wait a few minutes, then the update check will work automatically again.<br><br>" : "<b>GitHub-Abfragelimit erreicht!</b><br><br>Da die Seite sehr oft neu geladen wurde, hat GitHub die Verbindung vorübergehend blockiert (max. 60 Abfragen pro Stunde).<br>Dies ist ein temporärer Schutz von GitHub.<br><br>Bitte warte ein paar Minuten, dann funktioniert die Update-Prüfung wieder ganz von alleine.<br><br>",
+                    err: isEn ? "Error fetching GitHub releases (Status: " : "Fehler beim Abrufen der GitHub-Releases (Status: ",
+                    netErr: isEn ? "Could not connect to GitHub. Please check your internet connection.<br><br>" : "Es konnte keine Verbindung zu GitHub hergestellt werden. Bitte prüfe deine Internetverbindung.<br><br>"
+                };
+
                 const response = await fetch(`https://api.github.com/repos/${githubRepo}/releases/latest`);
                 if (response.ok) {
                     const release = await response.json();
-                    document.getElementById('update-version').innerText = `Neueste Version: ${release.tag_name} (${new Date(release.published_at).toLocaleDateString('de-DE')})`;
+                    updateAll('[id="update-version"]', `${texts.latest}${release.tag_name} (${new Date(release.published_at).toLocaleDateString(isEn ? 'en-US' : 'de-DE')})`);
                     
                     // Besserer Parser für Release-Notes
-                    let bodyText = release.body || "*Keine Release-Notes angegeben.*";
+                    let bodyText = release.body || (isEn ? "*No release notes provided.*" : "*Keine Release-Notes angegeben.*");
                     let notesHTML = bodyText
                         .replace(/</g, '&lt;').replace(/>/g, '&gt;') // Prevent HTML injection
                         .replace(/\r\n/g, '<br>').replace(/\n/g, '<br>'); // Handle newlines
@@ -969,25 +2104,30 @@
                     notesHTML = notesHTML.replace(/(<\/h[2-4]>|<\/ul>)<br>/g, '$1');
                     notesHTML = notesHTML.replace(/<br>(<h[2-4].*?>|<ul.*?>)/g, '$1');
                     
-                    document.getElementById('update-notes').innerHTML = notesHTML;
-                    
-                    const updateLink = document.getElementById('update-link');
-                    updateLink.href = release.html_url;
-                    updateLink.style.display = 'block';
+                    updateAll('[id="update-notes"]', notesHTML);
+                    updateLinkUrl(release.html_url);
+                    document.querySelectorAll('[id="update-link"]').forEach(el => {
+                        const btn = el.querySelector('button');
+                        if (btn) btn.innerText = texts.btn;
+                    });
                 } else if (response.status === 404) {
-                    document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
-                    document.getElementById('update-notes').innerHTML = "Es wurden noch keine Releases auf GitHub veröffentlicht.<br><br>Sobald ein Release erstellt wird, erscheint es hier automatisch.";
+                    updateAll('[id="update-version"]', texts.local);
+                    updateAll('[id="update-notes"]', texts.noRel);
                 } else if (response.status === 403) {
-                    document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
-                    document.getElementById('update-notes').innerHTML = "<b>GitHub-Abfragelimit erreicht!</b><br><br>Da die Seite sehr oft neu geladen wurde, hat GitHub die Verbindung vorübergehend blockiert (max. 60 Abfragen pro Stunde).<br>Dies ist ein temporärer Schutz von GitHub.<br><br>Bitte warte ein paar Minuten, dann funktioniert die Update-Prüfung wieder ganz von alleine.<br><br><a href=\"https://github.com/Exulizer/LayerSpy/releases\" target=\"_blank\" class=\"btn\" style=\"display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;\">Releases auf GitHub ansehen</a>";
+                    updateAll('[id="update-version"]', texts.local);
+                    updateAll('[id="update-notes"]', `${texts.limit}<a href="https://github.com/Exulizer/LayerSpy/releases" target="_blank" class="btn" style="display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;">${texts.btn}</a>`);
                 } else {
-                    document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
-                    document.getElementById('update-notes').innerHTML = "Fehler beim Abrufen der GitHub-Releases (Status: " + response.status + ").<br><br><a href=\"https://github.com/Exulizer/LayerSpy/releases\" target=\"_blank\" class=\"btn\" style=\"display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;\">Releases auf GitHub ansehen</a>";
+                    updateAll('[id="update-version"]', texts.local);
+                    updateAll('[id="update-notes"]', `${texts.err}${response.status}).<br><br><a href="https://github.com/Exulizer/LayerSpy/releases" target="_blank" class="btn" style="display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;">${texts.btn}</a>`);
                 }
             } catch (err) {
                 console.error("GitHub Sync Fehler:", err);
-                document.getElementById('update-version').innerText = "Version 1.2.0 (Lokal)";
-                document.getElementById('update-notes').innerHTML = "Es konnte keine Verbindung zu GitHub hergestellt werden. Bitte prüfe deine Internetverbindung.<br><br><a href=\"https://github.com/Exulizer/LayerSpy/releases\" target=\"_blank\" class=\"btn\" style=\"display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;\">Releases auf GitHub ansehen</a>";
+                const lang = localStorage.getItem('layerspy_lang') || 'de';
+                const isEn = lang === 'en';
+                const btn = isEn ? "View Releases on GitHub" : "Releases auf GitHub ansehen";
+                const netErr = isEn ? "Could not connect to GitHub. Please check your internet connection.<br><br>" : "Es konnte keine Verbindung zu GitHub hergestellt werden. Bitte prüfe deine Internetverbindung.<br><br>";
+                updateAll('[id="update-version"]', isEn ? "Version 1.3.0 (Local)" : "Version 1.3.0 (Lokal)");
+                updateAll('[id="update-notes"]', `${netErr}<a href="https://github.com/Exulizer/LayerSpy/releases" target="_blank" class="btn" style="display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;">${btn}</a>`);
             }
         }
         
@@ -1047,7 +2187,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 });
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration note:', err));
+    });
+}
 </script>
 
 </body>
 </html>
+
+

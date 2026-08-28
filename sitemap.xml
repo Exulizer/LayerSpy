@@ -13,13 +13,31 @@
       <priority>0.8</priority>
    </url>
    <url>
+      <loc>https://layerspy.de/kontakt_en.html</loc>
+      <lastmod>2026-07-18</lastmod>
+      <changefreq>monthly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
       <loc>https://layerspy.de/datenschutz.html</loc>
       <lastmod>2026-07-18</lastmod>
       <changefreq>yearly</changefreq>
       <priority>0.5</priority>
    </url>
    <url>
+      <loc>https://layerspy.de/datenschutz_en.html</loc>
+      <lastmod>2026-07-18</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.5</priority>
+   </url>
+   <url>
       <loc>https://layerspy.de/impressum.html</loc>
+      <lastmod>2026-07-18</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.5</priority>
+   </url>
+   <url>
+      <loc>https://layerspy.de/impressum_en.html</loc>
       <lastmod>2026-07-18</lastmod>
       <changefreq>yearly</changefreq>
       <priority>0.5</priority>

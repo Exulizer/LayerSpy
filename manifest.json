@@ -1,0 +1,19 @@
+{
+  "name": "LayerSpy - G-Code Analyzer & Simulator",
+  "short_name": "LayerSpy",
+  "description": "Professional 3D Printing G-Code Visualizer, Linter and Kinematic Analyzer.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#00bcd4",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"]
+}
