@@ -36,7 +36,9 @@ function setLanguage(lang) {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (window.i18n[lang][key]) {
-            el.innerHTML = window.i18n[lang][key]; // innerHTML allows HTML entities if any
+            if (el.innerHTML !== window.i18n[lang][key]) {
+                el.innerHTML = window.i18n[lang][key]; // innerHTML allows HTML entities if any
+            }
         }
     });
 
@@ -55,15 +57,25 @@ function setLanguage(lang) {
             el.setAttribute('data-tooltip', window.i18n[lang][key]);
         }
     });
+    
+    // Translate data-i18n-placeholder attributes
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (window.i18n[lang][key]) {
+            el.setAttribute('placeholder', window.i18n[lang][key]);
+        }
+    });
 }
 
 // Helper for dynamic strings
 window.t = function(key) {
+    window.currentLang = window.currentLang || localStorage.getItem('layerspy_lang') || 'de';
     return (window.i18n && window.i18n[window.currentLang] && window.i18n[window.currentLang][key]) ? window.i18n[window.currentLang][key] : key;
 };
 
 // Apply on load
 document.addEventListener('DOMContentLoaded', () => {
+    window.currentLang = localStorage.getItem('layerspy_lang') || 'de';
     // Setup listeners
     const langEnBtn = document.getElementById('lang-en');
     const langDeBtn = document.getElementById('lang-de');
@@ -103,6 +115,13 @@ class GCodeViewer {
         this.foldedRanges = []; // {start: int, end: int}
         this.bookmarks = new Set();
         this.lintWarnings = {}; // map of lineIndex -> array of warning strings
+        
+        // Corner & Deceleration Auditor state
+        this.showCornerAudit = true;
+        this.cornerAuditResults = [];
+        this.cornerAuditByLayer = {};
+        this.pressureAdvanceState = { enabled: false, value: 0, source: 'none' };
+        this.cornerMarkers3D = null;
         
         // Pagination state
         this.gcodeViewMode = 'layer'; // 'layer' or 'all'
@@ -269,8 +288,10 @@ class GCodeViewer {
             selectMode.style.display = 'block';
                         btn3d.classList.add('active');
             btn3d.style.background = 'rgba(255,255,255,0.1)';
+            btn3d.style.color = 'white';
             btn2d.classList.remove('active');
-            btn2d.style.background = 'transparent';
+            btn2d.style.background = 'rgba(0,0,0,0.3)';
+            btn2d.style.color = 'var(--text-color)';
             
             // Resize renderer
             const rect = c3d.parentElement.getBoundingClientRect();
@@ -283,8 +304,10 @@ class GCodeViewer {
             selectMode.style.display = 'none';
                         btn2d.classList.add('active');
             btn2d.style.background = 'rgba(255,255,255,0.1)';
+            btn2d.style.color = 'white';
             btn3d.classList.remove('active');
-            btn3d.style.background = 'transparent';
+            btn3d.style.background = 'rgba(0,0,0,0.3)';
+            btn3d.style.color = 'var(--text-color)';
             this.draw(); // Ensure 2D is up to date
         }
     }
@@ -390,6 +413,7 @@ class GCodeViewer {
         document.getElementById('layer-slider').addEventListener('input', (e) => {
             this.currentLayerIdx = parseInt(e.target.value, 10);
             this.playbackIndex = -1;
+            this.playbackFloatIndex = 0;
             this.gcodeCurrentPage = 1; // Reset to page 1 on layer change
             this.updateLayerIndicator();
             this.draw();
@@ -459,6 +483,7 @@ class GCodeViewer {
         document.getElementById('playback-slider').addEventListener('input', (e) => {
             this.pause();
             this.playbackIndex = parseInt(e.target.value, 10);
+            this.playbackFloatIndex = this.playbackIndex;
             this.draw();
         });
 
@@ -502,6 +527,10 @@ class GCodeViewer {
             document.getElementById('zoffset-val').innerText = `${(this.currentZOffset > 0 ? '+' : '')}${this.currentZOffset.toFixed(2)} mm`;
             e.target.classList.add('modified-value');
             this.checkPendingUpdates();
+        });
+        
+        ['vfa1-min', 'vfa1-max', 'vfa2-min', 'vfa2-max'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => this.checkVFA());
         });
 
         document.getElementById('xoffset-slider').addEventListener('input', (e) => {
@@ -720,6 +749,45 @@ class GCodeViewer {
         });
 
         // Color Mode & Travel Mode
+        window.updateLegend = () => {
+            const legend = document.getElementById('heatmap-legend');
+            const kinGradLabel = document.getElementById('kinematics-gradient-label');
+            
+            if (kinGradLabel) {
+                kinGradLabel.style.display = 'none';
+            }
+            if (!legend) return;
+            
+            legend.style.display = 'flex';
+            legend.style.flexWrap = 'wrap';
+            
+            if (this.colorMode === 'normal') {
+                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#4caf50; border-radius:2px;"></div><span>Extrusion</span></div>' +
+                    (this.showTravelMoves ? '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#2196f3; border-radius:2px;"></div><span>Travel</span></div>' : '');
+            } else if (this.colorMode === 'feature') {
+                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#ff8c00; border-radius:2px;"></div><span style="font-size:10px;">Outer</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#ffeb3b; border-radius:2px;"></div><span style="font-size:10px;">Inner</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#f44336; border-radius:2px;"></div><span style="font-size:10px;">Infill</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#9c27b0; border-radius:2px;"></div><span style="font-size:10px;">Solid</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#e91e63; border-radius:2px;"></div><span style="font-size:10px;">Top</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#4caf50; border-radius:2px;"></div><span style="font-size:10px;">Support</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#00bcd4; border-radius:2px;"></div><span style="font-size:10px;">Bridge</span></div>';
+            } else if (this.colorMode === 'heatmap') {
+                const maxS = Math.round(this.maxSpeedNormal || 240);
+                legend.innerHTML = '<span>0 mm/s</span><div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(120, 100%, 50%), hsl(0, 100%, 50%));"></div><span>' + maxS + ' mm/s</span>';
+            } else if (this.colorMode === 'kinematics') {
+                const maxS = Math.round(this.maxSpeedKinematics || 240);
+                legend.innerHTML = '<span>0 mm/s</span><div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(60, 100%, 50%), hsl(0, 100%, 50%));"></div><span>' + maxS + ' mm/s (Real)</span>';
+            } else if (this.colorMode === 'risk') {
+                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#4caf50; border-radius:2px;"></div><span>Safe</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#ff9800; border-radius:2px;"></div><span>High Flow</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#f44336; border-radius:2px;"></div><span>Melting Risk</span></div>';
+            } else if (this.colorMode === 'vfa') {
+                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#e91e63; border-radius:2px;"></div><span>VFA Risk</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#4caf50; border-radius:2px;"></div><span>Safe</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:rgba(255,255,255,0.1); border-radius:2px;"></div><span>Ignored</span></div>';
+            }
+        };
         // Color Mode & Travel Mode
         const colorModeGroup = document.getElementById('color-mode-group');
         if (colorModeGroup) {
@@ -728,24 +796,13 @@ class GCodeViewer {
                 btn.addEventListener('click', (e) => {
                     btns.forEach(b => {
                         b.classList.remove('active');
-                        b.style.background = 'transparent';
+                        b.style.background = 'rgba(0,0,0,0.3)'; b.style.color = 'var(--text-color)';
                     });
                     btn.classList.add('active');
-                    btn.style.background = 'var(--accent-color)';
+                    btn.style.background = 'var(--accent-color)'; btn.style.color = 'white';
                     
                     this.colorMode = btn.dataset.mode;
-                    const legend = document.getElementById('heatmap-legend');
-                    const lLow = document.getElementById('legend-low');
-                    const lHigh = document.getElementById('legend-high');
-                    if (legend) {
-                        if (this.colorMode === 'heatmap') {
-                            legend.style.display = 'flex';
-                            if (lLow) { lLow.setAttribute('data-i18n', 'view.speed_low'); lLow.innerText = window.t ? window.t('view.speed_low') : '10 mm/s'; }
-                            if (lHigh) { lHigh.setAttribute('data-i18n', 'view.speed_high'); lHigh.innerText = window.t ? window.t('view.speed_high') : '50+ mm/s'; }
-                        } else {
-                            legend.style.display = 'none';
-                        }
-                    }
+                    updateLegend();
                     this.rebuild3DScene();
                     this.draw();
                 });
@@ -760,6 +817,17 @@ class GCodeViewer {
                 this.draw();
             });
         }
+        
+        const showCornerAuditBtn = document.getElementById('show-corner-audit-btn');
+        if (showCornerAuditBtn) {
+            showCornerAuditBtn.addEventListener('change', (e) => {
+                this.showCornerAudit = e.target.checked;
+                this.rebuild3DScene();
+                this.draw();
+            });
+        }
+        
+
     }
 
     resetSettings(skipUpdate = false) {
@@ -881,23 +949,23 @@ class GCodeViewer {
         const worldY = -((mouseY - (this.canvas.height / 2 + this.offsetY)) / this.scale) - this.currentYOffset;
         const threshold = 5 / this.scale; 
         
-        let closestPath = null;
+        let closestLineIndex = null;
         let minDistance = Infinity;
 
         if (this.layerList.length > 0) {
             const paths = this.layerList[this.currentLayerIdx].paths;
 
-            for (const path of paths) {
-                const d = this.distanceToSegment(worldX, worldY, path.x1, path.y1, path.x2, path.y2);
+            for (let i = 0; i < paths.length; i += 12) {
+                const d = this.distanceToSegment(worldX, worldY, paths[i+1], paths[i+2], paths[i+3], paths[i+4]);
                 if (d <= threshold && d < minDistance) {
                     minDistance = d;
-                    closestPath = path;
+                    closestLineIndex = paths[i+7];
                 }
             }
         }
 
-        if (closestPath) {
-            this.selectLine(closestPath.lineIndex);
+        if (closestLineIndex !== null) {
+            this.selectLine(closestLineIndex);
         }
     }
 
@@ -930,12 +998,13 @@ class GCodeViewer {
         const overlay = document.getElementById('loading-overlay');
         const overlayText = document.querySelector('.loading-text');
         if (overlay) overlay.classList.add('visible');
-        if (overlayText) overlayText.innerText = 'Lade Demo G-Code...';
+        if (overlayText) overlayText.innerText = window.currentLang === 'en' ? 'Loading Demo G-Code...' : 'Lade Demo G-Code...';
         
         try {
             let demoGcode = window.demoGcode;
             if (!demoGcode) {
                 // Fallback to fetch if window.demoGcode is not injected
+                const workerCode = await fetch('js/gcode-analyzer.worker.js?v=' + Date.now()).then(res => res.text());
                 const response = await fetch('gcode/example_layerspy.gcode');
                 if (!response.ok) throw new Error('Demo file not found');
                 demoGcode = await response.text();
@@ -998,7 +1067,7 @@ class GCodeViewer {
         const overlay = document.getElementById('loading-overlay');
         const overlayText = document.querySelector('.loading-text');
         overlay.classList.add('visible');
-        overlayText.innerText = 'Lese Datei...';
+        overlayText.innerText = window.currentLang === 'en' ? 'Reading file...' : 'Lese Datei...';
         
         const canvas = document.getElementById('gcode-canvas');
         const ctx = canvas.getContext('2d');
@@ -1031,7 +1100,7 @@ class GCodeViewer {
 
     async parseGcodeAsync(forceRecalc = false) {
         const overlayText = document.querySelector('.loading-text');
-        overlayText.innerText = 'Starte Analyse...';
+        overlayText.innerText = window.currentLang === 'en' ? 'Starting analysis...' : 'Starte Analyse...';
         
         // Memory cleanup before massive allocation
         if (this.layerList) this.layerList.length = 0;
@@ -1059,8 +1128,25 @@ class GCodeViewer {
             };
 
             
-            const workerBlob = new Blob([`self.onmessage = function(e) {
-    const { lines, k, halfBed, forceRecalc } = e.data;
+            const workerBlob = new Blob([`
+
+    async function readLinesFromFile(file) {
+        postMessage({ type: 'progress', percent: 5, msg: 'Lese Datei...' });
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                postMessage({ type: 'progress', percent: 15, msg: 'Splitte Linien...' });
+                resolve(e.target.result.split(/\\r?\\n/));
+            };
+            reader.readAsText(file);
+        });
+    }
+
+self.onmessage = async function(e) {
+
+    const { file, lines: inputLines, k, halfBed, forceRecalc } = e.data;
+    const lines = file ? await readLinesFromFile(file) : inputLines;
+    if (!lines) return;
     
     let foundTemp = null;
     let foundBed = null;
@@ -1207,6 +1293,7 @@ class GCodeViewer {
     let maxZ = 0;
     let totalE = 0, totalRetracts = 0;
     let currentF = 3000;
+    let currentFanPWM = 0;
     let currentFeatureType = 'Unknown';
     let estimatedPrintTimeSeconds = 0;
     let lastDx = 0, lastDy = 0, lastLineDist = 0, lastE = 0;
@@ -1350,7 +1437,8 @@ class GCodeViewer {
                         featureType: currentFeatureType,
                         x1: lastX, y1: lastY,
                         x2: tempX, y2: tempY,
-                        feedrate: currentF
+                        feedrate: currentF,
+                        fanPWM: currentFanPWM
                     });
                 }
 
@@ -1394,17 +1482,272 @@ class GCodeViewer {
             foundTemp, foundBed, foundFan, foundRetract, slicerBaseTime
         };
 
-        self.postMessage({
+        
+    let diagnosticWarnings = [];
+    let healthScore = 100;
+    
+    // Convert layerList to Float32Arrays and apply diagnostics
+    let transferables = [];
+    
+    // Klipper limits
+    let a_max = (typeof foundK !== 'undefined' && foundK && foundK.accel && foundK.accel.x) ? foundK.accel.x : 3000;
+    let SCV = (typeof foundK !== 'undefined' && foundK && foundK.jerk && foundK.jerk.x) ? foundK.jerk.x : 5.0;
+
+        let prevGrid = new Uint8Array(1600 * 1600);
+    let currGrid = new Uint8Array(1600 * 1600);
+
+    for (let i = 0; i < layerList.length; i++) {
+        let layer = layerList[i];
+        let numPaths = layer.paths.length;
+        
+        let t_layer = 0;
+        // Use TypedArrays for high-performance 2D Kinematics planner
+        let s_arr = new Float32Array(numPaths);
+        let dirX_arr = new Float32Array(numPaths);
+        let dirY_arr = new Float32Array(numPaths);
+        let v_target_arr = new Float32Array(numPaths);
+        let v_junction_arr = new Float32Array(numPaths);
+        let v_entry_arr = new Float32Array(numPaths);
+        let v_exit_arr = new Float32Array(numPaths);
+        
+        for (let j = 0; j < numPaths; j++) {
+            let p = layer.paths[j];
+            let dx = p.x2 - p.x1;
+            let dy = p.y2 - p.y1;
+            let s = Math.sqrt(dx*dx + dy*dy);
+            s_arr[j] = s;
+            dirX_arr[j] = s > 0 ? dx / s : 0;
+            dirY_arr[j] = s > 0 ? dy / s : 0;
+            let feed = p.feedrate !== undefined ? p.feedrate : (p.f || 0);
+            v_target_arr[j] = feed / 60.0;
+        }
+        
+        // Calculate junctions
+        for (let j = 0; j < numPaths - 1; j++) {
+            if (s_arr[j] === 0 || s_arr[j+1] === 0) {
+                v_junction_arr[j] = 0;
+                continue;
+            }
+            let cosTheta = dirX_arr[j] * dirX_arr[j+1] + dirY_arr[j] * dirY_arr[j+1];
+            if (cosTheta > 1.0) cosTheta = 1.0;
+            if (cosTheta < -1.0) cosTheta = -1.0;
+            
+            let v_junction;
+            if (cosTheta > 0.9999) {
+                v_junction = Math.min(v_target_arr[j], v_target_arr[j+1]);
+            } else {
+                let sinThetaHalf = Math.sqrt((1 - cosTheta) / 2);
+                if (sinThetaHalf > 0.0001) {
+                    v_junction = SCV / sinThetaHalf;
+                } else {
+                    v_junction = Math.min(v_target_arr[j], v_target_arr[j+1]);
+                }
+                v_junction = Math.min(v_junction, v_target_arr[j], v_target_arr[j+1]);
+            }
+            v_junction_arr[j] = v_junction;
+        }
+        if (numPaths > 0) v_junction_arr[numPaths - 1] = 0;
+        
+        // Forward pass
+        let current_v_entry = 0;
+        for (let j = 0; j < numPaths; j++) {
+            v_entry_arr[j] = current_v_entry;
+            let v_exit_max = Math.sqrt(current_v_entry * current_v_entry + 2 * a_max * s_arr[j]);
+            v_exit_arr[j] = Math.min(v_exit_max, v_junction_arr[j], v_target_arr[j]);
+            current_v_entry = v_exit_arr[j];
+        }
+        
+        // Backward pass
+        let current_v_exit = 0;
+        for (let j = numPaths - 1; j >= 0; j--) {
+            v_exit_arr[j] = Math.min(v_exit_arr[j], current_v_exit);
+            let v_entry_max = Math.sqrt(v_exit_arr[j] * v_exit_arr[j] + 2 * a_max * s_arr[j]);
+            v_entry_arr[j] = Math.min(v_entry_arr[j], v_entry_max);
+            current_v_exit = v_entry_arr[j];
+        }
+        
+        let buffer = new Float32Array(numPaths * 12);
+        
+        for (let j = 0; j < numPaths; j++) {
+            let p = layer.paths[j];
+            let pType = p.type === 'extrude' ? 1 : (p.type === 'travel' ? 0 : 2);
+            let flowRate = 0;
+            let fVal = p.feedrate !== undefined ? p.feedrate : (p.f || 0);
+            
+            const fTypeStr = (p.featureType || '').toUpperCase();
+            let fTypeId = 0;
+            if (fTypeStr.includes('OUTER') || fTypeStr === 'EXTERNAL PERIMETER') fTypeId = 1;
+            else if (fTypeStr.includes('INNER') || fTypeStr.includes('PERIMETER') || fTypeStr.includes('WALL')) fTypeId = 2;
+            else if (fTypeStr.includes('SOLID INFILL') || fTypeStr.includes('BOTTOM') || fTypeStr.includes('INTERNAL SOLID')) fTypeId = 4;
+            else if (fTypeStr.includes('INFILL') || fTypeStr.includes('FILL') || fTypeStr.includes('SPARSE')) fTypeId = 3;
+            else if (fTypeStr.includes('TOP') || fTypeStr.includes('SKIN') || fTypeStr.includes('IRONING')) fTypeId = 5;
+            else if (fTypeStr.includes('SUPPORT INTERFACE')) fTypeId = 7;
+            else if (fTypeStr.includes('SUPPORT')) fTypeId = 6;
+            else if (fTypeStr.includes('BRIDGE') || fTypeStr.includes('OVERHANG')) fTypeId = 8;
+            else if (fTypeStr.includes('GAP')) fTypeId = 9;
+            else if (fTypeStr.includes('SKIRT') || fTypeStr.includes('BRIM') || fTypeStr.includes('TOWER')) fTypeId = 10;
+            
+            let s = s_arr[j];
+            let v_target = v_target_arr[j];
+            let v_entry = v_entry_arr[j];
+            let v_exit = v_exit_arr[j];
+            
+            let v_real = 0;
+            let t_segment = 0;
+            
+            if (s > 0 && v_target > 0) {
+                let max_reachable = Math.sqrt((v_entry * v_entry + v_exit * v_exit + 2 * a_max * s) / 2);
+                if (max_reachable < v_target) {
+                    v_real = max_reachable;
+                    let t_acc = (v_real - v_entry) / a_max;
+                    let t_dec = (v_real - v_exit) / a_max;
+                    t_segment = t_acc + t_dec;
+                } else {
+                    v_real = v_target;
+                    let d_acc = (v_real * v_real - v_entry * v_entry) / (2 * a_max);
+                    let d_dec = (v_real * v_real - v_exit * v_exit) / (2 * a_max);
+                    let d_cruise = Math.max(0, s - d_acc - d_dec);
+                    let t_acc = (v_real - v_entry) / a_max;
+                    let t_dec = (v_real - v_exit) / a_max;
+                    let t_cruise = d_cruise / v_real;
+                    t_segment = t_acc + t_dec + t_cruise;
+                }
+            }
+              if (isNaN(t_segment) || !isFinite(t_segment) || t_segment < 0) {
+                  t_segment = (s > 0 && v_target > 0) ? (s / v_target) : 0;
+              }
+
+            
+            // Flowrate = Area * E_dist / time
+            if (pType === 1 && fVal > 0) {
+                let eDist = p.e - (j > 0 ? layer.paths[j-1].e : p.e);
+                if (eDist > 0 && s > 0) {
+                    let time = s / (fVal / 60);
+                    flowRate = (eDist * Math.PI * Math.pow(1.75 / 2, 2)) / time;
+                    if (flowRate > 15) {
+                        if (!layer.hasHighFlowWarning) {
+                            diagnosticWarnings.push({ type: 'high_flow', layerIndex: i, msg: 'High volumetric flow (' + flowRate.toFixed(1) + ' mm³/s) at Layer ' + i });
+                            layer.hasHighFlowWarning = true;
+                        }
+                        healthScore -= 0.1;
+                    }
+                }
+            }
+            
+            buffer[j * 12 + 0] = pType;
+            buffer[j * 12 + 1] = p.x1;
+            buffer[j * 12 + 2] = p.y1;
+            buffer[j * 12 + 3] = p.x2;
+            buffer[j * 12 + 4] = p.y2;
+            buffer[j * 12 + 5] = fVal;
+            buffer[j * 12 + 6] = flowRate;
+            buffer[j * 12 + 7] = p.lineIndex || 0;
+            buffer[j * 12 + 8] = fTypeId;
+            buffer[j * 12 + 9] = v_real;
+            buffer[j * 12 + 10] = t_segment;
+            t_layer += t_segment;
+        }
+        
+        // Thermal Trap Pass
+        let overhang_length = 0;
+        for (let j = 0; j < numPaths; j++) {
+            let pType = buffer[j * 12 + 0];
+            let x1 = buffer[j * 12 + 1];
+            let y1 = buffer[j * 12 + 2];
+            let x2 = buffer[j * 12 + 3];
+            let y2 = buffer[j * 12 + 4];
+            let fanPWM = layer.paths[j].fanPWM || 0;
+            
+            let diag_flag = 0;
+            
+            if (pType === 1) { // Extrude
+                let dx = x2 - x1;
+                let dy = y2 - y1;
+                let steps = Math.max(1, Math.ceil(Math.sqrt(dx*dx + dy*dy) * 2)); // 0.5mm steps
+                let isOverhang = (i > 0);
+                
+                for (let s = 0; s <= steps; s++) {
+                    let cx = x1 + (dx * s) / steps;
+                    let cy = y1 + (dy * s) / steps;
+                    
+                    let gx = Math.floor(cx * 2 + 800);
+                    let gy = Math.floor(cy * 2 + 800);
+                    
+                    if (gx >= 1 && gx < 1599 && gy >= 1 && gy < 1599) {
+                        currGrid[gy * 1600 + gx] = 1; // Draw to current grid
+                        
+                        // Check 3x3 neighborhood for support (approx 1.5mm)
+                        let supported = false;
+                        for(let dy=-1; dy<=1; dy++) {
+                            for(let dx=-1; dx<=1; dx++) {
+                                if (prevGrid[(gy+dy) * 1600 + (gx+dx)] === 1) supported = true;
+                            }
+                        }
+                        if (supported) {
+                            isOverhang = false;
+                        }
+                    }
+                }
+                
+                if (isOverhang) {
+                    overhang_length += Math.sqrt(dx*dx + dy*dy);
+                    if (fanPWM < 180) {
+                        if (t_layer < 6.0 || overhang_length > 15.0) {
+                            diag_flag = 1;
+                            if (!layer.hasThermalWarning) {
+                                diagnosticWarnings.push({ type: 'thermal_risk', layerIndex: i, msg: 'Melting Risk (Layer ' + i + '): Überhang bei ' + t_layer.toFixed(1) + 's Layerzeit & ' + Math.round((fanPWM/255)*100) + '% Lüfter' });
+                                layer.hasThermalWarning = true;
+                            }
+                            healthScore -= 0.01;
+                        }
+                    }
+                } else {
+                    overhang_length = 0;
+                }
+            }
+            buffer[j * 12 + 11] = diag_flag;
+        }
+        
+        // Swap grids
+        prevGrid.set(currGrid);
+        currGrid.fill(0);
+        
+        layer.paths = buffer;
+        transferables.push(buffer.buffer);
+    }
+    
+    // Check Klipper Start Sequence
+    let hasHeated = false;
+    let hasHomed = false;
+    for(let i=0; i<Math.min(lines.length, 1000); i++) {
+        let l = lines[i].toUpperCase();
+        if (l.includes('M190') || l.includes('M140') || l.includes('BED_TEMP')) hasHeated = true;
+        if (l.startsWith('G28')) {
+            hasHomed = true;
+            if (!hasHeated) {
+                diagnosticWarnings.push({ type: 'klipper_home', msg: 'Homing before heating bed.' });
+                healthScore -= 5;
+            }
+        }
+    }
+    
+    healthScore = Math.max(0, healthScore);
+    
+    self.postMessage({
             type: 'done',
             layerList: layerList,
             stats: stats,
             defaults: defaults,
             foundK: foundK
-        });
+        , 
+            diagnostics: { warnings: diagnosticWarnings, score: healthScore }
+        }, transferables);
     };
 
     processChunk(0);
 };
+
+
 `], { type: 'application/javascript' });
             const workerUrl = URL.createObjectURL(workerBlob);
 
@@ -1412,7 +1755,7 @@ class GCodeViewer {
             worker.onmessage = (e) => {
                 const msg = e.data;
                 if (msg.type === 'progress') {
-                    if (overlayText) overlayText.innerText = `Analysiere Geometrie... ${msg.percent}%`;
+                    if (overlayText) overlayText.innerText = window.currentLang === 'en' ? `Analyzing geometry... ${msg.percent}%` : `Analysiere Geometrie... ${msg.percent}%`;
                 } else if (msg.type === 'done') {
                     this.layerList = msg.layerList;
                     
@@ -1488,6 +1831,21 @@ class GCodeViewer {
                     
                     this.updateStatsUI();
                     
+                    this.maxSpeedNormal = 10;
+                    this.maxSpeedKinematics = 10;
+                    this.layerList.forEach(layer => {
+                        for(let i=0; i<layer.paths.length; i+=12) {
+                            if (layer.paths[i] === 1) { // 1 = extrude
+                                const sN = layer.paths[i+5] / 60;
+                                const sK = layer.paths[i+9];
+                                if (sN > this.maxSpeedNormal) this.maxSpeedNormal = sN;
+                                if (sK > this.maxSpeedKinematics) this.maxSpeedKinematics = sK;
+                            }
+                        }
+                    });
+                    
+                    if (window.updateLegend) window.updateLegend();
+                    
                     const slider = document.getElementById('layer-slider');
                     slider.max = Math.max(0, this.layerList.length - 1);
                     slider.value = 0;
@@ -1498,7 +1856,10 @@ class GCodeViewer {
                     this.rebuild3DScene();
                     this.draw();
                     
+                    this.workerDiagnostics = msg.diagnostics;
+                    this.auditCorners();
                     this.runLinter();
+                    this.checkVFA();
                     
                     worker.terminate();
                     resolve();
@@ -1665,12 +2026,12 @@ class GCodeViewer {
                 } else {
                     const prevLayer = this.layerList[this.currentLayerIdx - 1];
                     if (prevLayer && prevLayer.paths && prevLayer.paths.length > 0) {
-                        startLine = prevLayer.paths[prevLayer.paths.length - 1].lineIndex + 1;
+                        startLine = prevLayer.paths[prevLayer.paths.length - 5] + 1; /* i+7 where i = length - 12 = length-5 */
                     } else {
-                        startLine = currentLayer.paths[0].lineIndex;
+                        startLine = currentLayer.paths[7];
                     }
                 }
-                endLine = currentLayer.paths[currentLayer.paths.length - 1].lineIndex;
+                endLine = currentLayer.paths[currentLayer.paths.length - 5];
             }
         }
 
@@ -1698,14 +2059,24 @@ class GCodeViewer {
         if (nextBtn) nextBtn.disabled = this.gcodeCurrentPage >= this.gcodeTotalPages;
 
         let skipUntil = -1;
+        let currentIndent = 0;
+        
         for(let i = 0; i < totalLines; i += chunkSize) {
             const chunkEnd = Math.min(i + chunkSize, totalLines);
             for(let j = i; j < chunkEnd; j++) {
-                if (j <= skipUntil) continue;
-                
                 const originalLine = this.originalLines[j];
                 const cleanLine = originalLine.trim();
                 if (cleanLine === "") continue;
+                
+                if (cleanLine.toUpperCase().startsWith(';LAYER:')) {
+                    currentIndent = 0;
+                } else if (cleanLine.toUpperCase().startsWith(';TYPE:')) {
+                    currentIndent = 1;
+                } else if (currentIndent < 2 && !cleanLine.startsWith(';')) {
+                    currentIndent = 2; // Commands inside a type are indented
+                }
+                
+                if (j <= skipUntil) continue;
 
                 if (cleanLine.startsWith(';') && (
                     cleanLine.toLowerCase().includes('thumbnail') || 
@@ -1724,8 +2095,6 @@ class GCodeViewer {
                     } else {
                         foldBtnHtml = `<button class="fold-btn" onclick="window.gcodeApp.toggleFold(${j})">-</button>`;
                     }
-                } else {
-                    foldBtnHtml = `<span style="display:inline-block;width:24px;"></span>`;
                 }
 
                 const isBookmarked = this.bookmarks.has(j);
@@ -1753,7 +2122,7 @@ class GCodeViewer {
                 let badgeHtml = '';
                 if (this.lintWarnings && this.lintWarnings[j]) {
                     this.lintWarnings[j].forEach(w => {
-                        badgeHtml += `<span class="mod-badge badge-warning" style="background:#e74c3c; color:white; border-color:#c0392b;">⚠️ ${w}</span> `;
+                        badgeHtml += `<span class="mod-badge badge-warning" style="background:#e74c3c; color:white; border-color:#c0392b;">?? ${w}</span> `;
                     });
                 }
                 
@@ -1773,12 +2142,13 @@ class GCodeViewer {
                     badgeHtml = '<span class="mod-badge">Geändert</span> ';
                 }
 
+                const paddingLeft = 10 + (currentIndent * 22);
                 const liHtml = `
-                    <li class="${classes}" id="line-${j}" data-index="${j}" style="display: flex; align-items: center; gap: 8px;">
+                    <li class="${classes}" id="line-${j}" data-index="${j}" style="display: flex; align-items: center; gap: 8px; padding-left: ${paddingLeft}px;">
                         ${foldBtnHtml}
                         ${bookmarkBtnHtml}
                         <span style="flex-grow:1;">${escapedLine}</span> 
-                        <small style="color: var(--text-muted); min-width: 150px; text-align:right;">${badgeHtml}Zeile ${j + 1}</small>
+                        <small style="color: var(--text-muted); min-width: 150px; text-align:right;">${badgeHtml}${window.currentLang === 'en' ? 'Line' : 'Zeile'} ${j + 1}</small>
                     </li>
                 `;
                 
@@ -1788,7 +2158,7 @@ class GCodeViewer {
             
             const percent = Math.round((i / totalLines) * 100);
             if (isInitialLoad && overlayText) {
-                overlayText.innerText = `Erstelle Liste... ${percent}%`;
+                overlayText.innerText = window.currentLang === 'en' ? `Building list... ${percent}%` : `Erstelle Liste... ${percent}%`;
             } else if (activeLoaderText) {
                 activeLoaderText.innerText = `⏳ ${percent}%`;
             }
@@ -1890,8 +2260,11 @@ class GCodeViewer {
         if (!currentLayer.paths.length) return;
         
         // If we are at the end, restart
-        if (this.playbackIndex >= currentLayer.paths.length - 1 || this.playbackIndex === -1) {
+        if (this.playbackIndex >= (currentLayer.paths.length / 12) - 1 || this.playbackIndex === -1) {
             this.playbackIndex = 0;
+            this.playbackFloatIndex = 0;
+        } else {
+            this.playbackFloatIndex = this.playbackIndex;
         }
         
         this.isPlaying = true;
@@ -1902,16 +2275,20 @@ class GCodeViewer {
     pause() {
         this.isPlaying = false;
         document.getElementById('play-toggle').innerText = '▶️';
-        if (this.playRequestId) cancelAnimationFrame(this.playRequestId);
+        if (this.playRequestId) {
+            cancelAnimationFrame(this.playRequestId);
+            this.playRequestId = null;
+        }
     }
     
     stepForward() {
         if (!this.layerList || !this.layerList.length) return;
         const currentLayer = this.layerList[this.currentLayerIdx];
-        if (this.playbackIndex === -1) this.playbackIndex = currentLayer.paths.length - 1;
+        if (this.playbackIndex === -1) this.playbackIndex = (currentLayer.paths.length / 12) - 1;
         
-        if (this.playbackIndex < currentLayer.paths.length - 1) {
+        if (this.playbackIndex < (currentLayer.paths.length / 12) - 1) {
             this.playbackIndex++;
+            this.playbackFloatIndex = this.playbackIndex;
             this.syncPlaybackUI();
             this.draw();
         }
@@ -1920,10 +2297,11 @@ class GCodeViewer {
     stepBackward() {
         if (!this.layerList || !this.layerList.length) return;
         const currentLayer = this.layerList[this.currentLayerIdx];
-        if (this.playbackIndex === -1) this.playbackIndex = currentLayer.paths.length - 1;
+        if (this.playbackIndex === -1) this.playbackIndex = (currentLayer.paths.length / 12) - 1;
         
         if (this.playbackIndex > 0) {
             this.playbackIndex--;
+            this.playbackFloatIndex = this.playbackIndex;
             this.syncPlaybackUI();
             this.draw();
         }
@@ -1934,12 +2312,18 @@ class GCodeViewer {
         
         const currentLayer = this.layerList[this.currentLayerIdx];
         
-        // Advance by a few paths per frame for smooth speed.
-        const speedMultiplier = Math.max(1, Math.floor(currentLayer.paths.length / 300));
-        this.playbackIndex += speedMultiplier;
+        const speedSelect = document.getElementById('playback-speed');
+        const userSpeed = speedSelect ? parseFloat(speedSelect.value) : 1.0;
         
-        if (this.playbackIndex >= currentLayer.paths.length - 1) {
-            this.playbackIndex = currentLayer.paths.length - 1;
+        // Base speed: 1.0x = 6 paths per second
+        let speedMultiplier = 0.1 * userSpeed;
+        
+        this.playbackFloatIndex += speedMultiplier;
+        this.playbackIndex = Math.floor(this.playbackFloatIndex);
+        
+        if (this.playbackIndex >= (currentLayer.paths.length / 12) - 1) {
+            this.playbackIndex = (currentLayer.paths.length / 12) - 1;
+            this.playbackFloatIndex = this.playbackIndex;
             this.pause();
         }
         
@@ -1960,26 +2344,65 @@ class GCodeViewer {
             return;
         }
         const currentLayer = this.layerList[this.currentLayerIdx];
-        const max = Math.max(0, currentLayer.paths.length - 1);
+        const max = Math.max(0, (currentLayer.paths.length / 12) - 1);
         
         if (slider.max != max) slider.max = max;
         slider.value = this.playbackIndex === -1 ? max : this.playbackIndex;
         
+        let percent = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+        percent = Math.max(0, Math.min(100, percent || 0));
+        slider.style.background = `linear-gradient(to right, var(--accent-color) ${percent}%, var(--border-color) ${percent}%)`;
+        
         // Highlight corresponding G-Code line in the list
-        if (this.playbackIndex !== -1 && currentLayer.paths[this.playbackIndex]) {
-            const path = currentLayer.paths[this.playbackIndex];
-            this.selectedLineIndex = path.lineIndex;
+        const activeIdx = this.playbackIndex === -1 ? 0 : this.playbackIndex;
+        if (currentLayer.paths.length > activeIdx * 12) {
+            const pathLineIndex = currentLayer.paths[activeIdx * 12 + 7];
+            this.selectedLineIndex = pathLineIndex;
             
             const prevActive = document.querySelector('.gcode-line.active');
             if (prevActive) {
-                if (prevActive.id === `line-${path.lineIndex}`) return; // Already active
+                if (prevActive.id === `line-${pathLineIndex}`) return; // Already active
                 prevActive.classList.remove('active');
             }
             
-            const lineEl = document.getElementById(`line-${path.lineIndex}`);
+            const lineEl = document.getElementById(`line-${pathLineIndex}`);
             if (lineEl) {
                 lineEl.classList.add('active');
-                this.safeScrollToLine(lineEl, 'auto', 'nearest');
+                this.safeScrollToLine(lineEl, 'auto', 'center');
+            } else if (this.playbackIndex !== -1 && !this.isUpdatingGcodeList && this.gcodePageSize !== 'all') {
+                let startLine = 0;
+                if (this.gcodeViewMode === 'layer' && this.layerList && this.layerList.length > 0) {
+                    const l = this.layerList[this.currentLayerIdx];
+                    if (l && l.paths && l.paths.length > 0) {
+                        if (this.currentLayerIdx === 0) {
+                            startLine = 0;
+                        } else {
+                            const prevLayer = this.layerList[this.currentLayerIdx - 1];
+                            if (prevLayer && prevLayer.paths && prevLayer.paths.length > 0) {
+                                startLine = prevLayer.paths[prevLayer.paths.length - 5] + 1; /* i+7 where i = length - 12 = length-5 */
+                            } else {
+                                startLine = l.paths[7];
+                            }
+                        }
+                    }
+                }
+                const relativeLine = pathLineIndex - startLine;
+                if (relativeLine >= 0) {
+                    const pageSize = parseInt(this.gcodePageSize, 10);
+                    const targetPage = Math.floor(relativeLine / pageSize) + 1;
+                    if (targetPage !== this.gcodeCurrentPage) {
+                        this.gcodeCurrentPage = targetPage;
+                        this.isUpdatingGcodeList = true;
+                        this.updateGcodeListAsync().then(() => {
+                            this.isUpdatingGcodeList = false;
+                            // Re-run sync to highlight now that the element exists
+                            this.syncPlaybackUI();
+                        }).catch(err => {
+                            console.error(err);
+                            this.isUpdatingGcodeList = false;
+                        });
+                    }
+                }
             }
         }
     }
@@ -2024,7 +2447,7 @@ class GCodeViewer {
                 for(let i=0; i<this.layerList.length; i++) {
                     const l = this.layerList[i];
                     if(l.paths.length > 0) {
-                        if (index <= l.paths[l.paths.length - 1].lineIndex) {
+                        if (index <= l.paths[l.paths.length - 5]) {
                             targetLayerIdx = i;
                             break;
                         }
@@ -2042,9 +2465,9 @@ class GCodeViewer {
                 } else {
                     const prevLayer = this.layerList[this.currentLayerIdx - 1];
                     if (prevLayer && prevLayer.paths && prevLayer.paths.length > 0) {
-                        startLine = prevLayer.paths[prevLayer.paths.length - 1].lineIndex + 1;
+                        startLine = prevLayer.paths[prevLayer.paths.length - 5] + 1; /* i+7 where i = length - 12 = length-5 */
                     } else {
-                        startLine = currentLayer.paths[0].lineIndex;
+                        startLine = currentLayer.paths[7];
                     }
                 }
             }
@@ -2162,7 +2585,7 @@ class GCodeViewer {
             box.innerHTML = window.t("expl.firmware").replace("{cmd}", cmd);
         } else {
             const info = window.currentLang === "en" ? "Click on a G-Code command (e.g. G1, M104) to see an explanation." : "Klicke auf einen G-Code Befehl (z.B. G1, M104), um eine Erklärung zu sehen.";
-            box.innerHTML = "💡 <strong>Info:</strong> " + info;
+            box.innerHTML = "ℹ️⚠️ <strong>Info:</strong> " + info;
             box.style.borderColor = "var(--border-color)";
         }
     }
@@ -2241,6 +2664,271 @@ class GCodeViewer {
         return `${m}m`;
     }
 
+    checkVFA() {
+        const layers = this.layerList || this.layers;
+        if (!layers) return;
+        const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
+        const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
+        const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
+        const vfa2Max = parseFloat(document.getElementById('vfa2-max')?.value) || 110;
+        
+        const elVfa1 = document.getElementById('vfa1-val');
+        if (elVfa1) elVfa1.innerText = `${vfa1Min} - ${vfa1Max}`;
+        const elVfa2 = document.getElementById('vfa2-val');
+        if (elVfa2) elVfa2.innerText = `${vfa2Min} - ${vfa2Max}`;
+        
+        let totalOuterWallLength = 0;
+        let vfaLength = 0;
+        
+        for (let layer of layers) {
+            if (!layer.paths) continue;
+            for (let j = 0; j < layer.paths.length / 12; j++) {
+                const type = layer.paths[j * 12 + 0];
+                const fTypeId = layer.paths[j * 12 + 8];
+                if (type === 1 && fTypeId === 1) { // Extrude && Outer Wall
+                    const x1 = layer.paths[j * 12 + 1];
+                    const y1 = layer.paths[j * 12 + 2];
+                    const x2 = layer.paths[j * 12 + 3];
+                    const y2 = layer.paths[j * 12 + 4];
+                    const dx = x2 - x1; const dy = y2 - y1;
+                    const len = Math.sqrt(dx*dx + dy*dy);
+                    totalOuterWallLength += len;
+                    
+                    const speed = layer.paths[j * 12 + 5] / 60; // Target Speed
+                    if ((speed >= vfa1Min && speed <= vfa1Max) || (speed >= vfa2Min && speed <= vfa2Max)) {
+                        vfaLength += len;
+                    }
+                }
+            }
+        }
+        
+        const warningDiv = document.getElementById('vfa-warning');
+        if (warningDiv) {
+            if (totalOuterWallLength > 0) {
+                const percent = (vfaLength / totalOuterWallLength) * 100;
+                if (percent > 15) {
+                    warningDiv.style.display = 'block';
+                    warningDiv.innerText = `\u26A0\uFE0F VFA-Gefahr: ${percent.toFixed(1)}% der Au\u00dfenw\u00e4nde im Resonanzbereich!`;
+                } else {
+                    warningDiv.style.display = 'none';
+                }
+            } else {
+                warningDiv.style.display = 'none';
+            }
+        }
+        
+        if (this.colorMode === 'vfa') {
+            this.rebuild3DScene();
+            this.draw();
+        }
+    }
+
+    detectPressureAdvance() {
+        let pa = { enabled: false, value: 0, source: 'none' };
+        if (!this.originalLines || this.originalLines.length === 0) return pa;
+        
+        for (let i = 0; i < this.originalLines.length; i++) {
+            const line = this.originalLines[i].trim();
+            const upper = line.toUpperCase();
+            
+            // Klipper SET_PRESSURE_ADVANCE ADVANCE=0.055
+            if (upper.includes('SET_PRESSURE_ADVANCE')) {
+                const advMatch = upper.match(/ADVANCE=([0-9.]+)/);
+                if (advMatch) {
+                    const val = parseFloat(advMatch[1]);
+                    if (val > 0) {
+                        pa = { enabled: true, value: val, source: 'Klipper' };
+                        break;
+                    }
+                } else {
+                    pa = { enabled: true, value: 0.05, source: 'Klipper' };
+                }
+            }
+            
+            // Marlin M900 K0.05
+            if (upper.startsWith('M900')) {
+                const kMatch = upper.match(/K([0-9.]+)/);
+                if (kMatch) {
+                    const val = parseFloat(kMatch[1]);
+                    if (val > 0) {
+                        pa = { enabled: true, value: val, source: 'Marlin' };
+                        break;
+                    }
+                }
+            }
+            
+            // Slicer comment metadata
+            if (line.startsWith(';')) {
+                const lower = line.toLowerCase();
+                const paMatch = lower.match(/;\s*pressure_advance\s*=\s*([0-9.]+)/);
+                if (paMatch) {
+                    const val = parseFloat(paMatch[1]);
+                    if (val > 0) {
+                        pa = { enabled: true, value: val, source: 'Slicer' };
+                    }
+                }
+                if (lower.includes('enable_pressure_advance = 1') && !pa.enabled) {
+                    pa = { enabled: true, value: 0.05, source: 'Slicer' };
+                }
+            }
+        }
+        this.pressureAdvanceState = pa;
+        return pa;
+    }
+
+    auditCorners() {
+        this.cornerAuditResults = [];
+        this.cornerAuditByLayer = {};
+        
+        const layers = this.layerList || this.layers;
+        if (!layers || layers.length === 0) return;
+        
+        const pa = this.detectPressureAdvance();
+        let bulgeCount = 0;
+        let stressCount = 0;
+        
+        for (let layerIdx = 0; layerIdx < layers.length; layerIdx++) {
+            const layer = layers[layerIdx];
+            if (!layer || !layer.paths) continue;
+            
+            const paths = layer.paths;
+            const numSegments = Math.floor(paths.length / 12);
+            if (numSegments < 2) continue;
+            
+            this.cornerAuditByLayer[layerIdx] = [];
+            
+            // Find consecutive outer wall extrusion segments
+            for (let j = 0; j < numSegments - 1; j++) {
+                const type1 = paths[j * 12 + 0];
+                const fTypeId1 = paths[j * 12 + 8];
+                const type2 = paths[(j + 1) * 12 + 0];
+                const fTypeId2 = paths[(j + 1) * 12 + 8];
+                
+                // Outer wall is fTypeId === 1 (Extrude is type === 1)
+                if (type1 !== 1 || fTypeId1 !== 1 || type2 !== 1 || fTypeId2 !== 1) continue;
+                
+                const x1 = paths[j * 12 + 1];
+                const y1 = paths[j * 12 + 2];
+                const x2 = paths[j * 12 + 3];
+                const y2 = paths[j * 12 + 4];
+                
+                const x2_next = paths[(j + 1) * 12 + 1];
+                const y2_next = paths[(j + 1) * 12 + 2];
+                const x3 = paths[(j + 1) * 12 + 3];
+                const y3 = paths[(j + 1) * 12 + 4];
+                
+                // Continuous vertex check
+                const dx_conn = x2 - x2_next;
+                const dy_conn = y2 - y2_next;
+                if (dx_conn * dx_conn + dy_conn * dy_conn > 0.08 * 0.08) continue;
+                
+                const dx1 = x2 - x1;
+                const dy1 = y2 - y1;
+                const s1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+                
+                const dx2 = x3 - x2_next;
+                const dy2 = y3 - y2_next;
+                const s2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                
+                if (s1 < 0.05 || s2 < 0.05) continue;
+                
+                // Direction vectors
+                const u1x = dx1 / s1;
+                const u1y = dy1 / s1;
+                const u2x = dx2 / s2;
+                const u2y = dy2 / s2;
+                
+                const dot = Math.max(-1.0, Math.min(1.0, u1x * u2x + u1y * u2y));
+                const turnAngleDeg = Math.acos(dot) * (180 / Math.PI);
+                const cornerAngleDeg = 180 - turnAngleDeg;
+                
+                // Filter sharp corners: alpha < 100 deg (turnAngle > 80 deg)
+                if (cornerAngleDeg < 100) {
+                    const feed1 = paths[j * 12 + 5] / 60.0; // mm/s
+                    const feed2 = paths[(j + 1) * 12 + 5] / 60.0;
+                    const deltaV = Math.abs(feed1 - feed2);
+                    
+                    const v_real1 = paths[j * 12 + 9];
+                    const v_real2 = paths[(j + 1) * 12 + 9];
+                    const effectiveDeltaV = Math.max(deltaV, Math.abs(v_real1 - v_real2), feed1 * (turnAngleDeg / 180.0));
+                    
+                    let riskLevel = null;
+                    let type = null;
+                    let msg = '';
+                    
+                    if (deltaV > 60 || effectiveDeltaV > 60) {
+                        if (!pa.enabled) {
+                            riskLevel = 'red';
+                            type = 'bulge_risk';
+                            msg = `Wulst-Gefahr: Scharfe Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s ohne Pressure Advance`;
+                            bulgeCount++;
+                        } else {
+                            riskLevel = 'yellow';
+                            type = 'pa_stress';
+                            msg = `PA-Belastungspunkt: Scharfe Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s (PA aktiv)`;
+                            stressCount++;
+                        }
+                    } else if (deltaV >= 30 || effectiveDeltaV >= 30) {
+                        riskLevel = 'yellow';
+                        type = 'moderate_decel';
+                        msg = `Moderate Verzögerung: Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s`;
+                        stressCount++;
+                    }
+                    
+                    if (riskLevel) {
+                        const cornerItem = {
+                            layerIndex: layerIdx,
+                            x: x2,
+                            y: y2,
+                            z: layer.z || 0,
+                            angle: cornerAngleDeg,
+                            deltaV: Math.max(deltaV, effectiveDeltaV),
+                            riskLevel: riskLevel,
+                            type: type,
+                            lineIndex: paths[j * 12 + 7] || 0,
+                            msg: msg
+                        };
+                        this.cornerAuditResults.push(cornerItem);
+                        this.cornerAuditByLayer[layerIdx].push(cornerItem);
+                    }
+                }
+            }
+        }
+        
+        // Update Bento UI widget
+        const badge = document.getElementById('pa-status-badge');
+        if (badge) {
+            if (pa.enabled) {
+                badge.innerText = `Aktiv (${pa.value})`;
+                badge.style.background = 'rgba(46, 204, 113, 0.2)';
+                badge.style.color = '#2ecc71';
+                badge.style.borderColor = 'rgba(46, 204, 113, 0.4)';
+            } else {
+                badge.innerText = 'Inaktiv';
+                badge.style.background = 'rgba(231, 76, 60, 0.2)';
+                badge.style.color = '#ff6b6b';
+                badge.style.borderColor = 'rgba(231, 76, 60, 0.4)';
+            }
+        }
+        
+        const bulgeSpan = document.getElementById('corner-bulge-count');
+        if (bulgeSpan) bulgeSpan.innerText = `${bulgeCount} Ecken`;
+        
+        const stressSpan = document.getElementById('corner-stress-count');
+        if (stressSpan) stressSpan.innerText = `${stressCount} Ecken`;
+        
+        const note = document.getElementById('corner-audit-note');
+        if (note) {
+            if (bulgeCount > 0) {
+                note.innerHTML = `⚠️ <strong style="color:#ff6b6b;">${bulgeCount} Wulststellen</strong> ohne PA. Empfehlung: Klipper PA konfigurieren!`;
+            } else if (stressCount > 0) {
+                note.innerHTML = `✅ <strong style="color:#2ecc71;">Keine Wulstgefahr</strong> (${stressCount} dynamische Ecken durch PA kompensiert).`;
+            } else {
+                note.innerText = 'Keine kritischen Eckenverzögerungen gefunden.';
+            }
+        }
+    }
+
     // --- 3D RENDERING LOGIC ---
     rebuild3DScene() {
         if (!this.is3DMode || !this.scene) return;
@@ -2273,9 +2961,9 @@ class GCodeViewer {
         // Count total extrude segments for buffer allocation
         let totalSegments = 0;
         this.layerList.forEach(layer => {
-            layer.paths.forEach(p => {
-                if (p.type === 'extrude') totalSegments++;
-            });
+            for(let i=0; i<layer.paths.length; i+=12) {
+                if (layer.paths[i] === 1) totalSegments++;
+            }
         });
         
         if (totalSegments === 0) return;
@@ -2284,24 +2972,24 @@ class GCodeViewer {
         if (this.showTravelMoves) {
             let travelCount = 0;
             this.layerList.forEach(layer => {
-                layer.paths.forEach(p => { if (p.type === 'travel') travelCount++; });
+                for(let i=0; i<layer.paths.length; i+=12) { if (layer.paths[i] === 0) travelCount++; }
             });
             
             if (travelCount > 0) {
                 let activePoints = [];
                 let activeColors = [];
-                const tMat = new THREE.LineDashedMaterial({ color: 0x00aaff, dashSize: 0.5, gapSize: 0.5, transparent: true, opacity: 0.5,
-                side: THREE.DoubleSide
-            });
+                const tMat = new THREE.LineDashedMaterial({ color: 0x00aaff, dashSize: 0.5, gapSize: 0.5, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
             
                 this.layerList.forEach((layer, lIdx) => {
-                    layer.paths.forEach(p => {
-                        if (p.type === 'travel' && lIdx <= this.currentLayerIdx) {
-                            activePoints.push(new THREE.Vector3(p.x1, p.y1, layer.z));
-                            activePoints.push(new THREE.Vector3(p.x2, p.y2, layer.z));
+                    for(let i=0; i<layer.paths.length; i+=12) {
+                        if (layer.paths[i] === 0 && lIdx <= this.currentLayerIdx) {
+                            let px1 = layer.paths[i+1], py1 = layer.paths[i+2];
+                            let px2 = layer.paths[i+3], py2 = layer.paths[i+4];
+                            activePoints.push(new THREE.Vector3(px1, py1, layer.z));
+                            activePoints.push(new THREE.Vector3(px2, py2, layer.z));
                             activeColors.push(0, 0.66, 1, 0, 0.66, 1);
                         }
-                    });
+                    }
                 });
                 if (activePoints.length > 0) {
                     const tGeo = new THREE.BufferGeometry().setFromPoints(activePoints);
@@ -2320,12 +3008,87 @@ class GCodeViewer {
             this.travelLinesObj = null;
         }
 
+        const hslToRgb = (h, s, l) => {
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l; 
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1 / 6) return p + (q - p) * 6 * t;
+                    if (t < 1 / 2) return q;
+                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1 / 3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1 / 3);
+            }
+            return [r, g, b];
+        };
+
+        const getSegmentColor = (pathArray, idx) => {
+            if (this.colorMode === 'heatmap') {
+                const feedrate = pathArray[idx+5];
+                const speedMms = Math.round(feedrate / 60);
+                const maxS = this.maxSpeedNormal || 240;
+                const ratio = Math.max(0, Math.min(1.0, speedMms / maxS));
+                const hue = (240 * (1 - ratio)) / 360;
+                return hslToRgb(hue, 1.0, 0.5);
+            } else if (this.colorMode === 'kinematics') {
+                const v_real = pathArray[idx+9] || 0;
+                const maxS = this.maxSpeedKinematics || 240;
+                const ratio = Math.max(0, Math.min(1.0, v_real / maxS));
+                const hue = (240 * (1 - ratio)) / 360;
+                return hslToRgb(hue, 1.0, 0.5);
+            } else if (this.colorMode === 'vfa') {
+                const fTypeId = pathArray[idx+8];
+                if (fTypeId === 1) { // Outer Wall
+                    const feedrate = pathArray[idx+5];
+                    const speed = feedrate / 60; // Target Speed
+                    const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
+                    const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
+                    const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
+                    const vfa2Max = parseFloat(document.getElementById('vfa2-max')?.value) || 110;
+                    if ((speed >= vfa1Min && speed <= vfa1Max) || (speed >= vfa2Min && speed <= vfa2Max)) {
+                        return [0.91, 0.12, 0.39]; // Magenta
+                    } else {
+                        return [0.3, 0.7, 0.3]; // Green
+                    }
+                }
+                return [0.15, 0.15, 0.15]; // Gray ignored
+            } else if (this.colorMode === 'risk') {
+                const diag = pathArray[idx+11];
+                if (diag === 2) return [1.0, 0.2, 0.2];
+                if (diag === 1) return [1.0, 0.6, 0.0];
+                return [0.3, 0.8, 0.3];
+            } else if (this.colorMode === 'feature') {
+                const fTypeId = pathArray[idx+8];
+                switch(fTypeId) {
+                    case 1: return [1.0, 0.55, 0.0]; // Outer Wall: Orange (#ff8c00)
+                    case 2: return [1.0, 0.92, 0.23]; // Inner Wall: Yellow (#ffeb3b)
+                    case 3: return [0.95, 0.26, 0.21]; // Infill: Red (#f44336)
+                    case 4: return [0.61, 0.15, 0.69]; // Solid Infill: Purple (#9c27b0)
+                    case 5: return [0.91, 0.12, 0.39]; // Top Surface: Pink (#e91e63)
+                    case 6: return [0.3, 0.69, 0.31]; // Support: Green (#4caf50)
+                    case 7: return [0.18, 0.49, 0.2]; // Support Interface: Dark Green (#2e7d32)
+                    case 8: return [0.01, 0.66, 0.96]; // Bridge: Light Blue (#03a9f4)
+                    case 9: return [1.0, 1.0, 1.0]; // Gap Fill: White
+                    case 10: return [0.62, 0.62, 0.62]; // Skirt/Brim: Gray (#9e9e9e)
+                    default: return [1.0, 0.7, 0.0]; // Default: Orange
+                }
+            }
+            return [1.0, 0.7, 0.0]; // Default #ffb300 for Normal mode
+        };
+
         if (useSolid) {
             // Instanced Mesh for cylinders (fastest way to render solid tubes)
             // Reduced segments from 24/16 to 6/6 for massive performance improvement
             const cylinderGeo = new THREE.CylinderGeometry(0.2, 0.2, 1, 6);
-            cylinderGeo.translate(0, 0.5, 0); // Pivot at bottom
-            cylinderGeo.rotateX(Math.PI / 2); // Point along Z in local space (which will be Y in ThreeJS)
+            cylinderGeo.rotateZ(Math.PI / 2); // Point along X axis so scaling X changes length
             
             const sphereGeo = new THREE.SphereGeometry(0.2, 6, 6);
             
@@ -2346,113 +3109,75 @@ class GCodeViewer {
             let idx = 0;
             let sphereIdx = 0;
             this.layerList.forEach((layer, lIdx) => {
-                layer.paths.forEach(path => {
-                    if (path.type !== 'extrude') return;
+                for(let i=0; i<layer.paths.length; i+=12) {
+                    if (layer.paths[i] !== 1) continue;
+                    let px1 = layer.paths[i+1], py1 = layer.paths[i+2];
+                    let px2 = layer.paths[i+3], py2 = layer.paths[i+4];
+                    const dx = px2 - px1;
+                    const dy = py2 - py1;
+                    const length = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
+                    const midX = px1 + dx / 2;
+                    const midY = py1 + dy / 2;
                     
-                    const dx = path.x2 - path.x1;
-                    const dy = path.y2 - path.y1;
-                    const len = Math.sqrt(dx*dx + dy*dy);
-                    
-                    // Position at start
-                    dummy.position.set(path.x1, path.y1, layer.z);
-                    // Orient towards end
-                    dummy.lookAt(path.x2, path.y2, layer.z);
-                    dummy.scale.set(1, 1, len);
+                    dummy.position.set(midX, midY, layer.z);
+                    dummy.scale.set(length, 1, 1);
+                    dummy.rotation.set(0, 0, Math.atan2(dy, dx));
                     dummy.updateMatrix();
-                    
                     this.instancedMesh.setMatrixAt(idx, dummy.matrix);
                     
-                    // Sphere at start
-                    dummySphere.position.set(path.x1, path.y1, layer.z);
-                    dummySphere.scale.set(1, 1, 1);
+                    const rgb = getSegmentColor(layer.paths, i);
+                    color.setRGB(rgb[0], rgb[1], rgb[2]);
+                    this.instancedMesh.setColorAt(idx, color);
+                    
+                    dummySphere.position.set(px1, py1, layer.z);
                     dummySphere.updateMatrix();
                     this.sphereInstancedMesh.setMatrixAt(sphereIdx, dummySphere.matrix);
-                    
-                    // Sphere at end
-                    dummySphere.position.set(path.x2, path.y2, layer.z);
-                    dummySphere.updateMatrix();
-                    this.sphereInstancedMesh.setMatrixAt(sphereIdx + 1, dummySphere.matrix);
-                    
-                    // Color based on heatmap, feature, flow, or normal
-                    if (this.colorMode === 'heatmap') {
-                        const speedMms = Math.round(path.feedrate / 60);
-                        const hue = Math.max(0, 240 - (speedMms * 1.5));
-                        color.setHSL(hue / 360, 1.0, 0.5);
-                    } else if (this.colorMode === 'feature') {
-                        const ft = path.featureType ? path.featureType.toLowerCase() : '';
-                        if (ft.includes('external perimeter')) color.setHex(0xffaa00);
-                        else if (ft.includes('perimeter')) color.setHex(0x00ff00);
-                        else if (ft.includes('infill')) color.setHex(0xff0000);
-                        else if (ft.includes('support')) color.setHex(0x00ffff);
-                        else if (ft.includes('skirt') || ft.includes('brim')) color.setHex(0x0000ff);
-                        else color.setHex(0xffb300);
-                    } else {
-                        color.setHex(0xffb300); // Standard yellow
-                    }
-                    this.instancedMesh.setColorAt(idx, color);
                     this.sphereInstancedMesh.setColorAt(sphereIdx, color);
-                    this.sphereInstancedMesh.setColorAt(sphereIdx + 1, color);
+                    sphereIdx++;
                     
-                    // Store layer info for playback hiding
-                    path.instanceIdx = idx;
+                    dummySphere.position.set(px2, py2, layer.z);
+                    dummySphere.updateMatrix();
+                    this.sphereInstancedMesh.setMatrixAt(sphereIdx, dummySphere.matrix);
+                    this.sphereInstancedMesh.setColorAt(sphereIdx, color);
+                    sphereIdx++;
+                    
                     idx++;
-                    sphereIdx += 2;
-                });
+                }
             });
             
             this.instancedMesh.instanceMatrix.needsUpdate = true;
-            this.instancedMesh.instanceColor.needsUpdate = true;
-            this.scene.add(this.instancedMesh);
-            
+            if (this.instancedMesh.instanceColor) this.instancedMesh.instanceColor.needsUpdate = true;
             this.sphereInstancedMesh.instanceMatrix.needsUpdate = true;
-            this.sphereInstancedMesh.instanceColor.needsUpdate = true;
+            if (this.sphereInstancedMesh.instanceColor) this.sphereInstancedMesh.instanceColor.needsUpdate = true;
+            
+            this.scene.add(this.instancedMesh);
             this.scene.add(this.sphereInstancedMesh);
             
         } else {
-            // LineSegments (Fastest)
-            const positions = new Float32Array(totalSegments * 6); // 2 verts per segment, 3 floats per vert
-            const colors = new Float32Array(totalSegments * 6);
+            let positions = new Float32Array(totalSegments * 6);
+            let colors = new Float32Array(totalSegments * 6);
+            
             let idx = 0;
-            const tempColor = new THREE.Color();
-
-            this.layerList.forEach((layer) => {
-                layer.paths.forEach(path => {
-                    if (path.type !== 'extrude') return;
-
-                    positions[idx * 6] = path.x1;
-                    positions[idx * 6 + 1] = path.y1;
-                    positions[idx * 6 + 2] = layer.z;
-
-                    positions[idx * 6 + 3] = path.x2;
-                    positions[idx * 6 + 4] = path.y2;
-                    positions[idx * 6 + 5] = layer.z;
-
-                    if (this.colorMode === 'heatmap') {
-                        const normalizedF = Math.max(0, Math.min(1, (path.feedrate - 600) / 2400));
-                        const hue = (1 - normalizedF) * 240;
-                        tempColor.setHSL(hue / 360, 1.0, 0.5);
-                    } else if (this.colorMode === 'feature') {
-                        const ft = path.featureType ? path.featureType.toLowerCase() : '';
-                        if (ft.includes('external perimeter')) tempColor.setHex(0xffaa00);
-                        else if (ft.includes('perimeter')) tempColor.setHex(0x00ff00);
-                        else if (ft.includes('infill')) tempColor.setHex(0xff0000);
-                        else if (ft.includes('support')) tempColor.setHex(0x00ffff);
-                        else if (ft.includes('skirt') || ft.includes('brim')) tempColor.setHex(0x0000ff);
-                        else tempColor.setHex(0xffb300);
-                    } else {
-                        tempColor.setHex(0xffb300);
-                    }
-
-                    colors[idx * 6] = tempColor.r;
-                    colors[idx * 6 + 1] = tempColor.g;
-                    colors[idx * 6 + 2] = tempColor.b;
-                    colors[idx * 6 + 3] = tempColor.r;
-                    colors[idx * 6 + 4] = tempColor.g;
-                    colors[idx * 6 + 5] = tempColor.b;
+            this.layerList.forEach(layer => {
+                for(let i=0; i<layer.paths.length; i+=12) {
+                    if (layer.paths[i] !== 1) continue;
+                    let px1 = layer.paths[i+1], py1 = layer.paths[i+2];
+                    let px2 = layer.paths[i+3], py2 = layer.paths[i+4];
                     
-                    path.vertexIdx = idx * 6; // To hide later
+                    positions[idx * 6 + 0] = px1;
+                    positions[idx * 6 + 1] = py1;
+                    positions[idx * 6 + 2] = layer.z;
+                    positions[idx * 6 + 3] = px2;
+                    positions[idx * 6 + 4] = py2;
+                    positions[idx * 6 + 5] = layer.z;
+                    
+                    const rgb = getSegmentColor(layer.paths, i);
+                    
+                    colors[idx * 6 + 0] = rgb[0]; colors[idx * 6 + 1] = rgb[1]; colors[idx * 6 + 2] = rgb[2];
+                    colors[idx * 6 + 3] = rgb[0]; colors[idx * 6 + 4] = rgb[1]; colors[idx * 6 + 5] = rgb[2];
+                    
                     idx++;
-                });
+                }
             });
 
             const geometry = new THREE.BufferGeometry();
@@ -2484,6 +3209,42 @@ class GCodeViewer {
             this.highlight3D.frustumCulled = false; // Disable culling so it doesn't disappear when zoomed in
             this.scene.add(this.highlight3D);
         }
+
+        // 3D Corner Auditor Markers
+        if (this.cornerMarkers3D) {
+            this.scene.remove(this.cornerMarkers3D);
+            if (this.cornerMarkers3D.geometry) this.cornerMarkers3D.geometry.dispose();
+            if (this.cornerMarkers3D.material) this.cornerMarkers3D.material.dispose();
+            this.cornerMarkers3D = null;
+        }
+        
+        if (this.showCornerAudit && this.cornerAuditResults && this.cornerAuditResults.length > 0) {
+            const activeCorners = this.cornerAuditResults.filter(c => c.layerIndex <= this.currentLayerIdx);
+            if (activeCorners.length > 0) {
+                const markerGeo = new THREE.BufferGeometry();
+                const positions = [];
+                const colors = [];
+                for (let c of activeCorners) {
+                    positions.push(c.x, c.y, c.z + 0.05);
+                    if (c.riskLevel === 'red') {
+                        colors.push(1.0, 0.2, 0.26); // Red
+                    } else {
+                        colors.push(0.95, 0.77, 0.06); // Yellow
+                    }
+                }
+                markerGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                markerGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                const markerMat = new THREE.PointsMaterial({
+                    size: 8.0,
+                    vertexColors: true,
+                    sizeAttenuation: false,
+                    depthTest: false
+                });
+                this.cornerMarkers3D = new THREE.Points(markerGeo, markerMat);
+                this.cornerMarkers3D.renderOrder = 998;
+                this.scene.add(this.cornerMarkers3D);
+            }
+        }
         
         // Center the scene if not done
         if (this.bed3D) {
@@ -2495,6 +3256,9 @@ class GCodeViewer {
         if (this.instancedMesh) {
             this.instancedMesh.position.set(0, 0, 0);
         }
+        if (this.cornerMarkers3D) {
+            this.cornerMarkers3D.position.set(this.currentXOffset, this.currentYOffset, 0);
+        }
         
         this.update3DPlayback();
     }
@@ -2505,6 +3269,7 @@ class GCodeViewer {
         // Offset
         if (this.gcode3DObject) this.gcode3DObject.position.set(this.currentXOffset, this.currentYOffset, 0);
         if (this.instancedMesh) this.instancedMesh.position.set(this.currentXOffset, this.currentYOffset, 0);
+        if (this.cornerMarkers3D) this.cornerMarkers3D.position.set(this.currentXOffset, this.currentYOffset, 0);
         
         let lastX = 0, lastY = 0, lastZ = 0;
         let foundPath = false;
@@ -2517,18 +3282,17 @@ class GCodeViewer {
         
         for (let l = 0; l <= this.currentLayerIdx; l++) {
             const layer = this.layerList[l];
-            let pathsToCount = layer.paths.length;
-            
+            let pathsToCount = layer.paths.length / 12;
             if (l === this.currentLayerIdx) {
-                pathsToCount = this.playbackIndex === -1 ? layer.paths.length : this.playbackIndex + 1;
+                pathsToCount = this.playbackIndex === -1 ? layer.paths.length / 12 : this.playbackIndex + 1;
             }
             
             for (let p = 0; p < pathsToCount; p++) {
-                const path = layer.paths[p];
-                if (path.type === 'extrude') {
+                const i = p * 12;
+                if (layer.paths[i] === 1) { // 1 = extrude
                     totalItemsToDraw++;
-                    lastX = path.x2;
-                    lastY = path.y2;
+                    lastX = layer.paths[i+3];
+                    lastY = layer.paths[i+4];
                     lastZ = layer.z;
                     foundPath = true;
                 }
@@ -2555,20 +3319,18 @@ class GCodeViewer {
         }
         
         let foundHighlight = false;
-        if (this.selectedLineIndex !== -1) {
-            // Sucht den Pfad zur ausgewählten Zeile
+        if (this.selectedLineIndex > -1) {
             for (let l = 0; l < this.layerList.length; l++) {
                 const layer = this.layerList[l];
-                for (let p = 0; p < layer.paths.length; p++) {
-                    const path = layer.paths[p];
-                    if (path.lineIndex === this.selectedLineIndex && (path.type === 'extrude' || path.type === 'travel')) {
+                for (let p = 0; p < layer.paths.length; p+=12) {
+                    if (layer.paths[p+7] === this.selectedLineIndex && (layer.paths[p] === 1 || layer.paths[p] === 0)) {
                         if (this.highlight3D) {
                             const pos = this.highlight3D.geometry.attributes.position.array;
-                            pos[0] = path.x1 + this.currentXOffset;
-                            pos[1] = path.y1 + this.currentYOffset;
+                            pos[0] = layer.paths[p+1] + this.currentXOffset;
+                            pos[1] = layer.paths[p+2] + this.currentYOffset;
                             pos[2] = layer.z; 
-                            pos[3] = path.x2 + this.currentXOffset;
-                            pos[4] = path.y2 + this.currentYOffset;
+                            pos[3] = layer.paths[p+3] + this.currentXOffset;
+                            pos[4] = layer.paths[p+4] + this.currentYOffset;
                             pos[5] = layer.z;
                             this.highlight3D.geometry.attributes.position.needsUpdate = true;
                             this.highlight3D.geometry.computeBoundingBox();
@@ -2632,12 +3394,12 @@ class GCodeViewer {
             if (this.currentLayerIdx > 0) {
                 const prevLayer = this.layerList[this.currentLayerIdx - 1];
                 this.ctx.beginPath();
-                prevLayer.paths.forEach(path => {
-                    if (path.type === 'extrude') {
-                        this.ctx.moveTo(path.x1, -path.y1);
-                        this.ctx.lineTo(path.x2, -path.y2);
+                for(let i=0; i<prevLayer.paths.length; i+=12) {
+                    if (prevLayer.paths[i] === 1) {
+                        this.ctx.moveTo(prevLayer.paths[i+1], -prevLayer.paths[i+2]);
+                        this.ctx.lineTo(prevLayer.paths[i+3], -prevLayer.paths[i+4]);
                     }
-                });
+                }
                 this.ctx.strokeStyle = `rgba(0, 188, 212, ${0.15 * Math.min(1, this.scale)})`; // Fade out even more when zoomed out
                 this.ctx.lineWidth = prevLw;
                 this.ctx.lineCap = 'round';
@@ -2649,45 +3411,59 @@ class GCodeViewer {
             let highlightedPath = null;
             
             // Limit paths for playback
-            const activePaths = this.playbackIndex === -1 
-                ? currentLayer.paths 
-                : currentLayer.paths.slice(0, this.playbackIndex + 1);
+            let activePathsEnd = this.playbackIndex === -1 
+                  ? currentLayer.paths.length 
+                  : (this.playbackIndex + 1) * 12;
+              if (activePathsEnd > currentLayer.paths.length) activePathsEnd = currentLayer.paths.length;
+              const activePaths = currentLayer.paths;
 
             // --- OPTIMIZATION: Batch render Travel Paths ---
             if (this.showTravelMoves) {
                 this.ctx.beginPath();
-                activePaths.forEach(path => {
-                    if (path.lineIndex === this.selectedLineIndex) { highlightedPath = path; return; }
-                    if (path.type === 'travel') {
-                        this.ctx.moveTo(path.x1, -path.y1);
-                        this.ctx.lineTo(path.x2, -path.y2);
+                for (let i = 0; i < activePathsEnd; i += 12) {
+                    let lineIndex = activePaths[i+7];
+                    if (lineIndex === this.selectedLineIndex) { 
+                        highlightedPath = {
+                            x1: activePaths[i+1], y1: activePaths[i+2],
+                            x2: activePaths[i+3], y2: activePaths[i+4]
+                        };
+                        continue; 
                     }
-                });
+                    if (activePaths[i] === 0) {
+                        this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
+                        this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
+                    }
+                }
                 this.ctx.strokeStyle = `rgba(0, 170, 255, ${dynamicAlpha})`;
                 this.ctx.lineWidth = 0.5 / this.scale;
                 this.ctx.stroke();
             } else {
                 // Find highlighted path even if not drawing travel
-                activePaths.forEach(path => {
-                    if (path.lineIndex === this.selectedLineIndex) highlightedPath = path;
-                });
+                for (let i = 0; i < activePathsEnd; i += 12) {
+                    if (activePaths[i+7] === this.selectedLineIndex) {
+                        highlightedPath = {
+                            x1: activePaths[i+1], y1: activePaths[i+2],
+                            x2: activePaths[i+3], y2: activePaths[i+4]
+                        };
+                    }
+                }
             }
 
             // --- OPTIMIZATION: Batch render Extrude Paths ---
             this.ctx.globalAlpha = dynamicAlpha;
             
-            if (this.colorMode === 'heatmap' || this.colorMode === 'feature') {
-                // INDIVIDUAL RENDER MODE (Heatmap, Flow or Feature)
+            if (this.colorMode === 'heatmap' || this.colorMode === 'feature' || this.colorMode === 'kinematics' || this.colorMode === 'vfa') {
+                // INDIVIDUAL RENDER MODE (Heatmap, Flow, Feature or VFA)
                 // Pass 1: Draw black borders for all segments (Skip if zoomed out to remove moiré)
                 if (this.scale > 1.2) {
                     this.ctx.beginPath();
-                    activePaths.forEach(path => {
-                        if (path.lineIndex === this.selectedLineIndex) return;
-                        if (path.type === 'extrude') {
-                            this.ctx.moveTo(path.x1, -path.y1);
-                            this.ctx.lineTo(path.x2, -path.y2);
-                        }
-                    });
+                    for (let i = 0; i < activePathsEnd; i += 12) {
+                    if (activePaths[i+7] === this.selectedLineIndex) continue;
+                    if (activePaths[i] === 1) {
+                        this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
+                        this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
+                    }
+                }
                     this.ctx.strokeStyle = '#000000'; // Dark border for 3D look
                     this.ctx.lineWidth = borderLw;
                     this.ctx.lineCap = 'round';
@@ -2696,43 +3472,94 @@ class GCodeViewer {
                 }
                 
                 // Pass 2: Draw colored cores
-                activePaths.forEach(path => {
-                    if (path.lineIndex === this.selectedLineIndex) return;
-                    if (path.type === 'extrude') {
+                for (let i = 0; i < activePathsEnd; i += 12) {
+                    if (activePaths[i+7] === this.selectedLineIndex) continue;
+                    if (activePaths[i] === 1) {
                         this.ctx.beginPath();
-                        this.ctx.moveTo(path.x1, -path.y1);
-                        this.ctx.lineTo(path.x2, -path.y2);
+                        this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
+                        this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
+                        
+                        let feedrate = activePaths[i+5];
+                        let v_real = activePaths[i+9];
                         
                         if (this.colorMode === 'heatmap') {
-                            const speedMms = Math.round(path.feedrate / 60);
-                            const hue = Math.max(0, 240 - (speedMms * 1.5));
+                            const speedMms = Math.round(feedrate / 60);
+                            const maxS = this.maxSpeedNormal || 240;
+                            const ratio = Math.max(0, Math.min(1.0, speedMms / maxS));
+                            const hue = 240 * (1 - ratio);
                             this.ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                        } else if (this.colorMode === 'vfa') {
+                            const fTypeId = activePaths[i+8];
+                            if (fTypeId === 1) { // Outer Wall
+                                const speed = feedrate / 60; // Target Speed
+                                const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
+                                const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
+                                const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
+                                const vfa2Max = parseFloat(document.getElementById('vfa2-max')?.value) || 110;
+                                if ((speed >= vfa1Min && speed <= vfa1Max) || (speed >= vfa2Min && speed <= vfa2Max)) {
+                                    this.ctx.strokeStyle = '#e91e63'; // Magenta
+                                } else {
+                                    this.ctx.strokeStyle = '#4caf50'; // Green
+                                }
+                            } else {
+                                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; // Gray ignored
+                            }
+                        } else if (this.colorMode === 'kinematics') {
+                            if (!this.showKinematicsGradient) {
+                                const maxS = this.maxSpeedKinematics || 240;
+                                const ratio = Math.max(0, Math.min(1.0, v_real / maxS));
+                                const hue = 240 * (1 - ratio);
+                                this.ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                            } else {
+                                const v_target = feedrate / 60.0;
+                                if (v_target > 0) {
+                                    const ratio = Math.min(1.0, v_real / v_target);
+                                    let hue = 0;
+                                    if (ratio >= 0.95) hue = 120; // Grün
+                                    else if (ratio <= 0.3) hue = 0; // Rot
+                                    else {
+                                        hue = ((ratio - 0.3) / 0.65) * 120;
+                                    }
+                                    this.ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                                } else {
+                                    this.ctx.strokeStyle = '#ffb300';
+                                }
+                            }
+                        } else if (this.colorMode === 'feature') {
+                            const fTypeId = activePaths[i+8];
+                            switch(fTypeId) {
+                                case 1: this.ctx.strokeStyle = '#ff8c00'; break;
+                                case 2: this.ctx.strokeStyle = '#ffeb3b'; break;
+                                case 3: this.ctx.strokeStyle = '#f44336'; break;
+                                case 4: this.ctx.strokeStyle = '#9c27b0'; break;
+                                case 5: this.ctx.strokeStyle = '#e91e63'; break;
+                                case 6: this.ctx.strokeStyle = '#4caf50'; break;
+                                case 7: this.ctx.strokeStyle = '#2e7d32'; break;
+                                case 8: this.ctx.strokeStyle = '#03a9f4'; break;
+                                case 9: this.ctx.strokeStyle = '#ffffff'; break;
+                                case 10: this.ctx.strokeStyle = '#9e9e9e'; break;
+                                default: this.ctx.strokeStyle = '#ffb300'; break;
+                            }
                         } else {
-                            const ft = path.featureType ? path.featureType.toLowerCase() : '';
-                            if (ft.includes('external perimeter')) this.ctx.strokeStyle = '#ffaa00';
-                            else if (ft.includes('perimeter')) this.ctx.strokeStyle = '#00ff00';
-                            else if (ft.includes('infill')) this.ctx.strokeStyle = '#ff0000';
-                            else if (ft.includes('support')) this.ctx.strokeStyle = '#00ffff';
-                            else if (ft.includes('skirt') || ft.includes('brim')) this.ctx.strokeStyle = '#0000ff';
-                            else this.ctx.strokeStyle = '#ffb300';
+                            this.ctx.strokeStyle = '#ffb300';
                         }
                         
-                        this.ctx.lineWidth = coreLw; // Inner core
+                        this.ctx.lineWidth = coreLw;
                         this.ctx.lineCap = 'round';
                         this.ctx.lineJoin = 'round';
                         this.ctx.stroke();
                     }
-                });
+                }
             } else {
                 // NORMAL RENDER MODE
                 this.ctx.beginPath();
-                activePaths.forEach(path => {
-                    if (path.lineIndex === this.selectedLineIndex) return; 
-                    if (path.type === 'extrude') {
-                        this.ctx.moveTo(path.x1, -path.y1);
-                        this.ctx.lineTo(path.x2, -path.y2);
+                for (let i = 0; i < activePathsEnd; i += 12) {
+                    if (activePaths[i+7] === this.selectedLineIndex) continue;
+                    if (activePaths[i] === 1) {
+                        this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
+                        this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
                     }
-                });
+                }
                 
                 // Pass 1: Border (Skip when zoomed out to completely remove dark moiré/noise)
                 if (this.scale > 1.2) {
@@ -2752,15 +3579,48 @@ class GCodeViewer {
             this.ctx.globalAlpha = 1.0;
             
             // Draw nozzle indicator if scrubbing or playing
-            if (this.playbackIndex !== -1 && activePaths.length > 0) {
-                const lastPath = activePaths[activePaths.length - 1];
-                this.ctx.beginPath();
-                this.ctx.arc(lastPath.x2, -lastPath.y2, 1.5 * sf, 0, Math.PI * 2);
+            if (this.playbackIndex !== -1 && activePathsEnd > 0) {
+                    const lastIdx = activePathsEnd - 12;
+                    const lx2 = activePaths[lastIdx + 3];
+                    const ly2 = activePaths[lastIdx + 4];
+                    this.ctx.beginPath();
+                    this.ctx.arc(lx2, -ly2, 1.5 * sf, 0, Math.PI * 2);
                 this.ctx.fillStyle = '#ff0000'; // Red core
                 this.ctx.fill();
                 this.ctx.strokeStyle = '#ffffff'; // White border
                 this.ctx.lineWidth = 0.5 * sf;
                 this.ctx.stroke();
+            }
+
+            // Render Corner Warnings Overlay
+            if (this.showCornerAudit && this.cornerAuditByLayer && this.cornerAuditByLayer[this.currentLayerIdx]) {
+                const corners = this.cornerAuditByLayer[this.currentLayerIdx];
+                for (let c of corners) {
+                    const r = (c.riskLevel === 'red' ? 4.5 : 3.5) * sf;
+                    
+                    // Outer ring for high risk
+                    if (c.riskLevel === 'red') {
+                        this.ctx.beginPath();
+                        this.ctx.arc(c.x, -c.y, 7.5 * sf, 0, Math.PI * 2);
+                        this.ctx.strokeStyle = 'rgba(255, 51, 68, 0.5)';
+                        this.ctx.lineWidth = 1.2 * sf;
+                        this.ctx.stroke();
+                    }
+                    
+                    // Main warning point
+                    this.ctx.beginPath();
+                    this.ctx.arc(c.x, -c.y, r, 0, Math.PI * 2);
+                    if (c.riskLevel === 'red') {
+                        this.ctx.fillStyle = '#ff3344';
+                        this.ctx.strokeStyle = '#ffffff';
+                    } else {
+                        this.ctx.fillStyle = '#f1c40f';
+                        this.ctx.strokeStyle = '#000000';
+                    }
+                    this.ctx.lineWidth = 1.0 * sf;
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                }
             }
 
             // Highlight chosen line
@@ -2818,6 +3678,222 @@ class GCodeViewer {
             }
         }
         
+        const linterList = document.getElementById('linter-warnings-list');
+                if (linterList) {
+            linterList.innerHTML = '';
+            let hasWarnings = false;
+            
+            const getSeverity = (msg, type) => {
+                if (type === 'thermal_risk' || type === 'klipper_home' || msg.includes('Cold Extrusion')) return { level: 'critical', bg: 'rgba(231, 76, 60, 0.15)', border: 'rgba(231, 76, 60, 0.4)', color: '#ff6b6b', icon: '🔴' };
+                if (type === 'high_flow' || msg.includes('Sehr hohe Geschwindigkeit')) return { level: 'warning', bg: 'rgba(241, 196, 15, 0.15)', border: 'rgba(241, 196, 15, 0.4)', color: '#f1c40f', icon: '🟡' };
+                return { level: 'info', bg: 'rgba(52, 152, 219, 0.15)', border: 'rgba(52, 152, 219, 0.4)', color: '#3498db', icon: '🟢' };
+            };
+
+            if (this.workerDiagnostics && this.workerDiagnostics.warnings) {
+                this.workerDiagnostics.warnings.forEach(diag => {
+                    hasWarnings = true;
+                    const sev = getSeverity(diag.msg, diag.type);
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.alignItems = 'center';
+                    row.style.padding = '8px 12px';
+                    row.style.background = sev.bg;
+                    row.style.border = '1px solid ' + sev.border;
+                    row.style.borderRadius = '4px';
+                    row.style.marginBottom = '6px';
+                    const textSpan = document.createElement('span');
+                    textSpan.style.color = sev.color;
+                    textSpan.style.fontSize = '12px';
+                    textSpan.innerHTML = sev.icon + " <strong>Global:</strong> " + diag.msg;
+                    row.appendChild(textSpan);
+                    
+                    if (diag.layerIndex !== undefined) {
+                        const jumpBtn = document.createElement('button');
+                        jumpBtn.className = 'upload-btn';
+                        jumpBtn.style.padding = '4px 8px';
+                        jumpBtn.style.fontSize = '11px';
+                        jumpBtn.style.minWidth = 'auto';
+                        jumpBtn.innerText = window.currentLang === 'en' ? 'Jump to Layer' : 'Zum Layer springen';
+                        jumpBtn.onclick = () => {
+                            if (window.closeAllModals) window.closeAllModals();
+                            this.gcodeViewMode = 'layer';
+                            const modeSelect = document.getElementById('gcode-view-mode');
+                            if (modeSelect) modeSelect.value = 'layer';
+                            
+                            this.currentLayerIdx = diag.layerIndex;
+                            const slider = document.getElementById('layer-slider');
+                            if (slider) {
+                                slider.value = diag.layerIndex;
+                                // update slider background color
+                                const percent = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+                                slider.style.background = 'linear-gradient(to right, var(--accent-color) ' + percent + '%, var(--border-color) ' + percent + '%)';
+                            }
+                            
+                            this.updateLayerIndicator();
+                            this.playbackIndex = -1;
+                            this.playbackFloatIndex = 0;
+                            this.updateGcodeListAsync();
+                            this.draw();
+                            this.rebuild3DScene();
+                        };
+                        row.appendChild(jumpBtn);
+                    }
+                    
+                    linterList.appendChild(row);
+                });
+            }
+
+            // Corner & Deceleration Auditor warnings
+            if (this.cornerAuditResults && this.cornerAuditResults.length > 0) {
+                const bulgeCorners = this.cornerAuditResults.filter(c => c.riskLevel === 'red');
+                const paStressCorners = this.cornerAuditResults.filter(c => c.riskLevel === 'yellow');
+                
+                if (bulgeCorners.length > 0) {
+                    hasWarnings = true;
+                    const firstLayer = bulgeCorners[0].layerIndex;
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.alignItems = 'center';
+                    row.style.padding = '8px 12px';
+                    row.style.background = 'rgba(231, 76, 60, 0.15)';
+                    row.style.border = '1px solid rgba(231, 76, 60, 0.4)';
+                    row.style.borderRadius = '4px';
+                    row.style.marginBottom = '6px';
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.style.color = '#ff6b6b';
+                    textSpan.style.fontSize = '12px';
+                    textSpan.innerHTML = `🔴 <strong>Eck-Auditor:</strong> ${bulgeCorners.length} Ecken mit hoher Wulst-Gefahr (Bulging) bei starker Verzögerung (Δv &gt; 60 mm/s) ohne Pressure Advance!`;
+                    row.appendChild(textSpan);
+                    
+                    const jumpBtn = document.createElement('button');
+                    jumpBtn.className = 'upload-btn';
+                    jumpBtn.style.padding = '4px 8px';
+                    jumpBtn.style.fontSize = '11px';
+                    jumpBtn.style.minWidth = 'auto';
+                    jumpBtn.innerText = window.currentLang === 'en' ? `Jump to Layer ${firstLayer}` : `Zu Layer ${firstLayer} springen`;
+                    jumpBtn.onclick = () => {
+                        if (window.closeAllModals) window.closeAllModals();
+                        this.gcodeViewMode = 'layer';
+                        const modeSelect = document.getElementById('gcode-view-mode');
+                        if (modeSelect) modeSelect.value = 'layer';
+                        
+                        this.currentLayerIdx = firstLayer;
+                        const slider = document.getElementById('layer-slider');
+                        if (slider) {
+                            slider.value = firstLayer;
+                            const percent = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+                            slider.style.background = 'linear-gradient(to right, var(--accent-color) ' + percent + '%, var(--border-color) ' + percent + '%)';
+                        }
+                        this.updateLayerIndicator();
+                        this.playbackIndex = -1;
+                        this.playbackFloatIndex = 0;
+                        this.updateGcodeListAsync();
+                        this.draw();
+                        this.rebuild3DScene();
+                    };
+                    row.appendChild(jumpBtn);
+                    linterList.appendChild(row);
+                } else if (paStressCorners.length > 0) {
+                    hasWarnings = true;
+                    const firstLayer = paStressCorners[0].layerIndex;
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.alignItems = 'center';
+                    row.style.padding = '8px 12px';
+                    row.style.background = 'rgba(241, 196, 15, 0.15)';
+                    row.style.border = '1px solid rgba(241, 196, 15, 0.4)';
+                    row.style.borderRadius = '4px';
+                    row.style.marginBottom = '6px';
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.style.color = '#f1c40f';
+                    textSpan.style.fontSize = '12px';
+                    textSpan.innerHTML = `🟡 <strong>Eck-Auditor:</strong> ${paStressCorners.length} PA-Belastungspunkte (Extruder-Druck durch aktives PA kompensiert).`;
+                    row.appendChild(textSpan);
+                    
+                    const jumpBtn = document.createElement('button');
+                    jumpBtn.className = 'upload-btn';
+                    jumpBtn.style.padding = '4px 8px';
+                    jumpBtn.style.fontSize = '11px';
+                    jumpBtn.style.minWidth = 'auto';
+                    jumpBtn.innerText = window.currentLang === 'en' ? `Jump to Layer ${firstLayer}` : `Zu Layer ${firstLayer} springen`;
+                    jumpBtn.onclick = () => {
+                        if (window.closeAllModals) window.closeAllModals();
+                        this.gcodeViewMode = 'layer';
+                        const modeSelect = document.getElementById('gcode-view-mode');
+                        if (modeSelect) modeSelect.value = 'layer';
+                        
+                        this.currentLayerIdx = firstLayer;
+                        const slider = document.getElementById('layer-slider');
+                        if (slider) {
+                            slider.value = firstLayer;
+                            const percent = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+                            slider.style.background = 'linear-gradient(to right, var(--accent-color) ' + percent + '%, var(--border-color) ' + percent + '%)';
+                        }
+                        this.updateLayerIndicator();
+                        this.playbackIndex = -1;
+                        this.playbackFloatIndex = 0;
+                        this.updateGcodeListAsync();
+                        this.draw();
+                        this.rebuild3DScene();
+                    };
+                    row.appendChild(jumpBtn);
+                    linterList.appendChild(row);
+                }
+            }
+
+            for (const [lineIdx, warnings] of Object.entries(this.lintWarnings)) {
+                hasWarnings = true;
+                warnings.forEach(w => {
+                    const sev = getSeverity(w, null);
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.alignItems = 'center';
+                    row.style.padding = '8px 12px';
+                    row.style.background = sev.bg;
+                    row.style.border = '1px solid ' + sev.border;
+                    row.style.borderRadius = '4px';
+                    row.style.marginBottom = '6px';
+                    const textSpan = document.createElement('span');
+                    textSpan.style.color = sev.color;
+                    textSpan.style.fontSize = '12px';
+                    const lineText = window.currentLang === 'en' ? 'Line' : 'Zeile';
+                    textSpan.innerHTML = sev.icon + " <strong>" + lineText + " " + (parseInt(lineIdx) + 1) + ":</strong> " + w;
+                    
+                    const jumpBtn = document.createElement('button');
+                    jumpBtn.className = 'upload-btn';
+                    jumpBtn.style.padding = '4px 8px';
+                    jumpBtn.style.fontSize = '11px';
+                    jumpBtn.style.minWidth = 'auto';
+                    jumpBtn.innerText = window.currentLang === 'en' ? 'Jump to Line' : 'Zur Zeile springen';
+                    jumpBtn.onclick = () => {
+                        if (window.closeAllModals) window.closeAllModals();
+                        this.gcodeViewMode = 'all';
+                        this.gcodeCurrentPage = Math.floor(parseInt(lineIdx) / parseInt(this.gcodePageSize)) + 1;
+                        this.updateGcodeListAsync().then(() => {
+                            const newEl = document.getElementById("line-" + lineIdx);
+                            if (newEl) {
+                                newEl.classList.add('active');
+                                this.safeScrollToLine(newEl, 'smooth', 'center');
+                            }
+                        });
+                    };
+                    
+                    row.appendChild(textSpan);
+                    row.appendChild(jumpBtn);
+                    linterList.appendChild(row);
+                });
+            }
+            if (!hasWarnings) {
+                linterList.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding: 20px;" data-i18n="stats.linter_ok">${window.currentLang === 'en' ? 'No errors found.' : 'Keine Fehler gefunden.'}</div>`;
+            }
+        }
+        
         this.renderHistogram();
     }
 
@@ -2828,13 +3904,18 @@ class GCodeViewer {
         this.speedDistribution = {};
         if (this.layerList) {
             this.layerList.forEach(layer => {
-                layer.paths.forEach(path => {
-                    if (path.type === 'extrude') {
-                        const speedMms = Math.round(path.feedrate / 60);
+                for(let i=0; i<layer.paths.length; i+=12) {
+                    if (layer.paths[i] === 1) { // 1 = extrude
+                        let speedMms;
+                        if (this.colorMode === 'kinematics') {
+                            speedMms = Math.round(layer.paths[i+9] || 0);
+                        } else {
+                            speedMms = Math.round(layer.paths[i+5] / 60);
+                        }
                         const bucket = Math.floor(speedMms / 10) * 10;
                         this.speedDistribution[bucket] = (this.speedDistribution[bucket] || 0) + 1;
                     }
-                });
+                }
             });
         }
         
@@ -2851,9 +3932,19 @@ class GCodeViewer {
             const count = this.speedDistribution[bucket];
             const heightPct = Math.max(5, (count / maxCount) * 100); // at least 5% so it's visible
             
-            // Calculate a color from blue (slow) to red (fast)
-            const hue = Math.max(0, 240 - (bucket * 1.5));
-            const color = `hsl(${hue}, 80%, 50%)`;
+            let color;
+            if (this.colorMode === 'kinematics' && this.showKinematicsGradient) {
+                // Efficiency gradient histogram doesn't perfectly map to bucket since bucket is just v_real
+                const maxS = this.maxSpeedKinematics || 240;
+                const ratio = Math.max(0, Math.min(1.0, bucket / maxS));
+                const hue = 240 * (1 - ratio);
+                color = `hsl(${hue}, 80%, 50%)`;
+            } else {
+                const maxS = this.colorMode === 'kinematics' ? (this.maxSpeedKinematics || 240) : (this.maxSpeedNormal || 240);
+                const ratio = Math.max(0, Math.min(1.0, bucket / maxS));
+                const hue = 240 * (1 - ratio);
+                color = `hsl(${hue}, 80%, 50%)`;
+            }
             
             const bar = document.createElement('div');
             bar.style.width = '100%';
@@ -2961,45 +4052,49 @@ class GCodeViewer {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    window.gcodeApp = new GCodeViewer();
+    setTimeout(() => {
+        window.gcodeApp = new GCodeViewer();
+    }, 0);
 });
 
 
 // --- Mobile UX: Canvas Interaction Lock ---
 document.addEventListener('DOMContentLoaded', () => {
-    const enableBtn = document.getElementById('enable-interaction-btn');
-    const disableBtn = document.getElementById('disable-interaction-btn');
-    const overlay = document.getElementById('mobile-canvas-overlay');
-    
-    // Show overlay if on mobile screen initially
-    if (window.innerWidth <= 1024) {
-        if (overlay) overlay.style.display = 'flex';
-    }
-    
-    window.addEventListener('resize', () => {
+    setTimeout(() => {
+        const enableBtn = document.getElementById('enable-interaction-btn');
+        const disableBtn = document.getElementById('disable-interaction-btn');
+        const overlay = document.getElementById('mobile-canvas-overlay');
+        
+        // Show overlay if on mobile screen initially
         if (window.innerWidth <= 1024) {
-            if (overlay && !document.body.classList.contains('canvas-interaction-locked')) {
-                overlay.style.display = 'flex';
-            }
-        } else {
-            if (overlay) overlay.style.display = 'none';
-            document.body.classList.remove('canvas-interaction-locked');
-            if (disableBtn) disableBtn.style.display = 'none';
-        }
-    });
-
-    if (enableBtn) {
-        enableBtn.addEventListener('click', () => {
-            document.body.classList.add('canvas-interaction-locked');
-        });
-    }
-    
-    if (disableBtn) {
-        disableBtn.addEventListener('click', () => {
-            document.body.classList.remove('canvas-interaction-locked');
             if (overlay) overlay.style.display = 'flex';
+        }
+        
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 1024) {
+                if (overlay && !document.body.classList.contains('canvas-interaction-locked')) {
+                    overlay.style.display = 'flex';
+                }
+            } else {
+                if (overlay) overlay.style.display = 'none';
+                document.body.classList.remove('canvas-interaction-locked');
+                if (disableBtn) disableBtn.style.display = 'none';
+            }
         });
-    }
+
+        if (enableBtn) {
+            enableBtn.addEventListener('click', () => {
+                document.body.classList.add('canvas-interaction-locked');
+            });
+        }
+        
+        if (disableBtn) {
+            disableBtn.addEventListener('click', () => {
+                document.body.classList.remove('canvas-interaction-locked');
+                if (overlay) overlay.style.display = 'flex';
+            });
+        }
+    }, 0);
 });
 
 // Global Modal Functions
@@ -3035,4 +4130,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => updateSliderColor(slider), 100);
     });
 });
+
+window.addEventListener('load', () => { document.body.classList.remove('preload'); });
+
+
+
+
+
+if (window.updateLegend) window.updateLegend();
 

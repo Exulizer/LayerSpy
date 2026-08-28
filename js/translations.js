@@ -52,9 +52,13 @@ const translations = {
         "view.normal": "Normal",
         "view.feature": "Feature",
         "view.speed_mode": "Speed",
+        "view.kinematics": "Actual Speed",
+        "view.kinematics_gradient": "Efficiency Gradient",
+        "view.risk_mode": "Risk",
+        "view.vfa": "VFA Radar",
         "view.travels": "Travels",
-        "view.speed_low": "10 mm/s",
-        "view.speed_high": "50+ mm/s",
+        "view.speed_low": "0 mm/s",
+        "view.speed_high": "240+ mm/s",
         "view.layer0": "Layer: 0",
         "tab.inspector": "🔎 G-Code Inspector",
         "tab.explorer": "G-Code Explorer",
@@ -119,7 +123,8 @@ const translations = {
         "update.limit.link": "View Releases on GitHub",
         
         "cookie.title": "Your privacy is important to us! 🍪",
-        
+        "cookie.desc": "We use essential storage technologies to make this website work. If you click on \"Accept All\", you also agree to the use of <strong>Google Analytics</strong>, which we use to collect anonymized data to improve our website.",
+        "cookie.moreInfo": "More Info",        
         "cookie.accept": "Accept All",
         "cookie.essential": "Essential Only",
         "select.lines.50": "50 Lines",
@@ -172,6 +177,16 @@ const translations = {
         "tuning.title": "⚙️ Parameter Tuning",
         "tuning.calc": "Calculate",
         "tuning.reset": "Reset",
+        "tuning.vfa": "VFA & Ghosting Radar",
+        "tooltip.vfa": "Highlights outer walls printed in known stepper motor resonance or vibration bands (Ghosting).",
+        "tuning.corner_audit": "Corner & Deceleration Auditor",
+        "tooltip.corner_audit": "Detects sharp corners with heavy deceleration and checks Pressure Advance status.",
+        "view.corner_overlay": "Corner Warnings",
+        "corner.bulge_risk": "High Bulge Risk",
+        "corner.pa_stress": "PA Stress Point",
+        "corner.pa_active": "Pressure Advance: Active ({val})",
+        "corner.pa_missing": "Pressure Advance: Not configured (Bulge risk!)",
+        "tuning.download": "Download G-Code",
         "tuning.nozzle": "Nozzle (Hotend)",
         "tuning.bed": "Print Bed",
         "tuning.retract": "Retract",
@@ -197,7 +212,9 @@ const translations = {
         "tooltip.speed_dist": "Distribution of printing speeds",
         "stats.speed_dist": "📊 Speed Distribution",
         "stats.speed_slow": "Slow (0 mm/s)",
-        "stats.speed_fast": "Fast"
+        "stats.speed_fast": "Fast",
+        "stats.linter_warnings": "⚠️ G-Code Warnings (Linter)",
+        "stats.linter_ok": "No errors found."
     },
     de: {
         "tooltip.1": "Auf Originalwerte zurücksetzen",
@@ -250,6 +267,10 @@ const translations = {
         "view.normal": "Normal",
         "view.feature": "Feature",
         "view.speed_mode": "Speed",
+        "view.kinematics": "Echte Kinematik",
+        "view.kinematics_gradient": "Effizienz-Farbverlauf",
+        "view.risk_mode": "Risiko",
+        "view.vfa": "VFA Radar",
         "view.travels": "Leerfahrten",
         "view.speed_low": "10 mm/s",
         "view.speed_high": "50+ mm/s",
@@ -317,7 +338,8 @@ const translations = {
         "update.limit.link": "Releases auf GitHub ansehen",
         
         "cookie.title": "Ihre Privatsphäre ist uns wichtig! 🍪",
-        
+        "cookie.desc": "Wir nutzen essenzielle Speichertechnologien, damit diese Webseite funktioniert. Wenn Sie auf \"Alles akzeptieren\" klicken, stimmen Sie zusätzlich der Nutzung von <strong>Google Analytics</strong> zu, mit dem wir anonymisierte Daten zur Verbesserung unserer Webseite erfassen.",
+        "cookie.moreInfo": "Mehr Infos",        
         "cookie.accept": "Alles akzeptieren",
         "cookie.essential": "Nur essenzielle",
         "select.lines.50": "50 Zeilen",
@@ -370,6 +392,16 @@ const translations = {
         "tuning.title": "⚙️ Parameter-Tuning",
         "tuning.calc": "Berechnen",
         "tuning.reset": "Reset",
+        "tuning.vfa": "VFA & Ghosting Radar",
+        "tooltip.vfa": "Zeigt Außenwände, die in bekannten Resonanz- oder Schrittmotor-Vibrationsbereichen (Ghosting) gedruckt werden.",
+        "tuning.corner_audit": "Eck- & Verzögerungs-Auditor",
+        "tooltip.corner_audit": "Lokalisiert scharfe Ecken mit starker Verzögerung und prüft den Pressure Advance Status.",
+        "view.corner_overlay": "Ecken-Warnungen",
+        "corner.bulge_risk": "Hohe Wulst-Gefahr",
+        "corner.pa_stress": "PA-Belastungspunkt",
+        "corner.pa_active": "Pressure Advance: Aktiv ({val})",
+        "corner.pa_missing": "Pressure Advance: Nicht konfiguriert (Wulstgefahr!)",
+        "tuning.download": "G-Code Herunterladen",
         "tuning.nozzle": "Düse (Hotend)",
         "tuning.bed": "Druckbett (Bed)",
         "tuning.retract": "Retract (Einzug)",
@@ -395,7 +427,9 @@ const translations = {
         "tooltip.speed_dist": "Verteilung der Druckgeschwindigkeiten",
         "stats.speed_dist": "📊 Geschwindigkeits-Verteilung",
         "stats.speed_slow": "Langsam (0 mm/s)",
-        "stats.speed_fast": "Schnell"
+        "stats.speed_fast": "Schnell",
+        "stats.linter_warnings": "⚠️ G-Code Warnungen (Linter)",
+        "stats.linter_ok": "Keine Fehler gefunden."
     }
 };
 
