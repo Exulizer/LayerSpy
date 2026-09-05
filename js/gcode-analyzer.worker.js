@@ -174,15 +174,25 @@ self.onmessage = async function(e) {
     let processChunk = function(startIndex) {
         const chunkEnd = Math.min(startIndex + chunkSize, totalLines);
         for(let j = startIndex; j < chunkEnd; j++) {
-            const cleanLine = lines[j].trim();
-            if (cleanLine.startsWith(';')) {
-                if (cleanLine.toUpperCase().startsWith(';TYPE:')) {
-                    currentFeatureType = cleanLine.substring(6).trim();
-                } else if (cleanLine.toUpperCase().startsWith('; TYPE:')) {
-                    currentFeatureType = cleanLine.substring(7).trim();
+            const line = lines[j];
+            const cleanLine = line.trim();
+            
+            const commentIdx = line.indexOf(';');
+            if (commentIdx !== -1) {
+                const comment = line.substring(commentIdx + 1).trim();
+                const upperComment = comment.toUpperCase();
+                if (upperComment.startsWith('TYPE:') || upperComment.startsWith('TYPE :')) {
+                    currentFeatureType = comment.substring(comment.indexOf(':') + 1).trim();
+                } else if (upperComment.startsWith('FEATURE:') || upperComment.startsWith('FEATURE :') || upperComment.startsWith('_FEATURE:')) {
+                    currentFeatureType = comment.substring(comment.indexOf(':') + 1).trim();
+                } else if (upperComment.startsWith('[FEATURE]')) {
+                    currentFeatureType = comment.substring(9).trim();
+                } else if (upperComment.startsWith('FEATURE ')) {
+                    currentFeatureType = comment.substring(8).trim();
                 }
-                continue;
             }
+
+            if (cleanLine.startsWith(';')) continue;
 
             if (cleanLine === 'M83') isRelativeE = true;
             if (cleanLine === 'M82') isRelativeE = false;
@@ -445,16 +455,32 @@ self.onmessage = async function(e) {
             
             const fTypeStr = (p.featureType || '').toUpperCase();
             let fTypeId = 0;
-            if (fTypeStr.includes('OUTER') || fTypeStr === 'EXTERNAL PERIMETER') fTypeId = 1;
-            else if (fTypeStr.includes('INNER') || fTypeStr.includes('PERIMETER') || fTypeStr.includes('WALL')) fTypeId = 2;
-            else if (fTypeStr.includes('SOLID INFILL') || fTypeStr.includes('BOTTOM') || fTypeStr.includes('INTERNAL SOLID')) fTypeId = 4;
-            else if (fTypeStr.includes('INFILL') || fTypeStr.includes('FILL') || fTypeStr.includes('SPARSE')) fTypeId = 3;
-            else if (fTypeStr.includes('TOP') || fTypeStr.includes('SKIN') || fTypeStr.includes('IRONING')) fTypeId = 5;
-            else if (fTypeStr.includes('SUPPORT INTERFACE')) fTypeId = 7;
-            else if (fTypeStr.includes('SUPPORT')) fTypeId = 6;
-            else if (fTypeStr.includes('BRIDGE') || fTypeStr.includes('OVERHANG')) fTypeId = 8;
-            else if (fTypeStr.includes('GAP')) fTypeId = 9;
-            else if (fTypeStr.includes('SKIRT') || fTypeStr.includes('BRIM') || fTypeStr.includes('TOWER')) fTypeId = 10;
+            if (fTypeStr.includes('OUTER') || 
+                fTypeStr.includes('EXTERNAL') || 
+                fTypeStr.includes('WALL-OUTER') || 
+                fTypeStr.includes('OUTER WALL') || 
+                fTypeStr.includes('OVERHANG PERIMETER') || 
+                fTypeStr.includes('OVERHANG WALL')) {
+                fTypeId = 1;
+            } else if (fTypeStr.includes('INNER') || fTypeStr.includes('PERIMETER') || fTypeStr.includes('WALL') || fTypeStr.includes('WALL-INNER')) {
+                fTypeId = 2;
+            } else if (fTypeStr.includes('SOLID INFILL') || fTypeStr.includes('BOTTOM') || fTypeStr.includes('INTERNAL SOLID')) {
+                fTypeId = 4;
+            } else if (fTypeStr.includes('INFILL') || fTypeStr.includes('FILL') || fTypeStr.includes('SPARSE')) {
+                fTypeId = 3;
+            } else if (fTypeStr.includes('TOP') || fTypeStr.includes('SKIN') || fTypeStr.includes('IRONING')) {
+                fTypeId = 5;
+            } else if (fTypeStr.includes('SUPPORT INTERFACE')) {
+                fTypeId = 7;
+            } else if (fTypeStr.includes('SUPPORT')) {
+                fTypeId = 6;
+            } else if (fTypeStr.includes('BRIDGE') || fTypeStr.includes('OVERHANG')) {
+                fTypeId = 8;
+            } else if (fTypeStr.includes('GAP')) {
+                fTypeId = 9;
+            } else if (fTypeStr.includes('SKIRT') || fTypeStr.includes('BRIM') || fTypeStr.includes('TOWER')) {
+                fTypeId = 10;
+            }
             
             let s = s_arr[j];
             let v_target = v_target_arr[j];

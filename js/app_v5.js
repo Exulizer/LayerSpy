@@ -1,22 +1,33 @@
 
 // --- i18n Localization ---
 
-
 function setLanguage(lang) {
     if (!window.i18n || !window.i18n[lang]) return;
-        // Update footer links for subpages
-        ['datenschutz', 'impressum', 'kontakt'].forEach(page => {
-            document.querySelectorAll('a[href^="' + page + '"]').forEach(a => {
-                a.href = lang === 'en' ? page + '_en.html' : page + '.html';
-            });
+    
+    // Update footer links for subpages
+    ['datenschutz', 'impressum', 'kontakt'].forEach(page => {
+        document.querySelectorAll('a[href^="' + page + '"]').forEach(a => {
+            a.href = lang === 'en' ? page + '_en.html' : page + '.html';
         });
+    });
 
     window.currentLang = lang;
     localStorage.setItem('layerspy_lang', lang);
     document.documentElement.lang = lang;
     if(window.translateModals) window.translateModals();
     
-    // Reset explanation box to translate the prompt, or just force the user to click again to get the new language explanation.
+    // Update document title and meta description dynamically
+    if (window.i18n[lang]['page.title']) {
+        document.title = window.i18n[lang]['page.title'];
+    }
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+        metaDesc.setAttribute('content', lang === 'de'
+            ? 'Kostenloser 3D-Druck G-Code Viewer & Analyzer im Browser. Prüfe Druckgeschwindigkeiten, VFA-Resonanzen, Flow & Klipper-Kinematik 100% lokal.'
+            : 'Free online 3D print G-Code viewer & analyzer. Inspect print speeds, VFA resonances, volumetric flow and Klipper kinematics 100% locally in your browser.');
+    }
+    
+    // Reset explanation box to translate the prompt
     const explBox = document.getElementById('explanation-output');
     if (explBox && !explBox.querySelector('[data-i18n]')) {
         explBox.innerHTML = '<span data-i18n="msg.click">' + window.t("msg.click") + '</span>';
@@ -69,13 +80,13 @@ function setLanguage(lang) {
 
 // Helper for dynamic strings
 window.t = function(key) {
-    window.currentLang = window.currentLang || localStorage.getItem('layerspy_lang') || 'de';
+    window.currentLang = window.currentLang || localStorage.getItem('layerspy_lang') || 'en';
     return (window.i18n && window.i18n[window.currentLang] && window.i18n[window.currentLang][key]) ? window.i18n[window.currentLang][key] : key;
 };
 
 // Apply on load
 document.addEventListener('DOMContentLoaded', () => {
-    window.currentLang = localStorage.getItem('layerspy_lang') || 'de';
+    window.currentLang = localStorage.getItem('layerspy_lang') || 'en';
     // Setup listeners
     const langEnBtn = document.getElementById('lang-en');
     const langDeBtn = document.getElementById('lang-de');
@@ -122,6 +133,15 @@ class GCodeViewer {
         this.cornerAuditByLayer = {};
         this.pressureAdvanceState = { enabled: false, value: 0, source: 'none' };
         this.cornerMarkers3D = null;
+        this.showVfaOuterOnly = true;
+        this.featureVisibility = {
+            outerWall: true,
+            innerWall: true,
+            infill: true,
+            topSurface: true,
+            bottomSurface: true,
+            support: true
+        };
         
         // Pagination state
         this.gcodeViewMode = 'layer'; // 'layer' or 'all'
@@ -533,6 +553,16 @@ class GCodeViewer {
             document.getElementById(id)?.addEventListener('input', () => this.checkVFA());
         });
 
+        const vfaOuterOnlyBtn = document.getElementById('vfa-outer-only-btn');
+        if (vfaOuterOnlyBtn) {
+            vfaOuterOnlyBtn.addEventListener('change', (e) => {
+                this.showVfaOuterOnly = e.target.checked;
+                this.checkVFA();
+                this.rebuild3DScene();
+                this.draw();
+            });
+        }
+
         document.getElementById('xoffset-slider').addEventListener('input', (e) => {
             this.currentXOffset = parseFloat(e.target.value);
             document.getElementById('xoffset-val').innerText = `${(this.currentXOffset > 0 ? '+' : '')}${this.currentXOffset.toFixed(1)} mm`;
@@ -783,9 +813,9 @@ class GCodeViewer {
                     '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#ff9800; border-radius:2px;"></div><span>High Flow</span></div>' +
                     '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#f44336; border-radius:2px;"></div><span>Melting Risk</span></div>';
             } else if (this.colorMode === 'vfa') {
-                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#e91e63; border-radius:2px;"></div><span>VFA Risk</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#4caf50; border-radius:2px;"></div><span>Safe</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:rgba(255,255,255,0.1); border-radius:2px;"></div><span>Ignored</span></div>';
+                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#ff007f; border-radius:2px; box-shadow: 0 0 4px #ff007f;"></div><span>VFA-Gefahr</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#00e676; border-radius:2px;"></div><span>Sicher</span></div>' +
+                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:rgba(100,116,139,0.5); border-radius:2px;"></div><span>Infill/Innen</span></div>';
             }
         };
         // Color Mode & Travel Mode
@@ -826,8 +856,36 @@ class GCodeViewer {
                 this.draw();
             });
         }
-        
 
+        const featureFilterMap = [
+            { id: 'filter-outer-wall', key: 'outerWall' },
+            { id: 'filter-inner-wall', key: 'innerWall' },
+            { id: 'filter-infill', key: 'infill' },
+            { id: 'filter-bottom', key: 'bottomSurface' },
+            { id: 'filter-top', key: 'topSurface' },
+            { id: 'filter-support', key: 'support' }
+        ];
+        featureFilterMap.forEach(f => {
+            const el = document.getElementById(f.id);
+            if (el) {
+                el.addEventListener('change', (e) => {
+                    this.featureVisibility[f.key] = e.target.checked;
+                    this.rebuild3DScene();
+                    this.draw();
+                });
+            }
+        });
+    }
+
+    isPathVisible(fTypeId, pType = 1) {
+        if (pType === 0) return this.showTravelMoves;
+        if (fTypeId === 1 || fTypeId === 8) return this.featureVisibility.outerWall;
+        if (fTypeId === 2) return this.featureVisibility.innerWall;
+        if (fTypeId === 3) return this.featureVisibility.infill;
+        if (fTypeId === 4) return this.featureVisibility.bottomSurface;
+        if (fTypeId === 5) return this.featureVisibility.topSurface;
+        if (fTypeId === 6 || fTypeId === 7) return this.featureVisibility.support;
+        return true;
     }
 
     resetSettings(skipUpdate = false) {
@@ -1305,15 +1363,25 @@ self.onmessage = async function(e) {
     let processChunk = function(startIndex) {
         const chunkEnd = Math.min(startIndex + chunkSize, totalLines);
         for(let j = startIndex; j < chunkEnd; j++) {
-            const cleanLine = lines[j].trim();
-            if (cleanLine.startsWith(';')) {
-                if (cleanLine.toUpperCase().startsWith(';TYPE:')) {
-                    currentFeatureType = cleanLine.substring(6).trim();
-                } else if (cleanLine.toUpperCase().startsWith('; TYPE:')) {
-                    currentFeatureType = cleanLine.substring(7).trim();
+            const line = lines[j];
+            const cleanLine = line.trim();
+            
+            const commentIdx = line.indexOf(';');
+            if (commentIdx !== -1) {
+                const comment = line.substring(commentIdx + 1).trim();
+                const upperComment = comment.toUpperCase();
+                if (upperComment.startsWith('TYPE:') || upperComment.startsWith('TYPE :')) {
+                    currentFeatureType = comment.substring(comment.indexOf(':') + 1).trim();
+                } else if (upperComment.startsWith('FEATURE:') || upperComment.startsWith('FEATURE :') || upperComment.startsWith('_FEATURE:')) {
+                    currentFeatureType = comment.substring(comment.indexOf(':') + 1).trim();
+                } else if (upperComment.startsWith('[FEATURE]')) {
+                    currentFeatureType = comment.substring(9).trim();
+                } else if (upperComment.startsWith('FEATURE ')) {
+                    currentFeatureType = comment.substring(8).trim();
                 }
-                continue;
             }
+
+            if (cleanLine.startsWith(';')) continue;
 
             if (cleanLine === 'M83') isRelativeE = true;
             if (cleanLine === 'M82') isRelativeE = false;
@@ -1576,16 +1644,32 @@ self.onmessage = async function(e) {
             
             const fTypeStr = (p.featureType || '').toUpperCase();
             let fTypeId = 0;
-            if (fTypeStr.includes('OUTER') || fTypeStr === 'EXTERNAL PERIMETER') fTypeId = 1;
-            else if (fTypeStr.includes('INNER') || fTypeStr.includes('PERIMETER') || fTypeStr.includes('WALL')) fTypeId = 2;
-            else if (fTypeStr.includes('SOLID INFILL') || fTypeStr.includes('BOTTOM') || fTypeStr.includes('INTERNAL SOLID')) fTypeId = 4;
-            else if (fTypeStr.includes('INFILL') || fTypeStr.includes('FILL') || fTypeStr.includes('SPARSE')) fTypeId = 3;
-            else if (fTypeStr.includes('TOP') || fTypeStr.includes('SKIN') || fTypeStr.includes('IRONING')) fTypeId = 5;
-            else if (fTypeStr.includes('SUPPORT INTERFACE')) fTypeId = 7;
-            else if (fTypeStr.includes('SUPPORT')) fTypeId = 6;
-            else if (fTypeStr.includes('BRIDGE') || fTypeStr.includes('OVERHANG')) fTypeId = 8;
-            else if (fTypeStr.includes('GAP')) fTypeId = 9;
-            else if (fTypeStr.includes('SKIRT') || fTypeStr.includes('BRIM') || fTypeStr.includes('TOWER')) fTypeId = 10;
+            if (fTypeStr.includes('OUTER') || 
+                fTypeStr.includes('EXTERNAL') || 
+                fTypeStr.includes('WALL-OUTER') || 
+                fTypeStr.includes('OUTER WALL') || 
+                fTypeStr.includes('OVERHANG PERIMETER') || 
+                fTypeStr.includes('OVERHANG WALL')) {
+                fTypeId = 1;
+            } else if (fTypeStr.includes('INNER') || fTypeStr.includes('PERIMETER') || fTypeStr.includes('WALL') || fTypeStr.includes('WALL-INNER')) {
+                fTypeId = 2;
+            } else if (fTypeStr.includes('SOLID INFILL') || fTypeStr.includes('BOTTOM') || fTypeStr.includes('INTERNAL SOLID')) {
+                fTypeId = 4;
+            } else if (fTypeStr.includes('INFILL') || fTypeStr.includes('FILL') || fTypeStr.includes('SPARSE')) {
+                fTypeId = 3;
+            } else if (fTypeStr.includes('TOP') || fTypeStr.includes('SKIN') || fTypeStr.includes('IRONING')) {
+                fTypeId = 5;
+            } else if (fTypeStr.includes('SUPPORT INTERFACE')) {
+                fTypeId = 7;
+            } else if (fTypeStr.includes('SUPPORT')) {
+                fTypeId = 6;
+            } else if (fTypeStr.includes('BRIDGE') || fTypeStr.includes('OVERHANG')) {
+                fTypeId = 8;
+            } else if (fTypeStr.includes('GAP')) {
+                fTypeId = 9;
+            } else if (fTypeStr.includes('SKIRT') || fTypeStr.includes('BRIM') || fTypeStr.includes('TOWER')) {
+                fTypeId = 10;
+            }
             
             let s = s_arr[j];
             let v_target = v_target_arr[j];
@@ -2666,7 +2750,7 @@ self.onmessage = async function(e) {
 
     checkVFA() {
         const layers = this.layerList || this.layers;
-        if (!layers) return;
+        if (!layers || layers.length === 0) return;
         const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
         const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
         const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
@@ -2678,39 +2762,87 @@ self.onmessage = async function(e) {
         if (elVfa2) elVfa2.innerText = `${vfa2Min} - ${vfa2Max}`;
         
         let totalOuterWallLength = 0;
-        let vfaLength = 0;
+        let vfaOuterLength = 0;
+        let totalInnerWallLength = 0;
+        let vfaInnerLength = 0;
+        
+        // Detect if explicit outer walls or perimeters are present in G-Code
+        let hasExplicitOuter = false;
+        for (let layer of layers) {
+            if (!layer.paths) continue;
+            for (let j = 0; j < layer.paths.length / 12; j++) {
+                const fTypeId = layer.paths[j * 12 + 8];
+                if (layer.paths[j * 12 + 0] === 1 && (fTypeId === 1 || fTypeId === 8)) {
+                    hasExplicitOuter = true;
+                    break;
+                }
+            }
+            if (hasExplicitOuter) break;
+        }
+        this.hasExplicitOuterWalls = hasExplicitOuter;
         
         for (let layer of layers) {
             if (!layer.paths) continue;
             for (let j = 0; j < layer.paths.length / 12; j++) {
                 const type = layer.paths[j * 12 + 0];
+                if (type !== 1) continue; // Only extrusions
+                
                 const fTypeId = layer.paths[j * 12 + 8];
-                if (type === 1 && fTypeId === 1) { // Extrude && Outer Wall
-                    const x1 = layer.paths[j * 12 + 1];
-                    const y1 = layer.paths[j * 12 + 2];
-                    const x2 = layer.paths[j * 12 + 3];
-                    const y2 = layer.paths[j * 12 + 4];
-                    const dx = x2 - x1; const dy = y2 - y1;
-                    const len = Math.sqrt(dx*dx + dy*dy);
+                const isOuter = hasExplicitOuter ? (fTypeId === 1 || fTypeId === 8) : true;
+                const isInner = hasExplicitOuter ? (fTypeId === 2) : false;
+                
+                const x1 = layer.paths[j * 12 + 1];
+                const y1 = layer.paths[j * 12 + 2];
+                const x2 = layer.paths[j * 12 + 3];
+                const y2 = layer.paths[j * 12 + 4];
+                const dx = x2 - x1; const dy = y2 - y1;
+                const len = Math.sqrt(dx*dx + dy*dy);
+                
+                const speedTarget = layer.paths[j * 12 + 5] / 60; // Target Speed in mm/s
+                const speedReal = layer.paths[j * 12 + 9] || speedTarget; // Kinematic speed in mm/s
+                
+                const isVfa = (speedTarget >= vfa1Min && speedTarget <= vfa1Max) || 
+                              (speedTarget >= vfa2Min && speedTarget <= vfa2Max) || 
+                              (speedReal >= vfa1Min && speedReal <= vfa1Max) || 
+                              (speedReal >= vfa2Min && speedReal <= vfa2Max);
+                
+                if (isOuter) {
                     totalOuterWallLength += len;
-                    
-                    const speed = layer.paths[j * 12 + 5] / 60; // Target Speed
-                    if ((speed >= vfa1Min && speed <= vfa1Max) || (speed >= vfa2Min && speed <= vfa2Max)) {
-                        vfaLength += len;
-                    }
+                    if (isVfa) vfaOuterLength += len;
+                } else if (isInner) {
+                    totalInnerWallLength += len;
+                    if (isVfa) vfaInnerLength += len;
                 }
             }
+        }
+        
+        const outerPercent = totalOuterWallLength > 0 ? (vfaOuterLength / totalOuterWallLength) * 100 : 0;
+        const innerPercent = totalInnerWallLength > 0 ? (vfaInnerLength / totalInnerWallLength) * 100 : 0;
+        
+        const outerStatEl = document.getElementById('vfa-outer-stat');
+        if (outerStatEl) {
+            outerStatEl.innerText = `${outerPercent.toFixed(1)}% (${vfaOuterLength.toFixed(0)} mm)`;
+            outerStatEl.style.color = outerPercent > 15 ? '#ff007f' : (outerPercent > 0 ? '#f1c40f' : '#00e676');
+        }
+        const innerStatEl = document.getElementById('vfa-inner-stat');
+        if (innerStatEl) {
+            innerStatEl.innerText = `${innerPercent.toFixed(1)}% (${vfaInnerLength.toFixed(0)} mm)`;
+            innerStatEl.style.color = innerPercent > 15 ? '#ffb300' : (innerPercent > 0 ? '#f1c40f' : '#00e676');
         }
         
         const warningDiv = document.getElementById('vfa-warning');
         if (warningDiv) {
             if (totalOuterWallLength > 0) {
-                const percent = (vfaLength / totalOuterWallLength) * 100;
-                if (percent > 15) {
-                    warningDiv.style.display = 'block';
-                    warningDiv.innerText = `\u26A0\uFE0F VFA-Gefahr: ${percent.toFixed(1)}% der Au\u00dfenw\u00e4nde im Resonanzbereich!`;
+                warningDiv.style.display = 'block';
+                if (outerPercent > 15) {
+                    warningDiv.style.color = '#ff007f';
+                    warningDiv.innerText = `⚠️ VFA-Gefahr: ${outerPercent.toFixed(1)}% der sichtbaren Außenwand im Resonanzbereich!`;
+                } else if (outerPercent > 0) {
+                    warningDiv.style.color = '#f1c40f';
+                    warningDiv.innerText = `ℹ️ VFA-Hinweis: ${outerPercent.toFixed(1)}% der Außenwand im Resonanzbereich.`;
                 } else {
-                    warningDiv.style.display = 'none';
+                    warningDiv.style.color = '#00e676';
+                    warningDiv.innerText = `✅ Keine VFA-Gefahr: Außenwand-Geschwindigkeiten sind sicher.`;
                 }
             } else {
                 warningDiv.style.display = 'none';
@@ -2962,7 +3094,9 @@ self.onmessage = async function(e) {
         let totalSegments = 0;
         this.layerList.forEach(layer => {
             for(let i=0; i<layer.paths.length; i+=12) {
-                if (layer.paths[i] === 1) totalSegments++;
+                const pType = layer.paths[i];
+                const fTypeId = layer.paths[i+8];
+                if (pType === 1 && this.isPathVisible(fTypeId, pType)) totalSegments++;
             }
         });
         
@@ -3046,20 +3180,33 @@ self.onmessage = async function(e) {
                 return hslToRgb(hue, 1.0, 0.5);
             } else if (this.colorMode === 'vfa') {
                 const fTypeId = pathArray[idx+8];
-                if (fTypeId === 1) { // Outer Wall
-                    const feedrate = pathArray[idx+5];
-                    const speed = feedrate / 60; // Target Speed
-                    const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
-                    const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
-                    const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
-                    const vfa2Max = parseFloat(document.getElementById('vfa2-max')?.value) || 110;
-                    if ((speed >= vfa1Min && speed <= vfa1Max) || (speed >= vfa2Min && speed <= vfa2Max)) {
-                        return [0.91, 0.12, 0.39]; // Magenta
+                const isOuter = this.hasExplicitOuterWalls ? (fTypeId === 1 || fTypeId === 8) : true;
+                const isInner = this.hasExplicitOuterWalls ? (fTypeId === 2) : false;
+                
+                const feedrate = pathArray[idx+5];
+                const speedTarget = feedrate / 60; // Target Speed in mm/s
+                const speedReal = pathArray[idx+9] || speedTarget; // Kinematic speed in mm/s
+                const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
+                const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
+                const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
+                const vfa2Max = parseFloat(document.getElementById('vfa2-max')?.value) || 110;
+                const isVfa = (speedTarget >= vfa1Min && speedTarget <= vfa1Max) || 
+                              (speedTarget >= vfa2Min && speedTarget <= vfa2Max) || 
+                              (speedReal >= vfa1Min && speedReal <= vfa1Max) || 
+                              (speedReal >= vfa2Min && speedReal <= vfa2Max);
+                
+                if (isOuter) {
+                    // Outer Wall / Overhang Outer Perimeters: Maximum Contrast & Radiance
+                    return isVfa ? [1.0, 0.0, 0.5] : [0.0, 0.9, 0.46]; // Neon Magenta vs Emerald Green
+                } else if (isInner) {
+                    if (this.showVfaOuterOnly) {
+                        return [0.15, 0.18, 0.22]; // Dimmed slate when focusing outer walls
                     } else {
-                        return [0.3, 0.7, 0.3]; // Green
+                        return isVfa ? [0.85, 0.35, 0.45] : [0.18, 0.55, 0.28]; // Muted inner wall
                     }
                 }
-                return [0.15, 0.15, 0.15]; // Gray ignored
+                // Infill / Top / Bottom / Supports: Dark Translucent Slate
+                return [0.12, 0.14, 0.18];
             } else if (this.colorMode === 'risk') {
                 const diag = pathArray[idx+11];
                 if (diag === 2) return [1.0, 0.2, 0.2];
@@ -3110,7 +3257,10 @@ self.onmessage = async function(e) {
             let sphereIdx = 0;
             this.layerList.forEach((layer, lIdx) => {
                 for(let i=0; i<layer.paths.length; i+=12) {
-                    if (layer.paths[i] !== 1) continue;
+                    const pType = layer.paths[i];
+                    const fTypeId = layer.paths[i+8];
+                    if (pType !== 1) continue;
+                    if (!this.isPathVisible(fTypeId, pType)) continue;
                     let px1 = layer.paths[i+1], py1 = layer.paths[i+2];
                     let px2 = layer.paths[i+3], py2 = layer.paths[i+4];
                     const dx = px2 - px1;
@@ -3160,7 +3310,10 @@ self.onmessage = async function(e) {
             let idx = 0;
             this.layerList.forEach(layer => {
                 for(let i=0; i<layer.paths.length; i+=12) {
-                    if (layer.paths[i] !== 1) continue;
+                    const pType = layer.paths[i];
+                    const fTypeId = layer.paths[i+8];
+                    if (pType !== 1) continue;
+                    if (!this.isPathVisible(fTypeId, pType)) continue;
                     let px1 = layer.paths[i+1], py1 = layer.paths[i+2];
                     let px2 = layer.paths[i+3], py2 = layer.paths[i+4];
                     
@@ -3289,7 +3442,9 @@ self.onmessage = async function(e) {
             
             for (let p = 0; p < pathsToCount; p++) {
                 const i = p * 12;
-                if (layer.paths[i] === 1) { // 1 = extrude
+                const pType = layer.paths[i];
+                const fTypeId = layer.paths[i+8];
+                if (pType === 1 && this.isPathVisible(fTypeId, pType)) { // 1 = extrude
                     totalItemsToDraw++;
                     lastX = layer.paths[i+3];
                     lastY = layer.paths[i+4];
@@ -3395,7 +3550,7 @@ self.onmessage = async function(e) {
                 const prevLayer = this.layerList[this.currentLayerIdx - 1];
                 this.ctx.beginPath();
                 for(let i=0; i<prevLayer.paths.length; i+=12) {
-                    if (prevLayer.paths[i] === 1) {
+                    if (prevLayer.paths[i] === 1 && this.isPathVisible(prevLayer.paths[i+8], prevLayer.paths[i])) {
                         this.ctx.moveTo(prevLayer.paths[i+1], -prevLayer.paths[i+2]);
                         this.ctx.lineTo(prevLayer.paths[i+3], -prevLayer.paths[i+4]);
                     }
@@ -3452,18 +3607,18 @@ self.onmessage = async function(e) {
             // --- OPTIMIZATION: Batch render Extrude Paths ---
             this.ctx.globalAlpha = dynamicAlpha;
             
-            if (this.colorMode === 'heatmap' || this.colorMode === 'feature' || this.colorMode === 'kinematics' || this.colorMode === 'vfa') {
+            if (this.colorMode === 'heatmap' || this.colorMode === 'feature' || this.colorMode === 'kinematics' || this.colorMode === 'vfa' || this.colorMode === 'risk') {
                 // INDIVIDUAL RENDER MODE (Heatmap, Flow, Feature or VFA)
                 // Pass 1: Draw black borders for all segments (Skip if zoomed out to remove moiré)
                 if (this.scale > 1.2) {
                     this.ctx.beginPath();
                     for (let i = 0; i < activePathsEnd; i += 12) {
-                    if (activePaths[i+7] === this.selectedLineIndex) continue;
-                    if (activePaths[i] === 1) {
-                        this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
-                        this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
+                        if (activePaths[i+7] === this.selectedLineIndex) continue;
+                        if (activePaths[i] === 1 && this.isPathVisible(activePaths[i+8], activePaths[i])) {
+                            this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
+                            this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
+                        }
                     }
-                }
                     this.ctx.strokeStyle = '#000000'; // Dark border for 3D look
                     this.ctx.lineWidth = borderLw;
                     this.ctx.lineCap = 'round';
@@ -3474,7 +3629,7 @@ self.onmessage = async function(e) {
                 // Pass 2: Draw colored cores
                 for (let i = 0; i < activePathsEnd; i += 12) {
                     if (activePaths[i+7] === this.selectedLineIndex) continue;
-                    if (activePaths[i] === 1) {
+                    if (activePaths[i] === 1 && this.isPathVisible(activePaths[i+8], activePaths[i])) {
                         this.ctx.beginPath();
                         this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
                         this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
@@ -3490,19 +3645,30 @@ self.onmessage = async function(e) {
                             this.ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
                         } else if (this.colorMode === 'vfa') {
                             const fTypeId = activePaths[i+8];
-                            if (fTypeId === 1) { // Outer Wall
-                                const speed = feedrate / 60; // Target Speed
-                                const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
-                                const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
-                                const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
-                                const vfa2Max = parseFloat(document.getElementById('vfa2-max')?.value) || 110;
-                                if ((speed >= vfa1Min && speed <= vfa1Max) || (speed >= vfa2Min && speed <= vfa2Max)) {
-                                    this.ctx.strokeStyle = '#e91e63'; // Magenta
+                            const isOuter = this.hasExplicitOuterWalls ? (fTypeId === 1 || fTypeId === 8) : true;
+                            const isInner = this.hasExplicitOuterWalls ? (fTypeId === 2) : false;
+                            
+                            const speedTarget = feedrate / 60; // Target Speed in mm/s
+                            const speedReal = v_real || speedTarget; // Kinematic speed in mm/s
+                            const vfa1Min = parseFloat(document.getElementById('vfa1-min')?.value) || 45;
+                            const vfa1Max = parseFloat(document.getElementById('vfa1-max')?.value) || 65;
+                            const vfa2Min = parseFloat(document.getElementById('vfa2-min')?.value) || 90;
+                            const vfa2Max = parseFloat(document.getElementById('vfa2-max')?.value) || 110;
+                            const isVfa = (speedTarget >= vfa1Min && speedTarget <= vfa1Max) || 
+                                          (speedTarget >= vfa2Min && speedTarget <= vfa2Max) || 
+                                          (speedReal >= vfa1Min && speedReal <= vfa1Max) || 
+                                          (speedReal >= vfa2Min && speedReal <= vfa2Max);
+                            
+                            if (isOuter) {
+                                this.ctx.strokeStyle = isVfa ? '#ff007f' : '#00e676';
+                            } else if (isInner) {
+                                if (this.showVfaOuterOnly) {
+                                    this.ctx.strokeStyle = 'rgba(100, 116, 139, 0.2)';
                                 } else {
-                                    this.ctx.strokeStyle = '#4caf50'; // Green
+                                    this.ctx.strokeStyle = isVfa ? '#e05688' : '#2e7d32';
                                 }
                             } else {
-                                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; // Gray ignored
+                                this.ctx.strokeStyle = 'rgba(100, 116, 139, 0.12)';
                             }
                         } else if (this.colorMode === 'kinematics') {
                             if (!this.showKinematicsGradient) {
@@ -3525,6 +3691,11 @@ self.onmessage = async function(e) {
                                     this.ctx.strokeStyle = '#ffb300';
                                 }
                             }
+                        } else if (this.colorMode === 'risk') {
+                            const diag = activePaths[i+11];
+                            if (diag === 2) this.ctx.strokeStyle = '#ff3d00';
+                            else if (diag === 1) this.ctx.strokeStyle = '#ff9100';
+                            else this.ctx.strokeStyle = '#00e676';
                         } else if (this.colorMode === 'feature') {
                             const fTypeId = activePaths[i+8];
                             switch(fTypeId) {
@@ -3555,7 +3726,7 @@ self.onmessage = async function(e) {
                 this.ctx.beginPath();
                 for (let i = 0; i < activePathsEnd; i += 12) {
                     if (activePaths[i+7] === this.selectedLineIndex) continue;
-                    if (activePaths[i] === 1) {
+                    if (activePaths[i] === 1 && this.isPathVisible(activePaths[i+8], activePaths[i])) {
                         this.ctx.moveTo(activePaths[i+1], -activePaths[i+2]);
                         this.ctx.lineTo(activePaths[i+3], -activePaths[i+4]);
                     }

@@ -1,33 +1,36 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="page.title">LayerSpy | Kostenloser Online G-Code Viewer & 3D-Druck Analyzer</title>
+    <title data-i18n="page.title">LayerSpy | Free Online G-Code Viewer & 3D Print Analyzer</title>
     
-    <meta name="description" content="Kostenloser Online G-Code Viewer und Simulator für 3D-Drucker. Analysiere deinen G-Code von Cura, PrusaSlicer oder Bambu Studio direkt in 3D im Browser. | Free online G-Code Viewer and Simulator. Analyze 3D print G-Codes completely locally.">
-    <meta name="keywords" content="G-Code Viewer, G-Code Analyzer, 3D Druck Simulator, Online GCode Viewer, LayerSpy, G-Code Heatmap, PrusaSlicer Gcode, Cura Gcode Viewer, Bambu Studio Analyzer, Gcode online betrachten, 3D Drucker Simulator, G-Code prüfen, 3d print gcode analyzer, local gcode viewer, webgl gcode simulator">
+    <meta name="description" content="Free online 3D print G-Code viewer & analyzer. Inspect print speeds, VFA resonances, volumetric flow and Klipper kinematics 100% locally in your browser.">
+    <meta name="keywords" content="G-Code Viewer, G-Code Analyzer, 3D Print Simulator, Online GCode Viewer, LayerSpy, G-Code Heatmap, Bambu Studio Analyzer, OrcaSlicer Gcode, PrusaSlicer Gcode, Cura Gcode Viewer, Klipper Motion Planner, VFA Radar, Pressure Advance, 3D printing software">
     <meta name="author" content="LayerSpy">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="stylesheet" href="css/style.css?v=2">
     <link rel="canonical" href="https://layerspy.de/" />
     <link rel="alternate" hreflang="x-default" href="https://layerspy.de/" />
-    <link rel="alternate" hreflang="de" href="https://layerspy.de/" />
     <link rel="alternate" hreflang="en" href="https://layerspy.de/" />
+    <link rel="alternate" hreflang="de" href="https://layerspy.de/" />
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="LayerSpy">
     <meta property="og:url" content="https://layerspy.de/">
-    <meta property="og:title" content="LayerSpy - 3D Print G-Code Analyzer & Simulator">
-    <meta property="og:description" content="Simuliere und analysiere deinen G-Code in Echtzeit im Browser. Ohne Download, 100% lokal. | Simulate and analyze your G-Code in real-time in the browser. No download, 100% local processing.">
+    <meta property="og:title" content="LayerSpy | Free Online G-Code Viewer & 3D Print Analyzer">
+    <meta property="og:description" content="Inspect print speeds, VFA resonances, volumetric flow limits, and Klipper kinematics 100% locally in your browser.">
     <meta property="og:image" content="https://layerspy.de/assets/logo.webp">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="LayerSpy 3D G-Code Viewer and Analyzer">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://layerspy.de/">
-    <meta name="twitter:title" content="LayerSpy | Kostenloser Online G-Code Viewer & Analyzer">
-    <meta name="twitter:description" content="Prüfe deine 3D-Druck Dateien direkt im Browser. G-Code Visualisierung mit Heatmaps. | Analyze your 3D print files directly in the browser with speed heatmaps.">
+    <meta name="twitter:title" content="LayerSpy | Free Online G-Code Viewer & 3D Print Analyzer">
+    <meta name="twitter:description" content="Inspect print speeds, VFA resonances, volumetric flow limits, and Klipper kinematics 100% locally in your browser.">
     <meta name="twitter:image" content="https://layerspy.de/assets/logo.webp">
     
     <!-- Icons & PWA Manifest -->
@@ -43,53 +46,97 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
     
-    <!-- Schema.org JSON-LD (GEO / KI-Suche Optimiert) -->
+    <!-- Schema.org JSON-LD (GEO / AI-Search Optimized) -->
     <script type="application/ld+json">
-    [{
-      "@context": "https://schema.org",
-      "@type": ["SoftwareApplication", "WebApplication"],
-      "name": "LayerSpy",
-      "operatingSystem": "Web Browser, Windows, macOS, Linux, Android, iOS",
-      "applicationCategory": ["UtilitiesApplication", "3DPrintingSoftware"],
-      "description": "A professional, web-based 3D printing G-Code analyzer and live simulator. Visualize and tune G-Code from Cura, PrusaSlicer, or Bambu Studio directly in the browser with detailed heatmaps. | Ein professioneller, webbasierter 3D-Druck G-Code Analyzer und Live-Simulator direkt im Browser.",
-      "url": "https://layerspy.de",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
-      "browserRequirements": "Requires WebGL support",
-      "featureList": [
-        "Real-time 3D G-Code Rendering",
-        "Heatmaps for Speed and Extrusion",
-        "Kinematic Simulation for Acceleration",
-        "100% local in the browser, no cloud upload",
-        "Echtzeit 3D G-Code Rendering",
-        "100% lokal im Browser, kein Cloud-Upload"
-      ],
-      "inLanguage": ["de-DE", "en-US"],
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "5.0",
-        "ratingCount": "128",
-        "bestRating": "5"
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": ["SoftwareApplication", "WebApplication"],
+        "name": "LayerSpy",
+        "operatingSystem": "Web Browser, Windows, macOS, Linux, Android, iOS",
+        "applicationCategory": "DesignApplication",
+        "applicationSubCategory": "3DPrintingSoftware",
+        "description": "Professional web-based 3D printing G-Code analyzer and live simulator. Visualize, inspect, and tune G-Code from Bambu Studio, OrcaSlicer, PrusaSlicer, or Cura directly in the browser with speed heatmaps, VFA resonance radar, and Klipper motion planning.",
+        "url": "https://layerspy.de",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "browserRequirements": "Requires WebGL support",
+        "featureList": [
+          "100% Local Browser Engine (Zero Cloud Upload)",
+          "2D & 3D WebGL Solid Tube Toolpath Rendering",
+          "VFA (Vertical Fine Artifacts) & Stepper Resonance Radar",
+          "Corner Deceleration & Pressure Advance Auditor",
+          "Kinematic 2D Trapezoidal Motion Planner",
+          "Speed, Kinematics & Efficiency Heatmaps",
+          "Individual Feature-Filter Toggles (Outer Wall, Infill, etc.)",
+          "Universal Slicer Support (Bambu Studio, OrcaSlicer, PrusaSlicer, Cura)"
+        ],
+        "inLanguage": ["en-US", "de-DE"],
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5.0",
+          "ratingCount": "128",
+          "bestRating": "5"
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to Analyze and Simulate 3D Print G-Code Online",
+        "description": "Step-by-step guide to inspecting print speed, VFA resonance risk, and Klipper kinematics using LayerSpy.",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "Upload G-Code File",
+            "text": "Drag and drop your .gcode file from Bambu Studio, OrcaSlicer, PrusaSlicer, or Cura into LayerSpy or click Upload."
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Inspect 2D and 3D Toolpaths",
+            "text": "Use layer scrubbing and feature filters to examine individual walls, infill, bridges, and travels in 3D WebGL solid tube view."
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Audit VFA and Corner Bulging",
+            "text": "Check the VFA Radar for stepper motor resonance speeds and the Corner Auditor for sharp deceleration points."
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Tune Parameters and Export",
+            "text": "Adjust temperature, flow, feedrate, or Z-offset in real-time and save the optimized G-Code directly."
+          }
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is LayerSpy a cloud service? Does it upload my 3D files?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. LayerSpy runs 100% locally on your computer inside your browser using Web Workers and WebGL. Your G-Code files are never transmitted to any external server."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which 3D printing slicers and firmwares are supported?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "LayerSpy supports G-Code from all major slicers including Bambu Studio, OrcaSlicer, PrusaSlicer, Ultimaker Cura, SuperSlicer, and Creality Print. It is optimized for Klipper, Marlin, and RepRapFirmware."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the VFA Radar in LayerSpy?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The VFA (Vertical Fine Artifacts) Radar analyzes print speeds along visible outer perimeter walls to warn when speeds fall into stepper motor resonance corridors (typically 45-65 mm/s and 90-110 mm/s)."
+            }
+          }
+        ]
       }
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [{
-        "@type": "Question",
-        "name": "Is LayerSpy a cloud service? / Werden meine G-Codes hochgeladen?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No, LayerSpy works 100% locally in your browser. Your G-Code files are never uploaded to any server. / Nein, LayerSpy läuft 100% lokal in deinem Browser. Deine G-Code-Dateien werden niemals auf einen Server hochgeladen."
-        }
-      }, {
-        "@type": "Question",
-        "name": "Which slicers are supported? / Welche Slicer werden unterstützt?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "LayerSpy supports G-Code from all major slicers, including PrusaSlicer, Cura, Bambu Studio, and OrcaSlicer. / LayerSpy unterstützt G-Code aus allen gängigen Slicern wie PrusaSlicer, Cura, Bambu Studio und OrcaSlicer."
-        }
-      }]
-    }]
+    ]
     </script>
 
     
@@ -1102,8 +1149,8 @@ html[lang="en"] .de-only { display: none !important; }
     <!-- Three.js (Deferred to avoid render blocking) -->
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-    <script defer src="js/translations.js?v=4"></script>
-    <script src="js/app_v5.js?v=22" defer></script>
+    <script defer src="js/translations.js?v=8"></script>
+    <script src="js/app_v5.js?v=28" defer></script>
 </head>
 <body class="dark-mode preload">
 
@@ -1118,11 +1165,11 @@ html[lang="en"] .de-only { display: none !important; }
         <header class="top-navbar">
             <div class="nav-left" style="display: flex; align-items: center; gap: 12px;">
                 <img src="assets/logo.webp" alt="LayerSpy Logo" width="48" height="48" style="height: 48px; width: 48px; object-fit: contain; border-radius: 8px; mix-blend-mode: lighten; filter: brightness(0.8) contrast(1.2);">
-                <h1 style="font-size: 1.6rem; margin: 0; color: #ffffff; font-weight: 700; letter-spacing: 0.5px;">layerspy<span style="color: #00bcd4;">.de</span></h1>
+                <div class="brand-title" style="font-size: 1.6rem; margin: 0; color: #ffffff; font-weight: 700; letter-spacing: 0.5px;">layerspy<span style="color: #00bcd4;">.de</span></div>
             </div>
             <div class="nav-center">
-                <label for="file-input" class="upload-btn" title="Oder ziehe eine Datei einfach per Drag & Drop in das Fenster" data-i18n-title="title.1" data-i18n="nav.upload">📁 Datei laden oder Drag & Drop</label>
-                <input type="file" id="file-input" accept=".gcode" aria-label="G-Code Datei hochladen">
+                <label for="file-input" class="upload-btn" title="Or just drag & drop a file into the window" data-i18n-title="title.1" data-i18n="nav.upload">📁 Upload file or Drag & Drop</label>
+                <input type="file" id="file-input" accept=".gcode" aria-label="G-Code File Upload">
             </div>
             
             <div class="nav-right" style="display: flex; gap: 10px; align-items: center;">
@@ -1133,20 +1180,20 @@ html[lang="en"] .de-only { display: none !important; }
                 <a href="https://github.com/Exulizer/LayerSpy" target="_blank" title="View Source on GitHub" data-i18n-title="title.2" style="color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; transition: background 0.2s;">
                     <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
                 </a>
-                <button class="upload-btn" id="demo-btn" style="background: var(--accent-color); color: #fff; border-color: var(--accent-color);" data-i18n="nav.demo">✨ Demo laden</button>
-                <button class="download-btn" id="download-btn" disabled data-i18n="nav.save">💾 Speichern (.gcode)</button>
+                <button class="upload-btn" id="demo-btn" style="background: var(--accent-color); color: #fff; border-color: var(--accent-color);" data-i18n="nav.demo">✨ Load Demo</button>
+                <button class="download-btn" id="download-btn" disabled data-i18n="nav.save">💾 Save (.gcode)</button>
             </div>
         </header>
 
         <!-- WELCOME HERO FOR SEO & USER -->
         <div id="welcome-hero" style="width: 100%; min-height: 160px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 30px 20px; box-sizing: border-box;">
             <div style="max-width: 900px; margin: 0 auto; text-align: center;">
-                <h2 style="color: var(--accent-color); margin-bottom: 15px; font-size: 1.5rem;" data-i18n="hero.subtitle">Willkommen bei LayerSpy - Deinem G-Code Analyzer</h2>
-                <p style="color: var(--text-color); line-height: 1.6; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
-                    <span data-i18n="hero.desc_p1">Optimiere deine 3D-Drucke, bevor sie entstehen!</span>
-                    <span data-i18n="hero.desc_p2">Lade einfach deine Datei aus Slicern wie Cura, PrusaSlicer oder OrcaSlicer</span>
-                    <span data-i18n="hero.desc_p3">(oder per Drag & Drop) hoch und analysiere Schicht für Schicht.</span>
-                    <strong data-i18n="hero.desc_p4" style="color: var(--accent-color);">Dein G-Code verlässt deinen PC nicht.</strong>
+                <h1 style="color: var(--accent-color); margin-bottom: 15px; font-size: 1.5rem;" data-i18n="hero.title">LayerSpy – Free Online G-Code Viewer, Analyzer & 3D Simulator</h1>
+                <p style="line-height: 1.6; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
+                    <span data-i18n="hero.desc_p1">Upload your file from slicers like Bambu Studio, OrcaSlicer, PrusaSlicer, or Cura</span>
+                    <span data-i18n="hero.desc_p2">(or via drag & drop) and inspect every single toolpath layer by layer.</span>
+                    <span data-i18n="hero.desc_p3">100% Client-Side WebGL engine.</span>
+                    <strong data-i18n="hero.desc_p4" style="color: var(--accent-color);">Your G-Code never leaves your PC.</strong>
                 </p>
             </div>
         </div>
@@ -1209,7 +1256,7 @@ html[lang="en"] .de-only { display: none !important; }
                                 <input type="number" id="vfa1-min" value="45" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
                                 <input type="number" id="vfa1-max" value="65" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
                                 <span>Band 2 (mm/s):</span>
                                 <span id="vfa2-val" class="accent">90 - 110</span>
                             </div>
@@ -1217,7 +1264,21 @@ html[lang="en"] .de-only { display: none !important; }
                                 <input type="number" id="vfa2-min" value="90" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
                                 <input type="number" id="vfa2-max" value="110" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
                             </div>
-                            <div id="vfa-warning" style="display: none; color: #ff3d00; font-size: 0.75rem; margin-top: 5px; font-weight: bold;"></div>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 4px;">
+                                <input type="checkbox" id="vfa-outer-only-btn" checked style="cursor: pointer;">
+                                <span data-i18n="tuning.vfa_outer_only">Nur Außenwand fokussieren</span>
+                            </label>
+                            <div id="vfa-stats-box" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-muted);">🔴 Außenwand (Sichtbar):</span>
+                                    <strong id="vfa-outer-stat" style="color: #ff007f;">0.0%</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-muted);">🟡 Innenwand (Struktur):</span>
+                                    <strong id="vfa-inner-stat" style="color: #f1c40f;">0.0%</strong>
+                                </div>
+                            </div>
+                            <div id="vfa-warning" style="display: none; color: #ff007f; font-size: 0.75rem; margin-top: 2px; font-weight: bold; line-height: 1.3;"></div>
                         </div>
                     </div>
                     <!-- Corner & Deceleration Auditor -->
@@ -1330,9 +1391,47 @@ html[lang="en"] .de-only { display: none !important; }
                         </div>
 
                         <!-- Row 2: Options and Legend -->
-                        <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap; min-height: 55px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;"><input type="checkbox" id="show-travel-btn"><span data-i18n="view.travels">Leerfahrten</span></label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;"><input type="checkbox" id="show-corner-audit-btn" checked><span data-i18n="view.corner_overlay">Ecken-Warnungen</span></label>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 40px;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="filter-outer-wall" checked>
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ff8c00; display: inline-block;"></span>
+                                <span data-i18n="view.filter_outer">Außenwand</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="filter-inner-wall" checked>
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ffeb3b; display: inline-block;"></span>
+                                <span data-i18n="view.filter_inner">Innenwand</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="filter-infill" checked>
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #f44336; display: inline-block;"></span>
+                                <span data-i18n="view.filter_infill">Infill</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="filter-bottom" checked>
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #9c27b0; display: inline-block;"></span>
+                                <span data-i18n="view.filter_bottom">Boden</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="filter-top" checked>
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #e91e63; display: inline-block;"></span>
+                                <span data-i18n="view.filter_top">Decke</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="filter-support" checked>
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #4caf50; display: inline-block;"></span>
+                                <span data-i18n="view.filter_support">Support</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="show-travel-btn">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #00bcd4; display: inline-block;"></span>
+                                <span data-i18n="view.travels">Leerfahrten</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
+                                <input type="checkbox" id="show-corner-audit-btn" checked>
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #e91e63; display: inline-block;"></span>
+                                <span data-i18n="view.corner_overlay">Ecken-Warnungen</span>
+                            </label>
 
                             <div id="heatmap-legend" style="display: none; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
                                 <span id="legend-low" data-i18n="view.speed_low">10 mm/s</span>
@@ -1558,13 +1657,24 @@ html[lang="en"] .de-only { display: none !important; }
         <!-- SEO SECTION -->
         <section class="seo-content" style="max-width: 1200px; margin: 0 auto; padding: 20px; color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;">
             <details style="cursor: pointer; background: var(--panel-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <summary style="color: var(--accent-color); font-weight: 600; outline: none;" data-i18n="info.more">Mehr über LayerSpy & G-Code Analyse erfahren...</summary>
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                    <h2 style="color: var(--text-color); margin-bottom: 10px; font-size: 1.2rem;" data-i18n="info.title1">Die ultimative G-Code Analyse für deinen 3D-Druck</h2>
-                    <p style="margin-bottom: 15px;" data-i18n="info.desc1">LayerSpy ist ein hochmoderner, browserbasierter<strong>G-Code Editor und Analyzer</strong>, der speziell für 3D-Druck Enthusiasten entwickelt wurde. Egal ob du <strong>Marlin</strong>, <strong>Klipper-Firmware</strong> oder RepRap nutzt, mit LayerSpy kannst du den generierten Code von Slicern wie <em>Cura</em>, <em>PrusaSlicer</em> oder <em>OrcaSlicer</em> direkt im Browser visualisieren und tunen.</p>
-                    
-                    <h3 style="color: var(--text-color); margin-bottom: 10px; font-size: 1.1rem;" data-i18n="info.title2">Warum G-Code live analysieren?</h3>
-                    <p data-i18n="info.desc2">Die Analyse von G-Code ermöglicht es dir, Fehler vor dem Druck zu erkennen. LayerSpy bietet eine interaktive 2D und 3D Vorschau mittels WebGL, mit der du Layer für Layer (Schicht für Schicht) durch dein Modell scrollen kannst. Die integrierte Heatmap-Funktion zeigt dir kritische Druckgeschwindigkeiten und Flussraten (Flow) an, um Stringing, Warping oder Under-Extrusion effektiv zu verhindern.</p>
+                <summary style="color: var(--accent-color); font-weight: 600; outline: none;" data-i18n="info.more">Learn more about LayerSpy &amp; G-Code Analysis...</summary>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <h2 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.2rem;" data-i18n="info.title1">The ultimate G-Code analysis for your 3D print</h2>
+                        <p data-i18n="info.desc1">LayerSpy is a state-of-the-art, browser-based <strong>G-Code editor and analyzer</strong> specifically designed for 3D printing enthusiasts. Whether you use <strong>Marlin</strong>, <strong>Klipper firmware</strong> or RepRap, with LayerSpy you can visualize and tune the generated code from slicers like <em>Cura</em>, <em>PrusaSlicer</em>, <em>Bambu Studio</em> or <em>OrcaSlicer</em> directly in the browser.</p>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.1rem;" data-i18n="info.title2">Why analyze G-Code live in 3D?</h3>
+                        <p data-i18n="info.desc2">Analyzing G-Code allows you to detect errors before printing. LayerSpy provides an interactive 2D and 3D preview using WebGL that lets you scroll through your model layer by layer. The integrated heatmap function shows you critical print speeds and flow rates to effectively prevent stringing, warping or under-extrusion.</p>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.1rem;" data-i18n="info.title3">VFA Radar & Corner Deceleration Auditor</h3>
+                        <p data-i18n="info.desc3">Detect Vertical Fine Artifacts (VFA) and stepper motor resonance corridors (45–65 mm/s and 90–110 mm/s) on outer walls. Audit corner decelerations to identify pressure bulging risks and verify Klipper Pressure Advance (<code>SET_PRESSURE_ADVANCE</code>) or Marlin Linear Advance (<code>M900</code>).</p>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.1rem;" data-i18n="info.title4">Universal Slicer & Firmware Compatibility</h3>
+                        <p data-i18n="info.desc4">Seamlessly parse files generated by Bambu Studio, OrcaSlicer, PrusaSlicer, Ultimaker Cura, Creality Print, SuperSlicer, and IdeaMaker. Fully compatible with Klipper, Marlin 2.0, and RepRapFirmware.</p>
+                    </div>
                 </div>
             </details>
         </section>
