@@ -76,6 +76,29 @@ function setLanguage(lang) {
             el.setAttribute('placeholder', window.i18n[lang][key]);
         }
     });
+
+    // Update theme toggle button tooltip
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const tooltip = isLight 
+            ? (lang === 'de' ? 'Zu dunklem Design wechseln' : 'Switch to dark mode')
+            : (lang === 'de' ? 'Zu hellem Design wechseln' : 'Switch to light mode');
+        themeBtn.setAttribute('title', tooltip);
+    }
+
+    if (window.gcodeApp) {
+        if (window.gcodeApp.checkVFA) window.gcodeApp.checkVFA();
+        if (window.gcodeApp.auditCorners) window.gcodeApp.auditCorners();
+        if (window.gcodeApp.updateZSeamUI) window.gcodeApp.updateZSeamUI();
+        if (window.gcodeApp.updateOverhangUI) window.gcodeApp.updateOverhangUI();
+        if (window.gcodeApp.updatePressureAdvanceUI) window.gcodeApp.updatePressureAdvanceUI();
+        if (window.gcodeApp.runLinter) window.gcodeApp.runLinter();
+        if (window.gcodeApp.updateTimeUI) window.gcodeApp.updateTimeUI();
+        if (window.gcodeApp.updateLayerIndicator) window.gcodeApp.updateLayerIndicator();
+        if (window.gcodeApp.updateHudLegend) window.gcodeApp.updateHudLegend();
+    }
+    if (window.updateLegend) window.updateLegend();
 }
 
 // Helper for dynamic strings
@@ -84,9 +107,56 @@ window.t = function(key) {
     return (window.i18n && window.i18n[window.currentLang] && window.i18n[window.currentLang][key]) ? window.i18n[window.currentLang][key] : key;
 };
 
+// --- Theme Handling (Dark / Light) ---
+window.applyTheme = function(theme) {
+    if (!theme) theme = localStorage.getItem('layerspy_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('layerspy_theme', theme);
+
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+        const isLight = theme === 'light';
+        const lang = window.currentLang || localStorage.getItem('layerspy_lang') || 'en';
+        const tooltip = isLight 
+            ? (lang === 'de' ? 'Zu dunklem Design wechseln' : 'Switch to dark mode')
+            : (lang === 'de' ? 'Zu hellem Design wechseln' : 'Switch to light mode');
+        themeBtn.setAttribute('title', tooltip);
+    }
+
+    if (window.gcodeApp) {
+        const isLight = theme === 'light';
+        if (window.gcodeApp.scene) {
+            window.gcodeApp.scene.background = new THREE.Color(isLight ? '#edf0f5' : '#050506');
+            if (window.gcodeApp.bed3D) {
+                window.gcodeApp.scene.remove(window.gcodeApp.bed3D);
+                const grid = new THREE.GridHelper(
+                    window.gcodeApp.bedSize, 
+                    22, 
+                    isLight ? 0x999999 : 0x444444, 
+                    isLight ? 0xd0d0d0 : 0x222222
+                );
+                grid.rotation.x = Math.PI / 2;
+                window.gcodeApp.scene.add(grid);
+                window.gcodeApp.bed3D = grid;
+            }
+        }
+        if (!window.gcodeApp.is3DMode) {
+            window.gcodeApp.draw();
+        }
+    }
+};
+
+window.toggleTheme = function() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const nextTheme = current === 'light' ? 'dark' : 'light';
+    window.applyTheme(nextTheme);
+};
+
 // Apply on load
 document.addEventListener('DOMContentLoaded', () => {
     window.currentLang = localStorage.getItem('layerspy_lang') || 'en';
+    window.applyTheme(localStorage.getItem('layerspy_theme') || 'dark');
+    
     // Setup listeners
     const langEnBtn = document.getElementById('lang-en');
     const langDeBtn = document.getElementById('lang-de');
@@ -126,6 +196,7 @@ class GCodeViewer {
         this.foldedRanges = []; // {start: int, end: int}
         this.bookmarks = new Set();
         this.lintWarnings = {}; // map of lineIndex -> array of warning strings
+        this.linterFilter = 'all'; // 'all', 'critical', 'warning', 'info'
         
         // Corner & Deceleration Auditor state
         this.showCornerAudit = true;
@@ -133,6 +204,16 @@ class GCodeViewer {
         this.cornerAuditByLayer = {};
         this.pressureAdvanceState = { enabled: false, value: 0, source: 'none' };
         this.cornerMarkers3D = null;
+        
+        // Z-Seam Quality & Alignment state
+        this.showZSeams = true;
+        this.zSeamData = {
+            points: [],
+            byLayer: {},
+            stats: { total: 0, inCorner: 0, onFlat: 0, cornerPercent: 100, alignmentType: 'none', avgSpreadMm: 0 }
+        };
+        this.seamMarkers3D = null;
+        
         this.showVfaOuterOnly = true;
         this.featureVisibility = {
             outerWall: true,
@@ -166,7 +247,7 @@ class GCodeViewer {
         
         // 3D View State
         this.is3DMode = false;
-        this.viewMode3D = 'lines'; // 'lines', 'solid'
+        this.viewMode3D = 'solid'; // 'solid' (tubes), 'lines' (fast)
         this.scene = null;
         this.camera = null;
         this.renderer = null;
@@ -249,8 +330,9 @@ class GCodeViewer {
         const canvas = document.getElementById('gcode-3d-canvas');
         if (!canvas || !window.THREE) return;
 
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color('#050506');
+        this.scene.background = new THREE.Color(isLight ? '#edf0f5' : '#050506');
 
         this.camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 10000);
         this.camera.position.set(0, -300, 250);
@@ -266,7 +348,7 @@ class GCodeViewer {
         this.scene.add(dirLight);
 
         // Grid/Bed
-        const grid = new THREE.GridHelper(this.bedSize, 22, 0x444444, 0x222222);
+        const grid = new THREE.GridHelper(this.bedSize, 22, isLight ? 0x999999 : 0x444444, isLight ? 0xd0d0d0 : 0x222222);
         grid.rotation.x = Math.PI / 2;
         this.scene.add(grid);
         this.bed3D = grid;
@@ -305,29 +387,38 @@ class GCodeViewer {
         if (enable3D) {
             c2d.style.display = 'none';
             c3d.style.display = 'block';
-            selectMode.style.display = 'block';
-                        btn3d.classList.add('active');
-            btn3d.style.background = 'rgba(255,255,255,0.1)';
-            btn3d.style.color = 'white';
-            btn2d.classList.remove('active');
-            btn2d.style.background = 'rgba(0,0,0,0.3)';
-            btn2d.style.color = 'var(--text-color)';
+            if (selectMode) {
+                selectMode.style.display = 'block';
+                this.viewMode3D = selectMode.value || 'solid';
+            }
+            if (btn3d) {
+                btn3d.classList.add('active');
+                btn3d.style.background = '';
+                btn3d.style.color = '';
+            }
+            if (btn2d) {
+                btn2d.classList.remove('active');
+                btn2d.style.background = '';
+                btn2d.style.color = '';
+            }
             
             // Resize renderer
-            const rect = c3d.parentElement.getBoundingClientRect();
-            this.renderer.setSize(rect.width, rect.height - 40); // Rough estimate, resizeCanvas fixes it
             this.resizeCanvas();
             this.rebuild3DScene();
         } else {
             c3d.style.display = 'none';
             c2d.style.display = 'block';
-            selectMode.style.display = 'none';
-                        btn2d.classList.add('active');
-            btn2d.style.background = 'rgba(255,255,255,0.1)';
-            btn2d.style.color = 'white';
-            btn3d.classList.remove('active');
-            btn3d.style.background = 'rgba(0,0,0,0.3)';
-            btn3d.style.color = 'var(--text-color)';
+            if (selectMode) selectMode.style.display = 'none';
+            if (btn2d) {
+                btn2d.classList.add('active');
+                btn2d.style.background = '';
+                btn2d.style.color = '';
+            }
+            if (btn3d) {
+                btn3d.classList.remove('active');
+                btn3d.style.background = '';
+                btn3d.style.color = '';
+            }
             this.draw(); // Ensure 2D is up to date
         }
     }
@@ -363,6 +454,34 @@ class GCodeViewer {
             });
         }
 
+        // Zen / Maximize Viewport Toggle
+        const zenBtn = document.getElementById('zen-view-btn');
+        if (zenBtn) {
+            zenBtn.addEventListener('click', () => {
+                const leftPanel = document.querySelector('.left-panel');
+                const rightPanel = document.querySelector('.right-panel');
+                const isZen = leftPanel?.classList.contains('panel-collapsed') && rightPanel?.classList.contains('panel-collapsed');
+                if (isZen) {
+                    leftPanel?.classList.remove('panel-collapsed');
+                    rightPanel?.classList.remove('panel-collapsed');
+                    if (toggleLeft) toggleLeft.innerText = '◀';
+                    if (toggleRight) toggleRight.innerText = '▶';
+                    zenBtn.classList.remove('active');
+                    zenBtn.style.background = '';
+                    zenBtn.style.borderColor = '';
+                } else {
+                    leftPanel?.classList.add('panel-collapsed');
+                    rightPanel?.classList.add('panel-collapsed');
+                    if (toggleLeft) toggleLeft.innerText = '▶';
+                    if (toggleRight) toggleRight.innerText = '◀';
+                    zenBtn.classList.add('active');
+                    zenBtn.style.background = '';
+                    zenBtn.style.borderColor = '';
+                }
+                setTimeout(() => this.resizeCanvas(), 300);
+            });
+        }
+
         // Mausrad-Fix für alle Slider und Kinematik-Felder
         document.querySelectorAll('.slider, .k-input').forEach(input => {
             input.addEventListener('wheel', (e) => {
@@ -382,6 +501,17 @@ class GCodeViewer {
                 input.value = val;
                 input.dispatchEvent(new Event('input'));
             }, { passive: false });
+        });
+
+        // Linter Filter Chips
+        const linterFilterBtns = document.querySelectorAll('.linter-filter-btn');
+        linterFilterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                linterFilterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.linterFilter = btn.getAttribute('data-linter-filter') || 'all';
+                this.applyLinterFilter();
+            });
         });
 
         // Canvas interactions
@@ -443,20 +573,18 @@ class GCodeViewer {
         
 
         // View Mode Listeners
-        document.getElementById('view-2d-btn').addEventListener('click', () => this.toggle3DMode(false));
-        document.getElementById('view-3d-btn').addEventListener('click', () => this.toggle3DMode(true));
-        document.getElementById('view-mode-select').addEventListener('change', (e) => {
-            this.viewMode3D = e.target.value;
-            this.rebuild3DScene();
-        });
-
-        // View Mode Listeners
-        document.getElementById('view-2d-btn').addEventListener('click', () => this.toggle3DMode(false));
-        document.getElementById('view-3d-btn').addEventListener('click', () => this.toggle3DMode(true));
-        document.getElementById('view-mode-select').addEventListener('change', (e) => {
-            this.viewMode3D = e.target.value;
-            this.rebuild3DScene();
-        });
+        const v2d = document.getElementById('view-2d-btn');
+        const v3d = document.getElementById('view-3d-btn');
+        const vSel = document.getElementById('view-mode-select');
+        if (vSel) {
+            this.viewMode3D = vSel.value || 'solid';
+            vSel.addEventListener('change', (e) => {
+                this.viewMode3D = e.target.value;
+                this.rebuild3DScene();
+            });
+        }
+        if (v2d) v2d.addEventListener('click', () => this.toggle3DMode(false));
+        if (v3d) v3d.addEventListener('click', () => this.toggle3DMode(true));
 
         // Pagination Controls
         const modeSelect = document.getElementById('gcode-view-mode');
@@ -782,43 +910,163 @@ class GCodeViewer {
         window.updateLegend = () => {
             const legend = document.getElementById('heatmap-legend');
             const kinGradLabel = document.getElementById('kinematics-gradient-label');
+            const hud = document.getElementById('canvas-hud-legend');
+            const hudTitle = document.getElementById('hud-legend-title');
+            const hudContent = document.getElementById('hud-legend-content');
+            if (kinGradLabel) kinGradLabel.style.display = 'none';
+            if (!hud || !hudTitle || !hudContent) return;
             
-            if (kinGradLabel) {
-                kinGradLabel.style.display = 'none';
-            }
-            if (!legend) return;
-            
-            legend.style.display = 'flex';
-            legend.style.flexWrap = 'wrap';
+            const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+            hud.style.display = 'block';
             
             if (this.colorMode === 'normal') {
-                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#4caf50; border-radius:2px;"></div><span>Extrusion</span></div>' +
-                    (this.showTravelMoves ? '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#2196f3; border-radius:2px;"></div><span>Travel</span></div>' : '');
+                hudTitle.innerHTML = `<span>🔍</span><span>${isEn ? 'Standard Toolpaths' : 'Standard-Pfade'}</span>`;
+                hudContent.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:12px; height:12px; background:#4caf50; border-radius:3px; box-shadow:0 0 5px rgba(76,175,80,0.5);"></div>
+                        <span style="font-weight:500;">${isEn ? 'Extrusion Moves' : 'Extrusions-Fahrten'}</span>
+                    </div>
+                    ${this.showTravelMoves ? `
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:12px; height:12px; background:#00bcd4; border-radius:3px;"></div>
+                        <span style="font-weight:500;">${isEn ? 'Travel Moves (G0)' : 'Leerfahrten (G0)'}</span>
+                    </div>` : ''}
+                `;
             } else if (this.colorMode === 'feature') {
-                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#ff8c00; border-radius:2px;"></div><span style="font-size:10px;">Outer</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#ffeb3b; border-radius:2px;"></div><span style="font-size:10px;">Inner</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#f44336; border-radius:2px;"></div><span style="font-size:10px;">Infill</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#9c27b0; border-radius:2px;"></div><span style="font-size:10px;">Solid</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#e91e63; border-radius:2px;"></div><span style="font-size:10px;">Top</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#4caf50; border-radius:2px;"></div><span style="font-size:10px;">Support</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:#00bcd4; border-radius:2px;"></div><span style="font-size:10px;">Bridge</span></div>';
+                hudTitle.innerHTML = `<span>🧱</span><span>${isEn ? 'Line Type & Feature' : 'Linientyp & Feature'}</span>`;
+                hudContent.innerHTML = `
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px 10px;">
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#ff8c00; border-radius:2px;"></div><span>${isEn ? 'Outer wall' : 'Außenwand'}</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#ffeb3b; border-radius:2px;"></div><span>${isEn ? 'Inner wall' : 'Innenwand'}</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#f44336; border-radius:2px;"></div><span>${isEn ? 'Infill' : 'Infill'}</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#9c27b0; border-radius:2px;"></div><span>${isEn ? 'Solid infill' : 'Boden / Solid'}</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#e91e63; border-radius:2px;"></div><span>${isEn ? 'Top surface' : 'Decke'}</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#00bcd4; border-radius:2px;"></div><span>${isEn ? 'Bridge' : 'Brücke'}</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#4caf50; border-radius:2px;"></div><span>${isEn ? 'Support' : 'Support'}</span></div>
+                        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#ffffff; border-radius:2px;"></div><span>${isEn ? 'Gap fill' : 'Gap fill'}</span></div>
+                    </div>
+                `;
             } else if (this.colorMode === 'heatmap') {
                 const maxS = Math.round(this.maxSpeedNormal || 240);
-                legend.innerHTML = '<span>0 mm/s</span><div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(120, 100%, 50%), hsl(0, 100%, 50%));"></div><span>' + maxS + ' mm/s</span>';
+                hudTitle.innerHTML = `<span>🏎️</span><span>${isEn ? 'Print Speed (G-Code)' : 'Druckgeschwindigkeit (G-Code)'}</span>`;
+                hudContent.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.75rem; margin-bottom:2px;">
+                        <span>0 mm/s</span>
+                        <span>${Math.round(maxS/2)} mm/s</span>
+                        <span style="color:#ff3d00; font-weight:bold;">${maxS} mm/s</span>
+                    </div>
+                    <div style="width:100%; height:8px; border-radius:4px; background:linear-gradient(to right, hsl(240, 100%, 50%), hsl(120, 100%, 50%), hsl(0, 100%, 50%)); box-shadow: 0 0 8px rgba(0,0,0,0.5);"></div>
+                `;
             } else if (this.colorMode === 'kinematics') {
                 const maxS = Math.round(this.maxSpeedKinematics || 240);
-                legend.innerHTML = '<span>0 mm/s</span><div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(60, 100%, 50%), hsl(0, 100%, 50%));"></div><span>' + maxS + ' mm/s (Real)</span>';
+                hudTitle.innerHTML = `<span>⚡</span><span>${isEn ? 'Actual Physical Speed' : 'Echte Kinematik-Speed'}</span>`;
+                hudContent.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.75rem; margin-bottom:2px;">
+                        <span>0 mm/s</span>
+                        <span>${Math.round(maxS/2)} mm/s</span>
+                        <span style="color:#ff3d00; font-weight:bold;">${maxS} mm/s</span>
+                    </div>
+                    <div style="width:100%; height:8px; border-radius:4px; background:linear-gradient(to right, hsl(240, 100%, 50%), hsl(60, 100%, 50%), hsl(0, 100%, 50%)); box-shadow: 0 0 8px rgba(0,0,0,0.5);"></div>
+                    <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${isEn ? 'Calculated with Klipper Accel & SCV' : 'Berechnet mit Klipper Beschleunigung & SCV'}</div>
+                `;
             } else if (this.colorMode === 'risk') {
-                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#4caf50; border-radius:2px;"></div><span>Safe</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#ff9800; border-radius:2px;"></div><span>High Flow</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#f44336; border-radius:2px;"></div><span>Melting Risk</span></div>';
+                hudTitle.innerHTML = `<span>⚠️</span><span>${isEn ? 'Extrusion & Heat Risk' : 'Extrusions- & Hitzerisiko'}</span>`;
+                hudContent.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; background:#4caf50; border-radius:3px;"></div><span>${isEn ? 'Safe Flow & Cooling' : 'Optimaler Fluss & Kühlung'}</span></div>
+                        <div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; background:#ff9800; border-radius:3px;"></div><span>${isEn ? 'High Volumetric Flow (> 15 mm³/s)' : 'Hoher Fluss (> 15 mm³/s)'}</span></div>
+                        <div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; background:#f44336; border-radius:3px;"></div><span>${isEn ? 'Thermal / Melting Risk' : 'Hitzestau / Schmelzgefahr'}</span></div>
+                    </div>
+                `;
             } else if (this.colorMode === 'vfa') {
-                legend.innerHTML = '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#ff007f; border-radius:2px; box-shadow: 0 0 4px #ff007f;"></div><span>VFA-Gefahr</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:#00e676; border-radius:2px;"></div><span>Sicher</span></div>' +
-                    '<div style="display:flex; align-items:center; gap:5px;"><div style="width:12px; height:12px; background:rgba(100,116,139,0.5); border-radius:2px;"></div><span>Infill/Innen</span></div>';
+                hudTitle.innerHTML = `<span>📡</span><span>${isEn ? 'VFA & Ghosting Radar' : 'VFA & Resonanz-Radar'}</span>`;
+                hudContent.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; background:#ff007f; border-radius:3px; box-shadow: 0 0 6px #ff007f;"></div><span>${isEn ? 'Resonance Band (Visible Ghosting)' : 'Resonanzbereich (VFA-Gefahr)'}</span></div>
+                        <div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; background:#00e676; border-radius:3px;"></div><span>${isEn ? 'Safe Speed (No Ghosting)' : 'Sichere Geschwindigkeit'}</span></div>
+                        <div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; background:rgba(100,116,139,0.5); border-radius:3px;"></div><span>${isEn ? 'Internal Structure (Hidden)' : 'Infill / Innenwand'}</span></div>
+                    </div>
+                `;
+            } else if (this.colorMode === 'overhang') {
+                const oStats = this.stats?.overhang;
+                hudTitle.innerHTML = `<span>📐</span><span>${isEn ? 'Overhang & Bridge Inspector' : 'Überhang- & Bridge-Inspektor'}</span>`;
+                hudContent.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="width:12px; height:12px; background:#2ecc71; border-radius:3px;"></div>
+                                <span>&le; 45°</span>
+                            </div>
+                            <span style="color:#2ecc71; font-weight:600;">${isEn ? 'Safe' : 'Sicher'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="width:12px; height:12px; background:#ffe600; border-radius:3px; box-shadow:0 0 5px rgba(255,230,0,0.5);"></div>
+                                <span>45° - 60°</span>
+                            </div>
+                            <span style="color:#ffe600; font-weight:600;">${isEn ? 'Moderate' : 'Mäßig'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="width:12px; height:12px; background:#ff6d00; border-radius:3px; box-shadow:0 0 6px rgba(255,109,0,0.6);"></div>
+                                <span>60° - 75°</span>
+                            </div>
+                            <span style="color:#ff6d00; font-weight:600;">${isEn ? 'Steep' : 'Steil'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="width:12px; height:12px; background:#ff0055; border-radius:3px; box-shadow:0 0 8px rgba(255,0,85,0.7);"></div>
+                                <span>&gt; 75°</span>
+                            </div>
+                            <span style="color:#ff0055; font-weight:600;">${isEn ? 'Critical' : 'Kritisch'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; border-top:1px solid rgba(255,255,255,0.08); padding-top:4px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="width:12px; height:12px; background:#00e5ff; border-radius:3px; box-shadow:0 0 8px rgba(0,229,255,0.7);"></div>
+                                <span>${isEn ? 'Bridge' : 'Brücke'}</span>
+                            </div>
+                            <span style="color:#00e5ff; font-weight:600;">${isEn ? 'Free Air' : 'Frei schwebend'}</span>
+                        </div>
+                        ${oStats ? `
+                        <div style="font-size:0.7rem; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.08); padding-top:4px; display:flex; justify-content:space-between;">
+                            <span>${isEn ? 'Max Angle:' : 'Max. Winkel:'} <strong style="color:var(--text-color);">${oStats.maxAngle}°</strong></span>
+                            <span>${isEn ? 'Bridges:' : 'Brücken:'} <strong style="color:#00e5ff;">${oStats.totalBridgeLengthMm.toFixed(0)} mm</strong></span>
+                        </div>` : ''}
+                    </div>
+                `;
             }
         };
-        // Color Mode & Travel Mode
+        window.updateLegend = updateLegend;
+
+        const hudCloseBtn = document.getElementById('hud-legend-close');
+        if (hudCloseBtn) {
+            hudCloseBtn.addEventListener('click', () => {
+                const hud = document.getElementById('canvas-hud-legend');
+                if (hud) hud.style.display = 'none';
+            });
+        }
+        const toggleHudBtn = document.getElementById('toggle-hud-btn');
+        if (toggleHudBtn) {
+            toggleHudBtn.addEventListener('click', () => {
+                const hud = document.getElementById('canvas-hud-legend');
+                if (hud) {
+                    hud.style.display = hud.style.display === 'none' ? 'block' : 'none';
+                    if (hud.style.display === 'block') updateLegend();
+                }
+            });
+        }
+
+        // Color Mode (Dropdown & Button fallback)
+        const colorModeSelect = document.getElementById('color-mode-select');
+        if (colorModeSelect) {
+            this.colorMode = colorModeSelect.value || 'normal';
+            colorModeSelect.addEventListener('change', (e) => {
+                this.colorMode = e.target.value;
+                updateLegend();
+                this.rebuild3DScene();
+                this.draw();
+            });
+        }
         const colorModeGroup = document.getElementById('color-mode-group');
         if (colorModeGroup) {
             const btns = colorModeGroup.querySelectorAll('.mode-btn');
@@ -832,10 +1080,81 @@ class GCodeViewer {
                     btn.style.background = 'var(--accent-color)'; btn.style.color = 'white';
                     
                     this.colorMode = btn.dataset.mode;
+                    if (colorModeSelect) colorModeSelect.value = this.colorMode;
                     updateLegend();
                     this.rebuild3DScene();
                     this.draw();
                 });
+            });
+        }
+
+        // Filter Popover Menu Handling
+        const filterPopoverBtn = document.getElementById('filter-popover-btn');
+        const filterPopoverMenu = document.getElementById('filter-popover-menu');
+        if (filterPopoverBtn && filterPopoverMenu) {
+            filterPopoverBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isShown = filterPopoverMenu.style.display === 'flex';
+                filterPopoverMenu.style.display = isShown ? 'none' : 'flex';
+            });
+            document.addEventListener('click', (e) => {
+                if (!filterPopoverMenu.contains(e.target) && e.target !== filterPopoverBtn) {
+                    filterPopoverMenu.style.display = 'none';
+                }
+            });
+        }
+
+        const updateFilterBadge = () => {
+            const badge = document.getElementById('filter-count-badge');
+            if (!badge) return;
+            const filterIds = ['filter-outer-wall', 'filter-inner-wall', 'filter-infill', 'filter-top', 'filter-bottom', 'show-seam-btn'];
+            let activeCount = 0;
+            filterIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.checked) activeCount++;
+            });
+            badge.innerText = `${activeCount}/${filterIds.length}`;
+        };
+
+        const filterAllBtn = document.getElementById('filter-all-btn');
+        if (filterAllBtn) {
+            filterAllBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                ['filter-outer-wall', 'filter-inner-wall', 'filter-infill', 'filter-top', 'filter-bottom', 'show-travel-btn', 'show-seam-btn'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.checked = true;
+                });
+                this.featureVisibility.outerWall = true;
+                this.featureVisibility.innerWall = true;
+                this.featureVisibility.infill = true;
+                this.featureVisibility.topSurface = true;
+                this.featureVisibility.bottomSurface = true;
+                this.showTravelMoves = true;
+                this.showZSeams = true;
+                updateFilterBadge();
+                this.rebuild3DScene();
+                this.draw();
+            });
+        }
+
+        const filterNoneBtn = document.getElementById('filter-none-btn');
+        if (filterNoneBtn) {
+            filterNoneBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                ['filter-outer-wall', 'filter-inner-wall', 'filter-infill', 'filter-top', 'filter-bottom', 'show-travel-btn', 'show-seam-btn'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.checked = false;
+                });
+                this.featureVisibility.outerWall = false;
+                this.featureVisibility.innerWall = false;
+                this.featureVisibility.infill = false;
+                this.featureVisibility.topSurface = false;
+                this.featureVisibility.bottomSurface = false;
+                this.showTravelMoves = false;
+                this.showZSeams = false;
+                updateFilterBadge();
+                this.rebuild3DScene();
+                this.draw();
             });
         }
         
@@ -843,6 +1162,7 @@ class GCodeViewer {
         if (showTravelBtn) {
             showTravelBtn.addEventListener('change', (e) => {
                 this.showTravelMoves = e.target.checked;
+                updateFilterBadge();
                 this.rebuild3DScene();
                 this.draw();
             });
@@ -852,6 +1172,16 @@ class GCodeViewer {
         if (showCornerAuditBtn) {
             showCornerAuditBtn.addEventListener('change', (e) => {
                 this.showCornerAudit = e.target.checked;
+                this.rebuild3DScene();
+                this.draw();
+            });
+        }
+
+        const showSeamBtn = document.getElementById('show-seam-btn');
+        if (showSeamBtn) {
+            showSeamBtn.addEventListener('change', (e) => {
+                this.showZSeams = e.target.checked;
+                updateFilterBadge();
                 this.rebuild3DScene();
                 this.draw();
             });
@@ -870,11 +1200,87 @@ class GCodeViewer {
             if (el) {
                 el.addEventListener('change', (e) => {
                     this.featureVisibility[f.key] = e.target.checked;
+                    updateFilterBadge();
                     this.rebuild3DScene();
                     this.draw();
                 });
             }
         });
+
+        // Pressure Advance Tuning Slider & Presets
+        const paSlider = document.getElementById('pa-interactive-slider');
+        const paSliderVal = document.getElementById('pa-slider-val');
+        if (paSlider && paSliderVal) {
+            paSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                paSliderVal.innerText = `${val.toFixed(3)} s`;
+                this.pressureAdvanceValue = val;
+            });
+        }
+
+        const paPresetBtns = document.querySelectorAll('.pa-preset-btn');
+        paPresetBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const val = parseFloat(btn.dataset.val);
+                if (paSlider && paSliderVal) {
+                    paSlider.value = val;
+                    paSliderVal.innerText = `${val.toFixed(3)} s`;
+                    this.pressureAdvanceValue = val;
+                }
+                paPresetBtns.forEach(b => {
+                    b.style.background = 'rgba(255,255,255,0.05)';
+                    b.style.borderColor = 'rgba(255,255,255,0.1)';
+                    b.style.color = 'var(--text-color)';
+                });
+                btn.style.background = 'rgba(0, 229, 255, 0.15)';
+                btn.style.borderColor = 'rgba(0, 229, 255, 0.4)';
+                btn.style.color = '#00e5ff';
+            });
+        });
+
+        // 1-Click Embed PA in G-Code
+        const embedPaBtn = document.getElementById('embed-pa-btn');
+        if (embedPaBtn) {
+            embedPaBtn.addEventListener('click', () => {
+                const val = paSlider ? parseFloat(paSlider.value) : 0.025;
+                const paCmd = `SET_PRESSURE_ADVANCE ADVANCE=${val.toFixed(4)}`;
+                
+                if (!this.originalLines || this.originalLines.length === 0) {
+                    this.showToast(window.currentLang === 'en' ? 'Please upload a G-Code file first.' : 'Bitte lade zuerst eine G-Code-Datei hoch.', 'warning');
+                    return;
+                }
+
+                // Insert PA command after G28 or start sequence
+                let inserted = false;
+                for (let i = 0; i < Math.min(this.originalLines.length, 200); i++) {
+                    const l = this.originalLines[i].trim().toUpperCase();
+                    if (l.startsWith('G28') || l.startsWith('M109') || l.startsWith('M190')) {
+                        this.originalLines.splice(i + 1, 0, `; --- LayerSpy Injected Pressure Advance ---`, paCmd);
+                        inserted = true;
+                        break;
+                    }
+                }
+                if (!inserted) {
+                    this.originalLines.unshift(`; --- LayerSpy Injected Pressure Advance ---`, paCmd);
+                }
+
+                // Mark applied & update UI
+                this.saveAppliedState();
+                this.updateGcodeListAsync();
+                
+                // Update badge in sidebar
+                const badge = document.getElementById('pa-status-badge');
+                if (badge) {
+                    badge.innerText = `Klipper PA: ${val.toFixed(4)}`;
+                    badge.style.background = 'rgba(76, 175, 80, 0.2)';
+                    badge.style.color = '#4caf50';
+                    badge.style.borderColor = 'rgba(76, 175, 80, 0.4)';
+                }
+
+                const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+                this.showToast(isEn ? `✅ Successfully injected "${paCmd}" into G-Code start sequence!` : `✅ "${paCmd}" wurde erfolgreich in den Start-Code eingefügt!`, 'success');
+            });
+        }
     }
 
     isPathVisible(fTypeId, pType = 1) {
@@ -902,6 +1308,8 @@ class GCodeViewer {
         
         // Settings
         this.colorMode = 'normal';
+        const colorModeSelect = document.getElementById('color-mode-select');
+        if (colorModeSelect) colorModeSelect.value = 'normal';
         this.showTravelMoves = false;
 
         document.getElementById('temp-slider').value = this.currentTemp;
@@ -1047,10 +1455,10 @@ class GCodeViewer {
         // Slide up the control bar smoothly
         const controlBar = document.getElementById('main-control-bar');
         if (controlBar) {
-            controlBar.style.maxHeight = '300px';
+            controlBar.style.maxHeight = '70px';
             controlBar.style.opacity = '1';
             controlBar.style.transform = 'translateY(0)';
-            controlBar.style.padding = '15px 25px';
+            controlBar.style.padding = '8px 16px';
             controlBar.style.borderTop = '1px solid var(--border-color)';
         }
         const overlay = document.getElementById('loading-overlay');
@@ -1081,7 +1489,7 @@ class GCodeViewer {
                 document.getElementById('download-btn').disabled = false;
                 if (overlay) overlay.classList.remove('visible');
             } catch(err) {
-                alert("ERROR: " + err.message);
+                this.showToast("ERROR: " + err.message, 'error');
                 console.error(err);
                 if (overlay) overlay.classList.remove('visible');
             }
@@ -1089,7 +1497,7 @@ class GCodeViewer {
         } catch(e) {
             console.error(e);
             if (overlay) overlay.classList.remove('visible');
-            alert("Konnte Demo-Datei nicht laden. Läuft das Projekt über einen Webserver?");
+            this.showToast(window.currentLang === 'en' ? "Could not load demo file. Is the project running on a web server?" : "Konnte Demo-Datei nicht laden. Läuft das Projekt über einen Webserver?", 'error');
         }
     }
 
@@ -1104,7 +1512,7 @@ class GCodeViewer {
         
         // Allow only .gcode files
         if (!file.name.toLowerCase().endsWith('.gcode')) {
-            alert('Bitte nur .gcode Dateien hochladen!');
+            this.showToast(window.currentLang === 'en' ? 'Please upload .gcode files only!' : 'Bitte nur .gcode Dateien hochladen!', 'warning');
             return;
         }
 
@@ -1116,10 +1524,10 @@ class GCodeViewer {
         // Slide up the control bar smoothly
         const controlBar = document.getElementById('main-control-bar');
         if (controlBar) {
-            controlBar.style.maxHeight = '300px';
+            controlBar.style.maxHeight = '70px';
             controlBar.style.opacity = '1';
             controlBar.style.transform = 'translateY(0)';
-            controlBar.style.padding = '15px 25px';
+            controlBar.style.padding = '8px 16px';
             controlBar.style.borderTop = '1px solid var(--border-color)';
         }
         const overlay = document.getElementById('loading-overlay');
@@ -1148,7 +1556,7 @@ class GCodeViewer {
                 document.getElementById('download-btn').disabled = false;
                 overlay.classList.remove('visible');
             } catch(err) {
-                alert("ERROR: " + err.message + "\n" + err.stack);
+                this.showToast("ERROR: " + err.message, 'error');
                 console.error(err);
                 overlay.classList.remove('visible');
             }
@@ -1390,6 +1798,27 @@ self.onmessage = async function(e) {
                 if (g92E) lastE = parseFloat(g92E[1]);
             }
 
+            if (cleanLine.startsWith('M106')) {
+                const sMatch = cleanLine.match(/S([0-9.]+)/);
+                if (sMatch) {
+                    let sVal = parseFloat(sMatch[1]);
+                    if (sVal > 0 && sVal <= 1.0 && cleanLine.includes('.')) {
+                        currentFanPWM = Math.round(sVal * 255);
+                    } else {
+                        currentFanPWM = Math.min(255, Math.round(sVal));
+                    }
+                } else {
+                    currentFanPWM = 255;
+                }
+            } else if (cleanLine.startsWith('M107')) {
+                currentFanPWM = 0;
+            } else if (cleanLine.startsWith('SET_FAN_SPEED')) {
+                const speedMatch = cleanLine.match(/SPEED=([0-9.]+)/i);
+                if (speedMatch) {
+                    currentFanPWM = Math.round(parseFloat(speedMatch[1]) * 255);
+                }
+            }
+
             const isExtruding = cleanLine.includes('E') && !cleanLine.includes('E-');
             
             const xMatch = cleanLine.match(/X([-+]?[0-9]*.?[0-9]+)/);
@@ -1561,12 +1990,25 @@ self.onmessage = async function(e) {
     let a_max = (typeof foundK !== 'undefined' && foundK && foundK.accel && foundK.accel.x) ? foundK.accel.x : 3000;
     let SCV = (typeof foundK !== 'undefined' && foundK && foundK.jerk && foundK.jerk.x) ? foundK.jerk.x : 5.0;
 
-        let prevGrid = new Uint8Array(1600 * 1600);
+    let prevGrid = new Uint8Array(1600 * 1600);
     let currGrid = new Uint8Array(1600 * 1600);
+
+    let maxOverhangAngle = 0;
+    let totalBridgeLength = 0;
+    let steepCount = 0;
+    let bridgeCount = 0;
+    let firstCriticalLayer = -1;
+    let lowFanOverhangCount = 0;
+    let criticalLowFanCount = 0;
 
     for (let i = 0; i < layerList.length; i++) {
         let layer = layerList[i];
         let numPaths = layer.paths.length;
+        let deltaZ = 0.20;
+        if (i > 0) {
+            let dz = layer.z - layerList[i - 1].z;
+            if (dz > 0.01 && dz < 2.0) deltaZ = dz;
+        }
         
         let t_layer = 0;
         // Use TypedArrays for high-performance 2D Kinematics planner
@@ -1710,7 +2152,12 @@ self.onmessage = async function(e) {
                     flowRate = (eDist * Math.PI * Math.pow(1.75 / 2, 2)) / time;
                     if (flowRate > 15) {
                         if (!layer.hasHighFlowWarning) {
-                            diagnosticWarnings.push({ type: 'high_flow', layerIndex: i, msg: 'High volumetric flow (' + flowRate.toFixed(1) + ' mm³/s) at Layer ' + i });
+                            diagnosticWarnings.push({ 
+                                type: 'high_flow', 
+                                layerIndex: i, 
+                                flowRate: flowRate.toFixed(1),
+                                msg: 'High volumetric flow (' + flowRate.toFixed(1) + ' mm³/s) at Layer ' + i 
+                            });
                             layer.hasHighFlowWarning = true;
                         }
                         healthScore -= 0.1;
@@ -1732,64 +2179,154 @@ self.onmessage = async function(e) {
             t_layer += t_segment;
         }
         
-        // Thermal Trap Pass
-        let overhang_length = 0;
+        // Geometric Overhang & Bridge Analysis Pass
         for (let j = 0; j < numPaths; j++) {
             let pType = buffer[j * 12 + 0];
             let x1 = buffer[j * 12 + 1];
             let y1 = buffer[j * 12 + 2];
             let x2 = buffer[j * 12 + 3];
             let y2 = buffer[j * 12 + 4];
+            let fTypeId = buffer[j * 12 + 8];
             let fanPWM = layer.paths[j].fanPWM || 0;
             
-            let diag_flag = 0;
-            
+            let overhang_level = 0; // 0: <=45 deg, 1: 45-60 deg, 2: 60-75 deg, 3: >75 deg / bridge
+            let segmentAngle = 0;
+
             if (pType === 1) { // Extrude
                 let dx = x2 - x1;
                 let dy = y2 - y1;
-                let steps = Math.max(1, Math.ceil(Math.sqrt(dx*dx + dy*dy) * 2)); // 0.5mm steps
-                let isOverhang = (i > 0);
+                let segLen = Math.sqrt(dx*dx + dy*dy);
                 
-                for (let s = 0; s <= steps; s++) {
-                    let cx = x1 + (dx * s) / steps;
-                    let cy = y1 + (dy * s) / steps;
-                    
-                    let gx = Math.floor(cx * 2 + 800);
-                    let gy = Math.floor(cy * 2 + 800);
-                    
-                    if (gx >= 1 && gx < 1599 && gy >= 1 && gy < 1599) {
-                        currGrid[gy * 1600 + gx] = 1; // Draw to current grid
-                        
-                        // Check 3x3 neighborhood for support (approx 1.5mm)
-                        let supported = false;
-                        for(let dy=-1; dy<=1; dy++) {
-                            for(let dx=-1; dx<=1; dx++) {
-                                if (prevGrid[(gy+dy) * 1600 + (gx+dx)] === 1) supported = true;
-                            }
-                        }
-                        if (supported) {
-                            isOverhang = false;
-                        }
-                    }
-                }
-                
-                if (isOverhang) {
-                    overhang_length += Math.sqrt(dx*dx + dy*dy);
-                    if (fanPWM < 180) {
-                        if (t_layer < 6.0 || overhang_length > 15.0) {
-                            diag_flag = 1;
-                            if (!layer.hasThermalWarning) {
-                                diagnosticWarnings.push({ type: 'thermal_risk', layerIndex: i, msg: 'Melting Risk (Layer ' + i + '): Überhang bei ' + t_layer.toFixed(1) + 's Layerzeit & ' + Math.round((fanPWM/255)*100) + '% Lüfter' });
-                                layer.hasThermalWarning = true;
-                            }
-                            healthScore -= 0.01;
+                if (fTypeId === 8) { // Explicit Bridge/Overhang
+                    overhang_level = 3;
+                    segmentAngle = 80;
+                    bridgeCount++;
+                    totalBridgeLength += segLen;
+                    if (firstCriticalLayer === -1 && i > 0) firstCriticalLayer = i;
+                } else if (i === 0) {
+                    // Bed layer
+                    overhang_level = 0;
+                    segmentAngle = 0;
+                    let steps = Math.max(1, Math.ceil(segLen * 2));
+                    for (let s = 0; s <= steps; s++) {
+                        let cx = x1 + (dx * s) / steps;
+                        let cy = y1 + (dy * s) / steps;
+                        let gx = Math.floor(cx * 2 + 800);
+                        let gy = Math.floor(cy * 2 + 800);
+                        if (gx >= 2 && gx < 1598 && gy >= 2 && gy < 1598) {
+                            currGrid[gy * 1600 + gx] = 1;
                         }
                     }
                 } else {
-                    overhang_length = 0;
+                    let steps = Math.max(1, Math.ceil(segLen * 2)); // 0.5mm steps
+                    let unsuppCount = 0;
+                    let maxSampleDist = 0;
+                    
+                    for (let s = 0; s <= steps; s++) {
+                        let cx = x1 + (dx * s) / steps;
+                        let cy = y1 + (dy * s) / steps;
+                        let gx = Math.floor(cx * 2 + 800);
+                        let gy = Math.floor(cy * 2 + 800);
+                        
+                        if (gx >= 2 && gx < 1598 && gy >= 2 && gy < 1598) {
+                            currGrid[gy * 1600 + gx] = 1; // Mark on current grid
+                            
+                            // Check 1-ring (approx 0.5mm)
+                            let sup1 = false;
+                            for(let ddy=-1; ddy<=1; ddy++) {
+                                for(let ddx=-1; ddx<=1; ddx++) {
+                                    if (prevGrid[(gy+ddy) * 1600 + (gx+ddx)] === 1) {
+                                        sup1 = true;
+                                        break;
+                                    }
+                                }
+                                if (sup1) break;
+                            }
+                            
+                            if (!sup1) {
+                                // Check 2-ring (approx 1.0mm)
+                                let sup2 = false;
+                                for(let ddy=-2; ddy<=2; ddy++) {
+                                    for(let ddx=-2; ddx<=2; ddx++) {
+                                        if (prevGrid[(gy+ddy) * 1600 + (gx+ddx)] === 1) {
+                                            sup2 = true;
+                                            break;
+                                        }
+                                    }
+                                    if (sup2) break;
+                                }
+                                if (sup2) {
+                                    if (maxSampleDist < 0.6) maxSampleDist = 0.6;
+                                } else {
+                                    unsuppCount++;
+                                    if (maxSampleDist < 1.2) maxSampleDist = 1.2;
+                                }
+                            }
+                        }
+                    }
+                    
+                    let unsuppRatio = steps > 0 ? (unsuppCount / (steps + 1)) : 0;
+                    if (unsuppRatio > 0.55) {
+                        overhang_level = 3; // Critical / Bridge
+                        segmentAngle = Math.min(85, Math.round(Math.atan((maxSampleDist > 0 ? maxSampleDist : 0.8) / deltaZ) * (180 / Math.PI)));
+                        bridgeCount++;
+                        totalBridgeLength += segLen;
+                        if (firstCriticalLayer === -1) firstCriticalLayer = i;
+                    } else if (unsuppRatio > 0.2 || maxSampleDist >= 0.6) {
+                        let calcAngle = Math.atan((maxSampleDist > 0 ? maxSampleDist : 0.4) / deltaZ) * (180 / Math.PI);
+                        if (calcAngle >= 60) {
+                            overhang_level = 2; // 60-75
+                            steepCount++;
+                            segmentAngle = Math.round(calcAngle);
+                            if (firstCriticalLayer === -1) firstCriticalLayer = i;
+                        } else {
+                            overhang_level = 1; // 45-60
+                            segmentAngle = Math.round(calcAngle);
+                        }
+                    } else {
+                        overhang_level = 0;
+                        segmentAngle = Math.round(Math.atan(0.12 / deltaZ) * (180 / Math.PI));
+                    }
+                }
+                
+                if (segmentAngle > maxOverhangAngle) {
+                    maxOverhangAngle = segmentAngle;
+                }
+                
+                // Fan cooling audit on steep / bridge overhangs (Traffic Light System / Ampelsystem)
+                if (i >= 2) {
+                    let fanPct = Math.round((fanPWM / 255) * 100);
+                    if (overhang_level >= 2 && fanPWM < 75) { // Critical Red: Steep (>60°) with < 30% fan
+                        lowFanOverhangCount++;
+                        criticalLowFanCount++;
+                        if (!layer.hasThermalCriticalWarning) {
+                            diagnosticWarnings.push({
+                                type: 'thermal_risk_critical',
+                                layerIndex: i,
+                                angle: segmentAngle,
+                                fanPercent: fanPct,
+                                msg: 'Melting Risk (Layer ' + i + '): Steep overhang (' + segmentAngle + '°) with insufficient cooling fan (' + fanPct + '%)'
+                            });
+                            layer.hasThermalCriticalWarning = true;
+                        }
+                        healthScore -= 0.04;
+                    } else if ((overhang_level >= 2 && fanPWM < 180) || (overhang_level === 1 && fanPWM < 25)) { // Moderate Yellow: 30-70% fan on steep or 0% on moderate
+                        lowFanOverhangCount++;
+                        if (!layer.hasThermalWarning && !layer.hasThermalCriticalWarning) {
+                            diagnosticWarnings.push({
+                                type: 'thermal_risk_warning',
+                                layerIndex: i,
+                                angle: segmentAngle,
+                                fanPercent: fanPct,
+                                msg: 'Cooling Notice (Layer ' + i + '): Overhang (' + segmentAngle + '°) with reduced cooling fan (' + fanPct + '%)'
+                            });
+                            layer.hasThermalWarning = true;
+                        }
+                        healthScore -= 0.01;
+                    }
                 }
             }
-            buffer[j * 12 + 11] = diag_flag;
+            buffer[j * 12 + 11] = overhang_level;
         }
         
         // Swap grids
@@ -1817,15 +2354,24 @@ self.onmessage = async function(e) {
     
     healthScore = Math.max(0, healthScore);
     
+    stats.overhang = {
+        maxAngle: maxOverhangAngle,
+        totalBridgeLengthMm: Math.round(totalBridgeLength * 10) / 10,
+        steepCount: steepCount,
+        bridgeCount: bridgeCount,
+        firstCriticalLayer: firstCriticalLayer,
+        lowFanCount: lowFanOverhangCount,
+        criticalLowFanCount: criticalLowFanCount
+    };
+    
     self.postMessage({
-            type: 'done',
-            layerList: layerList,
-            stats: stats,
-            defaults: defaults,
-            foundK: foundK
-        , 
-            diagnostics: { warnings: diagnosticWarnings, score: healthScore }
-        }, transferables);
+        type: 'done',
+        layerList: layerList,
+        stats: stats,
+        defaults: defaults,
+        foundK: foundK, 
+        diagnostics: { warnings: diagnosticWarnings, score: healthScore }
+    }, transferables);
     };
 
     processChunk(0);
@@ -1937,13 +2483,16 @@ self.onmessage = async function(e) {
                     
                     this.updateLayerIndicator();
                     
-                    this.rebuild3DScene();
-                    this.draw();
-                    
                     this.workerDiagnostics = msg.diagnostics;
                     this.auditCorners();
+                    this.analyzeZSeams();
                     this.runLinter();
                     this.checkVFA();
+                    this.updateOverhangUI(msg.stats?.overhang);
+                    this.updatePressureAdvanceUI(msg.stats?.pressureAdvance);
+                    
+                    this.rebuild3DScene();
+                    this.draw();
                     
                     worker.terminate();
                     resolve();
@@ -2051,10 +2600,10 @@ self.onmessage = async function(e) {
         // Slide up the control bar smoothly
         const controlBar = document.getElementById('main-control-bar');
         if (controlBar) {
-            controlBar.style.maxHeight = '300px';
+            controlBar.style.maxHeight = '70px';
             controlBar.style.opacity = '1';
             controlBar.style.transform = 'translateY(0)';
-            controlBar.style.padding = '15px 25px';
+            controlBar.style.padding = '8px 16px';
             controlBar.style.borderTop = '1px solid var(--border-color)';
         }
         const overlay = document.getElementById('loading-overlay');
@@ -2706,34 +3255,43 @@ self.onmessage = async function(e) {
         const speedFactor = this.currentSpeed / 100.0;
         const newTimeSec = this.stats.originalPrintTimeSec / speedFactor;
         
-        document.getElementById('stat-time').innerText = this.formatTime(newTimeSec);
+        const statTimeEl = document.getElementById('stat-time');
+        if (statTimeEl) statTimeEl.innerText = this.formatTime(newTimeSec);
         
         const savedBox = document.getElementById('stat-saved-box');
+        if (!savedBox) return;
         const savedLabel = savedBox.querySelector('.stat-label');
         const savedSpan = document.getElementById('stat-saved');
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
         
         if (this.originalJsTime) {
             const savedSec = this.originalJsTime - newTimeSec;
             if (savedSec > 60) {
                 savedBox.style.display = 'flex';
-                if(savedLabel) savedLabel.innerText = '⚡ Du sparst';
-                savedSpan.innerText = this.formatTime(savedSec);
-                savedSpan.style.color = 'var(--text-success)';
+                if(savedLabel) savedLabel.innerText = isEn ? '⚡ You save' : '⚡ Du sparst';
+                if(savedSpan) {
+                    savedSpan.innerText = this.formatTime(savedSec);
+                    savedSpan.style.color = '#4caf50';
+                }
             } else if (savedSec < -60) {
                 savedBox.style.display = 'flex';
-                if(savedLabel) savedLabel.innerText = '🐌 Dauert länger';
-                savedSpan.innerText = this.formatTime(Math.abs(savedSec));
-                savedSpan.style.color = 'var(--text-danger)';
+                if(savedLabel) savedLabel.innerText = isEn ? '🐌 Slower' : '🐌 Dauert länger';
+                if(savedSpan) {
+                    savedSpan.innerText = this.formatTime(Math.abs(savedSec));
+                    savedSpan.style.color = '#ff5252';
+                }
             } else {
                 savedBox.style.display = 'none';
             }
         } else {
             if (speedFactor > 1.0) {
                 savedBox.style.display = 'flex';
-                if(savedLabel) savedLabel.innerText = '⚡ Du sparst';
+                if(savedLabel) savedLabel.innerText = isEn ? '⚡ You save' : '⚡ Du sparst';
                 const savedSec = this.stats.originalPrintTimeSec - newTimeSec;
-                savedSpan.innerText = this.formatTime(savedSec);
-                savedSpan.style.color = 'var(--text-success)';
+                if(savedSpan) {
+                    savedSpan.innerText = this.formatTime(savedSec);
+                    savedSpan.style.color = '#4caf50';
+                }
             } else {
                 savedBox.style.display = 'none';
             }
@@ -2746,6 +3304,85 @@ self.onmessage = async function(e) {
         const m = Math.floor((seconds % 3600) / 60);
         if (h > 0) return `${h}h ${m}m`;
         return `${m}m`;
+    }
+
+    showToast(message, type = 'info', duration = 3500) {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                pointer-events: none;
+                align-items: center;
+            `;
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        const bgColors = {
+            success: 'rgba(20, 35, 25, 0.95)',
+            error: 'rgba(40, 20, 20, 0.95)',
+            warning: 'rgba(40, 30, 15, 0.95)',
+            info: 'rgba(18, 22, 30, 0.95)'
+        };
+        const borderColors = {
+            success: 'rgba(76, 175, 80, 0.5)',
+            error: 'rgba(244, 67, 54, 0.5)',
+            warning: 'rgba(255, 152, 0, 0.5)',
+            info: 'rgba(0, 188, 212, 0.5)'
+        };
+
+        toast.style.cssText = `
+            background: ${bgColors[type] || bgColors.info};
+            border: 1px solid ${borderColors[type] || borderColors.info};
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            font-size: 0.88rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90vw;
+            text-align: center;
+            cursor: pointer;
+        `;
+
+        toast.innerHTML = `<span>${message}</span>`;
+        container.appendChild(toast);
+
+        // Trigger enter animation
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0) scale(1)';
+        });
+
+        // Auto dismiss
+        const dismiss = () => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px) scale(0.95)';
+            setTimeout(() => toast.remove(), 300);
+        };
+
+        toast.addEventListener('click', dismiss);
+        if (duration > 0) {
+            setTimeout(dismiss, duration);
+        }
     }
 
     checkVFA() {
@@ -2830,19 +3467,27 @@ self.onmessage = async function(e) {
             innerStatEl.style.color = innerPercent > 15 ? '#ffb300' : (innerPercent > 0 ? '#f1c40f' : '#00e676');
         }
         
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+        
         const warningDiv = document.getElementById('vfa-warning');
         if (warningDiv) {
             if (totalOuterWallLength > 0) {
                 warningDiv.style.display = 'block';
                 if (outerPercent > 15) {
                     warningDiv.style.color = '#ff007f';
-                    warningDiv.innerText = `⚠️ VFA-Gefahr: ${outerPercent.toFixed(1)}% der sichtbaren Außenwand im Resonanzbereich!`;
+                    warningDiv.innerText = isEn 
+                        ? `⚠️ VFA Risk: ${outerPercent.toFixed(1)}% of visible outer wall in resonance band!`
+                        : `⚠️ VFA-Gefahr: ${outerPercent.toFixed(1)}% der sichtbaren Außenwand im Resonanzbereich!`;
                 } else if (outerPercent > 0) {
                     warningDiv.style.color = '#f1c40f';
-                    warningDiv.innerText = `ℹ️ VFA-Hinweis: ${outerPercent.toFixed(1)}% der Außenwand im Resonanzbereich.`;
+                    warningDiv.innerText = isEn
+                        ? `ℹ️ VFA Notice: ${outerPercent.toFixed(1)}% of outer wall in resonance band.`
+                        : `ℹ️ VFA-Hinweis: ${outerPercent.toFixed(1)}% der Außenwand im Resonanzbereich.`;
                 } else {
                     warningDiv.style.color = '#00e676';
-                    warningDiv.innerText = `✅ Keine VFA-Gefahr: Außenwand-Geschwindigkeiten sind sicher.`;
+                    warningDiv.innerText = isEn
+                        ? `✅ No VFA Risk: Outer wall speeds are safe.`
+                        : `✅ Keine VFA-Gefahr: Außenwand-Geschwindigkeiten sind sicher.`;
                 }
             } else {
                 warningDiv.style.display = 'none';
@@ -2915,6 +3560,7 @@ self.onmessage = async function(e) {
         const layers = this.layerList || this.layers;
         if (!layers || layers.length === 0) return;
         
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
         const pa = this.detectPressureAdvance();
         let bulgeCount = 0;
         let stressCount = 0;
@@ -2992,18 +3638,24 @@ self.onmessage = async function(e) {
                         if (!pa.enabled) {
                             riskLevel = 'red';
                             type = 'bulge_risk';
-                            msg = `Wulst-Gefahr: Scharfe Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s ohne Pressure Advance`;
+                            msg = isEn 
+                                ? `Bulge Risk: Sharp corner (${cornerAngleDeg.toFixed(0)}°) with Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s without Pressure Advance`
+                                : `Wulst-Gefahr: Scharfe Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s ohne Pressure Advance`;
                             bulgeCount++;
                         } else {
                             riskLevel = 'yellow';
                             type = 'pa_stress';
-                            msg = `PA-Belastungspunkt: Scharfe Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s (PA aktiv)`;
+                            msg = isEn
+                                ? `PA Stress Point: Sharp corner (${cornerAngleDeg.toFixed(0)}°) with Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s (PA active)`
+                                : `PA-Belastungspunkt: Scharfe Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s (PA aktiv)`;
                             stressCount++;
                         }
                     } else if (deltaV >= 30 || effectiveDeltaV >= 30) {
                         riskLevel = 'yellow';
                         type = 'moderate_decel';
-                        msg = `Moderate Verzögerung: Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s`;
+                        msg = isEn
+                            ? `Moderate Deceleration: Corner (${cornerAngleDeg.toFixed(0)}°) with Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s`
+                            : `Moderate Verzögerung: Ecke (${cornerAngleDeg.toFixed(0)}°) mit Δv=${Math.round(Math.max(deltaV, effectiveDeltaV))} mm/s`;
                         stressCount++;
                     }
                     
@@ -3031,12 +3683,12 @@ self.onmessage = async function(e) {
         const badge = document.getElementById('pa-status-badge');
         if (badge) {
             if (pa.enabled) {
-                badge.innerText = `Aktiv (${pa.value})`;
+                badge.innerText = isEn ? `Active (${pa.value})` : `Aktiv (${pa.value})`;
                 badge.style.background = 'rgba(46, 204, 113, 0.2)';
                 badge.style.color = '#2ecc71';
                 badge.style.borderColor = 'rgba(46, 204, 113, 0.4)';
             } else {
-                badge.innerText = 'Inaktiv';
+                badge.innerText = isEn ? 'Inactive' : 'Inaktiv';
                 badge.style.background = 'rgba(231, 76, 60, 0.2)';
                 badge.style.color = '#ff6b6b';
                 badge.style.borderColor = 'rgba(231, 76, 60, 0.4)';
@@ -3044,19 +3696,350 @@ self.onmessage = async function(e) {
         }
         
         const bulgeSpan = document.getElementById('corner-bulge-count');
-        if (bulgeSpan) bulgeSpan.innerText = `${bulgeCount} Ecken`;
+        if (bulgeSpan) bulgeSpan.innerText = `${bulgeCount} ${isEn ? 'Corners' : 'Ecken'}`;
         
         const stressSpan = document.getElementById('corner-stress-count');
-        if (stressSpan) stressSpan.innerText = `${stressCount} Ecken`;
+        if (stressSpan) stressSpan.innerText = `${stressCount} ${isEn ? 'Corners' : 'Ecken'}`;
         
         const note = document.getElementById('corner-audit-note');
         if (note) {
             if (bulgeCount > 0) {
-                note.innerHTML = `⚠️ <strong style="color:#ff6b6b;">${bulgeCount} Wulststellen</strong> ohne PA. Empfehlung: Klipper PA konfigurieren!`;
+                note.innerHTML = isEn
+                    ? `⚠️ <strong style="color:#ff6b6b;">${bulgeCount} Bulge Points</strong> without PA. Recommendation: Configure Klipper PA!`
+                    : `⚠️ <strong style="color:#ff6b6b;">${bulgeCount} Wulststellen</strong> ohne PA. Empfehlung: Klipper PA konfigurieren!`;
             } else if (stressCount > 0) {
-                note.innerHTML = `✅ <strong style="color:#2ecc71;">Keine Wulstgefahr</strong> (${stressCount} dynamische Ecken durch PA kompensiert).`;
+                note.innerHTML = isEn
+                    ? `✅ <strong style="color:#2ecc71;">No Bulge Risk</strong> (${stressCount} dynamic corners compensated by PA).`
+                    : `✅ <strong style="color:#2ecc71;">Keine Wulstgefahr</strong> (${stressCount} dynamische Ecken durch PA kompensiert).`;
             } else {
-                note.innerText = 'Keine kritischen Eckenverzögerungen gefunden.';
+                note.innerText = isEn ? 'No critical corner decelerations found.' : 'Keine kritischen Eckenverzögerungen gefunden.';
+            }
+        }
+    }
+
+    analyzeZSeams() {
+        this.zSeamData = {
+            points: [],
+            byLayer: {},
+            stats: {
+                total: 0,
+                inCorner: 0,
+                onFlat: 0,
+                cornerPercent: 100,
+                alignmentType: 'none',
+                avgSpreadMm: 0
+            }
+        };
+
+        const layers = this.layerList || this.layers;
+        if (!layers || layers.length === 0) return;
+
+        let totalSeams = 0;
+        let inCornerCount = 0;
+        let onFlatCount = 0;
+        const seamXCoords = [];
+        const seamYCoords = [];
+
+        for (let layerIdx = 0; layerIdx < layers.length; layerIdx++) {
+            const layer = layers[layerIdx];
+            if (!layer || !layer.paths) continue;
+
+            const paths = layer.paths;
+            const numSegments = Math.floor(paths.length / 12);
+            if (numSegments === 0) continue;
+
+            this.zSeamData.byLayer[layerIdx] = [];
+
+            // Check if this layer has explicit outer wall features
+            let hasOuterWallTag = false;
+            for (let j = 0; j < numSegments; j++) {
+                if (paths[j * 12 + 0] === 1 && (paths[j * 12 + 8] === 1 || paths[j * 12 + 8] === 8)) {
+                    hasOuterWallTag = true;
+                    break;
+                }
+            }
+
+            // Detect seam: Find outer wall extrusion start
+            let foundLayerSeam = false;
+            for (let j = 0; j < numSegments; j++) {
+                const type = paths[j * 12 + 0];
+                const fTypeId = paths[j * 12 + 8];
+
+                // Outer wall extrusion
+                const isOuter = hasOuterWallTag ? (fTypeId === 1 || fTypeId === 8) : (type === 1);
+                if (type === 1 && isOuter) {
+                    // Check if this is the start of an extrusion loop
+                    const isStart = (j === 0) || 
+                                    (paths[(j - 1) * 12 + 0] === 0) || 
+                                    (hasOuterWallTag && paths[(j - 1) * 12 + 8] !== 1 && paths[(j - 1) * 12 + 8] !== 8);
+
+                    if (isStart) {
+                        const sx = paths[j * 12 + 1];
+                        const sy = paths[j * 12 + 2];
+                        const sz = layer.z || 0;
+                        const lineIdx = paths[j * 12 + 7] || 0;
+
+                        // Calculate corner angle at seam start
+                        const dx1 = paths[j * 12 + 3] - sx;
+                        const dy1 = paths[j * 12 + 4] - sy;
+                        const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+
+                        let isCorner = false;
+                        let angleDeg = 180;
+
+                        if (j < numSegments - 1 && len1 > 0.01) {
+                            const dx2 = paths[(j + 1) * 12 + 3] - paths[(j + 1) * 12 + 1];
+                            const dy2 = paths[(j + 1) * 12 + 4] - paths[(j + 1) * 12 + 2];
+                            const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+                            if (len2 > 0.01) {
+                                const u1x = dx1 / len1, u1y = dy1 / len1;
+                                const u2x = dx2 / len2, u2y = dy2 / len2;
+                                const dot = Math.max(-1.0, Math.min(1.0, u1x * u2x + u1y * u2y));
+                                const turnAngle = Math.acos(dot) * (180 / Math.PI);
+                                angleDeg = 180 - turnAngle;
+                            }
+                        }
+
+                        // Also check if seam connects to loop end: find closing segment
+                        for (let k = j + 1; k < numSegments; k++) {
+                            if (paths[k * 12 + 0] === 1 && (paths[k * 12 + 8] === 1 || paths[k * 12 + 8] === 8)) {
+                                const endX = paths[k * 12 + 3];
+                                const endY = paths[k * 12 + 4];
+                                const distToStart = Math.sqrt((endX - sx)*(endX - sx) + (endY - sy)*(endY - sy));
+                                if (distToStart < 0.25) {
+                                    const cdx = endX - paths[k * 12 + 1];
+                                    const cdy = endY - paths[k * 12 + 2];
+                                    const clen = Math.sqrt(cdx * cdx + cdy * cdy);
+                                    if (clen > 0.01 && len1 > 0.01) {
+                                        const cu_x = cdx / clen, cu_y = cdy / clen;
+                                        const su_x = dx1 / len1, su_y = dy1 / len1;
+                                        const dotLoop = Math.max(-1.0, Math.min(1.0, cu_x * su_x + cu_y * su_y));
+                                        const loopTurn = Math.acos(dotLoop) * (180 / Math.PI);
+                                        angleDeg = 180 - loopTurn;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+
+                        isCorner = angleDeg < 135;
+
+                        const seamItem = {
+                            layerIndex: layerIdx,
+                            x: sx,
+                            y: sy,
+                            z: sz,
+                            inCorner: isCorner,
+                            angle: Math.round(angleDeg),
+                            lineIndex: lineIdx
+                        };
+
+                        this.zSeamData.points.push(seamItem);
+                        this.zSeamData.byLayer[layerIdx].push(seamItem);
+                        seamXCoords.push(sx);
+                        seamYCoords.push(sy);
+
+                        totalSeams++;
+                        if (isCorner) inCornerCount++;
+                        else onFlatCount++;
+
+                        foundLayerSeam = true;
+                        if (foundLayerSeam) break;
+                    }
+                }
+            }
+        }
+
+        // Calculate Alignment Dispersion
+        let alignmentType = 'aligned';
+        let cornerPercent = totalSeams > 0 ? (inCornerCount / totalSeams) * 100 : 100;
+
+        if (seamXCoords.length > 2) {
+            let sumDist = 0;
+            let count = 0;
+            for (let i = 0; i < seamXCoords.length - 1; i++) {
+                const dx = seamXCoords[i+1] - seamXCoords[i];
+                const dy = seamYCoords[i+1] - seamYCoords[i];
+                sumDist += Math.sqrt(dx * dx + dy * dy);
+                count++;
+            }
+            const avgDist = count > 0 ? sumDist / count : 0;
+            this.zSeamData.stats.avgSpreadMm = avgDist;
+
+            if (avgDist > 4.0) {
+                alignmentType = 'random';
+            } else {
+                alignmentType = 'aligned';
+            }
+        }
+
+        this.zSeamData.stats.total = totalSeams;
+        this.zSeamData.stats.inCorner = inCornerCount;
+        this.zSeamData.stats.onFlat = onFlatCount;
+        this.zSeamData.stats.cornerPercent = cornerPercent;
+        this.zSeamData.stats.alignmentType = alignmentType;
+
+        this.updateZSeamUI();
+    }
+
+    updateZSeamUI() {
+        const stats = this.zSeamData?.stats;
+        if (!stats) return;
+
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+
+        const badge = document.getElementById('zseam-badge');
+        if (badge) {
+            badge.innerText = `${stats.cornerPercent.toFixed(0)}% ${isEn ? 'Corner' : 'Kante'}`;
+            if (stats.cornerPercent >= 80) {
+                badge.style.background = 'rgba(46, 204, 113, 0.2)';
+                badge.style.color = '#2ecc71';
+                badge.style.borderColor = 'rgba(46, 204, 113, 0.4)';
+            } else if (stats.cornerPercent >= 50) {
+                badge.style.background = 'rgba(241, 196, 15, 0.2)';
+                badge.style.color = '#f1c40f';
+                badge.style.borderColor = 'rgba(241, 196, 15, 0.4)';
+            } else {
+                badge.style.background = 'rgba(231, 76, 60, 0.2)';
+                badge.style.color = '#ff6b6b';
+                badge.style.borderColor = 'rgba(231, 76, 60, 0.4)';
+            }
+        }
+
+        const cornerCountEl = document.getElementById('zseam-corner-count');
+        if (cornerCountEl) cornerCountEl.innerText = `${stats.inCorner} (${stats.cornerPercent.toFixed(0)}%)`;
+
+        const flatCountEl = document.getElementById('zseam-flat-count');
+        if (flatCountEl) {
+            const flatPercent = 100 - stats.cornerPercent;
+            flatCountEl.innerText = `${stats.onFlat} (${flatPercent.toFixed(0)}%)`;
+        }
+
+        const noteEl = document.getElementById('zseam-status-note');
+        if (noteEl) {
+            const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+            if (stats.total === 0) {
+                noteEl.innerText = isEn ? 'No Z-seams detected.' : 'Keine Z-Nähte erkannt.';
+            } else if (stats.cornerPercent >= 85) {
+                noteEl.innerHTML = `✅ <strong style="color:#2ecc71;">${isEn ? 'Optimal Seam Placement' : 'Optimale Platzierung'}</strong> (${stats.alignmentType === 'aligned' ? (isEn ? 'Aligned in corner' : 'In Kante ausgerichtet') : (isEn ? 'Corner dispersed' : 'In Kanten verteilt')}).`;
+            } else if (stats.onFlat > 0) {
+                noteEl.innerHTML = `⚠️ <strong style="color:#ff6b6b;">${isEn ? 'Visible Seam Risk' : 'Sichtbares Naht-Risiko'}</strong> (${stats.onFlat} ${isEn ? 'seams on flat surface' : 'Nähte auf glatter Sichtfläche'}).`;
+            } else {
+                noteEl.innerText = isEn ? `${stats.total} seam points analyzed.` : `${stats.total} Nahtpunkte analysiert.`;
+            }
+        }
+    }
+
+    updateOverhangUI(stats) {
+        if (!stats && this.overhangStats) stats = this.overhangStats;
+        if (!stats) return;
+        this.overhangStats = stats;
+        
+        const badge = document.getElementById('overhang-badge');
+        const maxAngleEl = document.getElementById('overhang-max-angle');
+        const bridgeStatEl = document.getElementById('overhang-bridge-stat');
+        const statusNoteEl = document.getElementById('overhang-status-note');
+        
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+        
+        if (maxAngleEl) {
+            maxAngleEl.innerText = `${stats.maxAngle}°`;
+            if (stats.maxAngle > 70) {
+                maxAngleEl.style.color = '#e91e63';
+            } else if (stats.maxAngle > 55) {
+                maxAngleEl.style.color = '#ff9800';
+            } else {
+                maxAngleEl.style.color = '#4caf50';
+            }
+        }
+        
+        if (bridgeStatEl) {
+            bridgeStatEl.innerText = `${stats.totalBridgeLengthMm.toFixed(1)} mm (${stats.bridgeCount})`;
+        }
+        
+        if (badge) {
+            if (stats.maxAngle > 60 || stats.bridgeCount > 0) {
+                const layerStr = stats.firstCriticalLayer >= 0 ? (isEn ? ` (from L${stats.firstCriticalLayer})` : ` (ab L${stats.firstCriticalLayer})`) : '';
+                badge.innerText = (isEn ? 'Supports Needed' : 'Stützen empfohlen') + layerStr;
+                badge.style.background = 'rgba(233, 30, 99, 0.2)';
+                badge.style.color = '#e91e63';
+                badge.style.borderColor = 'rgba(233, 30, 99, 0.4)';
+            } else {
+                badge.innerText = isEn ? 'No Supports Needed' : 'Kein Support nötig';
+                badge.style.background = 'rgba(76, 175, 80, 0.2)';
+                badge.style.color = '#4caf50';
+                badge.style.borderColor = 'rgba(76, 175, 80, 0.4)';
+            }
+        }
+        
+        if (statusNoteEl) {
+            if (stats.criticalLowFanCount > 0) {
+                statusNoteEl.innerHTML = `🔴 <strong style="color:#ff6b6b;">${isEn ? 'Critical Cooling Deficit' : 'Kritisches Kühlungsdefizit'}</strong> (${stats.criticalLowFanCount}x ${isEn ? 'steep overhangs under 30% fan' : 'Steilüberhänge unter 30% Lüfter'}).`;
+            } else if (stats.lowFanCount > 0) {
+                statusNoteEl.innerHTML = `🟡 <strong style="color:#ff9800;">${isEn ? 'Reduced Fan Speed' : 'Reduzierte Lüfterdrehzahl'}</strong> (${stats.lowFanCount}x ${isEn ? 'overhangs under 70% fan' : 'Überhänge unter 70% Lüfter'}).`;
+            } else if (stats.maxAngle > 60) {
+                statusNoteEl.innerHTML = `❄️ <strong style="color:#2ecc71;">${isEn ? 'High Fan Active' : 'Hohe Kühlung aktiv'}</strong> (${isEn ? 'Overhangs sufficiently cooled' : 'Überhänge ausreichend gekühlt'}).`;
+            } else {
+                statusNoteEl.innerText = isEn ? 'Cooling: 100% Optimal (No steep zones).' : 'Kühlung: 100% Optimal (Keine Steilzonen).';
+                statusNoteEl.style.color = 'var(--text-muted)';
+            }
+        }
+    }
+
+    updatePressureAdvanceUI(paData) {
+        if (!paData && this.paStats) paData = this.paStats;
+        if (!paData) return;
+        this.paStats = paData;
+
+        const badge = document.getElementById('pa-status-badge');
+        const cornerCountEl = document.getElementById('pa-corner-count');
+        const retractScoreEl = document.getElementById('pa-retract-score');
+        const statusNoteEl = document.getElementById('pa-status-note');
+        const slider = document.getElementById('pa-interactive-slider');
+        const sliderVal = document.getElementById('pa-slider-val');
+
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+
+        if (badge) {
+            if (paData.detected) {
+                const typeStr = paData.type === 'klipper' ? 'Klipper PA' : 'Marlin K';
+                badge.innerText = `${typeStr}: ${paData.value}`;
+                badge.style.background = 'rgba(76, 175, 80, 0.2)';
+                badge.style.color = '#4caf50';
+                badge.style.borderColor = 'rgba(76, 175, 80, 0.4)';
+                if (slider && sliderVal) {
+                    slider.value = paData.value;
+                    sliderVal.innerText = `${paData.value.toFixed(3)} s`;
+                }
+            } else {
+                badge.innerText = isEn ? 'Standard (No PA)' : 'Standard (Kein PA)';
+                badge.style.background = 'rgba(0, 229, 255, 0.15)';
+                badge.style.color = '#00e5ff';
+                badge.style.borderColor = 'rgba(0, 229, 255, 0.35)';
+            }
+        }
+
+        if (cornerCountEl) {
+            cornerCountEl.innerText = `${paData.cornerBulgeCount || 0} ${isEn ? 'Corners' : 'Ecken'}`;
+            cornerCountEl.style.color = (paData.cornerBulgeCount > 20 && !paData.detected) ? '#ff9800' : 'var(--text-color)';
+        }
+
+        if (retractScoreEl) {
+            const score = paData.retractScore !== undefined ? paData.retractScore : 100;
+            retractScoreEl.innerText = `${score}% (${score >= 90 ? 'Optimal' : (score >= 70 ? (isEn ? 'Moderate' : 'Mäßig') : (isEn ? 'Critical' : 'Kritisch'))})`;
+            retractScoreEl.style.color = score >= 90 ? '#4caf50' : (score >= 70 ? '#ff9800' : '#f44336');
+        }
+
+        if (statusNoteEl) {
+            if (paData.grindingClusters > 0) {
+                const layersStr = (paData.grindingLayers || []).map(l => `L${l}`).join(', ');
+                statusNoteEl.innerHTML = `⚠️ <strong style="color:#ff9800;">${isEn ? 'Grinding Risk' : 'Grinding-Gefahr'}</strong> (${paData.grindingClusters}x ${isEn ? 'clusters at' : 'Cluster bei'} ${layersStr}).`;
+            } else if (paData.cornerBulgeCount > 20 && !paData.detected) {
+                statusNoteEl.innerHTML = `💡 <strong style="color:#00bcd4;">${isEn ? 'PA Recommended' : 'PA empfohlen'}</strong> (${isEn ? 'Corners may bulge without PA' : 'Ecken können wulstig werden'}).`;
+            } else {
+                statusNoteEl.innerText = isEn ? 'No filament grinding detected.' : 'Kein Filament-Abrieb festgestellt.';
+                statusNoteEl.style.color = 'var(--text-muted)';
             }
         }
     }
@@ -3208,10 +4191,21 @@ self.onmessage = async function(e) {
                 // Infill / Top / Bottom / Supports: Dark Translucent Slate
                 return [0.12, 0.14, 0.18];
             } else if (this.colorMode === 'risk') {
-                const diag = pathArray[idx+11];
-                if (diag === 2) return [1.0, 0.2, 0.2];
-                if (diag === 1) return [1.0, 0.6, 0.0];
-                return [0.3, 0.8, 0.3];
+                const flowRate = pathArray[idx+6];
+                const oLevel = pathArray[idx+11];
+                if (flowRate > 15) return [1.0, 0.6, 0.0]; // High volumetric flow (Orange)
+                if (oLevel >= 2) return [1.0, 0.2, 0.2]; // Steep Overhang Risk (Red)
+                if (oLevel === 1) return [1.0, 0.9, 0.0]; // Moderate Overhang (Yellow)
+                return [0.0, 0.9, 0.46]; // Safe (Emerald Green)
+            } else if (this.colorMode === 'overhang') {
+                const fTypeId = pathArray[idx+8];
+                const oLevel = pathArray[idx+11];
+                if (fTypeId === 8) return [0.0, 0.9, 1.0]; // Bright Laser Cyan (#00e5ff) for Bridge
+                if (oLevel >= 3) return [1.0, 0.0, 0.33]; // High-Contrast Neon Crimson (#ff0055) for Critical > 75°
+                if (oLevel === 2) return [1.0, 0.43, 0.0]; // High-Vis Vibrant Orange (#ff6d00) for Steep 60-75°
+                if (oLevel === 1) return [1.0, 0.90, 0.0]; // Vivid Warning Yellow (#ffe600) for Moderate 45-60°
+                if (fTypeId === 1) return [0.18, 0.55, 0.35]; // Safe outer wall (emerald slate)
+                return [0.14, 0.17, 0.22]; // Infill / floor / inner structure: dark slate backdrop
             } else if (this.colorMode === 'feature') {
                 const fTypeId = pathArray[idx+8];
                 switch(fTypeId) {
@@ -3398,19 +4392,59 @@ self.onmessage = async function(e) {
                 this.scene.add(this.cornerMarkers3D);
             }
         }
+
+        // 3D Z-Seam Markers
+        if (this.seamMarkers3D) {
+            this.scene.remove(this.seamMarkers3D);
+            if (this.seamMarkers3D.geometry) this.seamMarkers3D.geometry.dispose();
+            if (this.seamMarkers3D.material) this.seamMarkers3D.material.dispose();
+            this.seamMarkers3D = null;
+        }
+        
+        if (this.zSeamData && this.zSeamData.points && this.zSeamData.points.length > 0) {
+            const seamCount = this.zSeamData.points.length;
+            const seamSphereGeo = new THREE.SphereGeometry(0.55, 12, 12);
+            const seamMat = new THREE.MeshBasicMaterial();
+            this.seamMarkers3D = new THREE.InstancedMesh(seamSphereGeo, seamMat, seamCount);
+            this.seamMarkers3D.renderOrder = 998;
+            const dummy = new THREE.Object3D();
+            const color = new THREE.Color();
+            
+            for (let i = 0; i < seamCount; i++) {
+                const s = this.zSeamData.points[i];
+                dummy.position.set(s.x, s.y, s.z + 0.05);
+                dummy.updateMatrix();
+                this.seamMarkers3D.setMatrixAt(i, dummy.matrix);
+                if (s.inCorner) {
+                    color.setRGB(1.0, 1.0, 1.0); // Clean pure white (Bambu Studio / OrcaSlicer standard)
+                } else {
+                    color.setRGB(1.0, 0.24, 0.0); // Bright Coral Red / Orange for exposed flat surface
+                }
+                this.seamMarkers3D.setColorAt(i, color);
+            }
+            this.seamMarkers3D.instanceMatrix.needsUpdate = true;
+            if (this.seamMarkers3D.instanceColor) this.seamMarkers3D.instanceColor.needsUpdate = true;
+            this.scene.add(this.seamMarkers3D);
+        }
         
         // Center the scene if not done
         if (this.bed3D) {
             this.bed3D.position.set(0, 0, 0);
         }
         if (this.gcode3DObject) {
-            this.gcode3DObject.position.set(0, 0, 0);
+            this.gcode3DObject.position.set(this.currentXOffset, this.currentYOffset, 0);
         }
         if (this.instancedMesh) {
-            this.instancedMesh.position.set(0, 0, 0);
+            this.instancedMesh.position.set(this.currentXOffset, this.currentYOffset, 0);
+        }
+        if (this.sphereInstancedMesh) {
+            this.sphereInstancedMesh.position.set(this.currentXOffset, this.currentYOffset, 0);
         }
         if (this.cornerMarkers3D) {
             this.cornerMarkers3D.position.set(this.currentXOffset, this.currentYOffset, 0);
+        }
+        if (this.seamMarkers3D) {
+            this.seamMarkers3D.position.set(this.currentXOffset, this.currentYOffset, 0);
         }
         
         this.update3DPlayback();
@@ -3422,7 +4456,9 @@ self.onmessage = async function(e) {
         // Offset
         if (this.gcode3DObject) this.gcode3DObject.position.set(this.currentXOffset, this.currentYOffset, 0);
         if (this.instancedMesh) this.instancedMesh.position.set(this.currentXOffset, this.currentYOffset, 0);
+        if (this.sphereInstancedMesh) this.sphereInstancedMesh.position.set(this.currentXOffset, this.currentYOffset, 0);
         if (this.cornerMarkers3D) this.cornerMarkers3D.position.set(this.currentXOffset, this.currentYOffset, 0);
+        if (this.seamMarkers3D) this.seamMarkers3D.position.set(this.currentXOffset, this.currentYOffset, 0);
         
         let lastX = 0, lastY = 0, lastZ = 0;
         let foundPath = false;
@@ -3462,6 +4498,26 @@ self.onmessage = async function(e) {
         }
         if (this.sphereInstancedMesh) {
             this.sphereInstancedMesh.count = totalItemsToDraw * 2;
+        }
+
+        if (this.cornerMarkers3D) {
+            if (!this.showCornerAudit) {
+                this.cornerMarkers3D.visible = false;
+            } else {
+                this.cornerMarkers3D.visible = true;
+                const activeCount = this.cornerAuditResults ? this.cornerAuditResults.filter(c => c.layerIndex <= this.currentLayerIdx).length : 0;
+                this.cornerMarkers3D.geometry.setDrawRange(0, activeCount);
+            }
+        }
+
+        if (this.seamMarkers3D) {
+            if (!this.showZSeams) {
+                this.seamMarkers3D.visible = false;
+            } else {
+                const activeCount = (this.zSeamData && this.zSeamData.points) ? this.zSeamData.points.filter(s => s.layerIndex <= this.currentLayerIdx).length : 0;
+                this.seamMarkers3D.count = activeCount;
+                this.seamMarkers3D.visible = activeCount > 0;
+            }
         }
         
         if (this.nozzle3D) {
@@ -3517,12 +4573,15 @@ self.onmessage = async function(e) {
         this.ctx.scale(this.scale, this.scale);
 
         // 1. Draw Bed
-        this.ctx.strokeStyle = '#2e2e38';
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        this.ctx.fillStyle = isLight ? '#ffffff' : '#0d0d12';
+        this.ctx.fillRect(-this.halfBed, -this.halfBed, this.bedSize, this.bedSize);
+        this.ctx.strokeStyle = isLight ? '#cbd5e1' : '#2e2e38';
         this.ctx.lineWidth = 1 / this.scale;
         this.ctx.strokeRect(-this.halfBed, -this.halfBed, this.bedSize, this.bedSize);
 
         // Grid
-        this.ctx.strokeStyle = '#1b1b22';
+        this.ctx.strokeStyle = isLight ? '#edf0f5' : '#1b1b22';
         this.ctx.lineWidth = 0.5 / this.scale;
         for (let i = -this.halfBed; i <= this.halfBed; i += 20) {
             this.ctx.beginPath(); this.ctx.moveTo(i, -this.halfBed); this.ctx.lineTo(i, this.halfBed); this.ctx.stroke();
@@ -3692,10 +4751,21 @@ self.onmessage = async function(e) {
                                 }
                             }
                         } else if (this.colorMode === 'risk') {
-                            const diag = activePaths[i+11];
-                            if (diag === 2) this.ctx.strokeStyle = '#ff3d00';
-                            else if (diag === 1) this.ctx.strokeStyle = '#ff9100';
-                            else this.ctx.strokeStyle = '#00e676';
+                            const flowRate = activePaths[i+6];
+                            const oLevel = activePaths[i+11];
+                            if (flowRate > 15) this.ctx.strokeStyle = '#ff9800'; // High Flow (Orange)
+                            else if (oLevel >= 2) this.ctx.strokeStyle = '#ff3344'; // Steep Overhang Risk (Red)
+                            else if (oLevel === 1) this.ctx.strokeStyle = '#ffe600'; // Moderate Overhang (Yellow)
+                            else this.ctx.strokeStyle = '#00e676'; // Safe (Green)
+                        } else if (this.colorMode === 'overhang') {
+                            const fTypeId = activePaths[i+8];
+                            const oLevel = activePaths[i+11];
+                            if (fTypeId === 8) this.ctx.strokeStyle = '#00e5ff'; // Bridge
+                            else if (oLevel >= 3) this.ctx.strokeStyle = '#ff0055'; // Critical > 75
+                            else if (oLevel === 2) this.ctx.strokeStyle = '#ff6d00'; // Steep 60-75
+                            else if (oLevel === 1) this.ctx.strokeStyle = '#ffe600'; // Moderate 45-60
+                            else if (fTypeId === 1) this.ctx.strokeStyle = '#2ecc71'; // Safe outer wall
+                            else this.ctx.strokeStyle = '#334155'; // Muted Slate for infill/internal
                         } else if (this.colorMode === 'feature') {
                             const fTypeId = activePaths[i+8];
                             switch(fTypeId) {
@@ -3794,6 +4864,29 @@ self.onmessage = async function(e) {
                 }
             }
 
+            // Render 2D Z-Seam Indicator (Clean Slicer Bead)
+            if (this.showZSeams && this.zSeamData && this.zSeamData.byLayer && this.zSeamData.byLayer[this.currentLayerIdx]) {
+                const seams = this.zSeamData.byLayer[this.currentLayerIdx];
+                for (let s of seams) {
+                    const r = 3.2 * sf;
+                    
+                    // Outer bead
+                    this.ctx.beginPath();
+                    this.ctx.arc(s.x, -s.y, r, 0, Math.PI * 2);
+                    this.ctx.fillStyle = s.inCorner ? '#ffffff' : '#ff5252';
+                    this.ctx.fill();
+                    this.ctx.lineWidth = 1.0 * sf;
+                    this.ctx.strokeStyle = '#111111';
+                    this.ctx.stroke();
+
+                    // Micro inner dot
+                    this.ctx.beginPath();
+                    this.ctx.arc(s.x, -s.y, 1.0 * sf, 0, Math.PI * 2);
+                    this.ctx.fillStyle = s.inCorner ? '#222222' : '#ffffff';
+                    this.ctx.fill();
+                }
+            }
+
             // Highlight chosen line
             if (highlightedPath) {
                 this.ctx.beginPath();
@@ -3810,10 +4903,45 @@ self.onmessage = async function(e) {
 
         this.ctx.restore(); // Restore from global pan/zoom
     }
+    applyLinterFilter() {
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+        const linterList = document.getElementById('linter-warnings-list');
+        if (!linterList) return;
+
+        const items = linterList.querySelectorAll('.linter-item');
+        if (items.length === 0) return;
+
+        let visibleCount = 0;
+        items.forEach(item => {
+            const sev = item.dataset.severity || 'info';
+            const match = (this.linterFilter === 'all' || sev === this.linterFilter);
+            item.style.display = match ? 'flex' : 'none';
+            if (match) visibleCount++;
+        });
+
+        let emptyMsg = linterList.querySelector('.linter-filter-empty');
+        if (visibleCount === 0) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.className = 'linter-filter-empty';
+                emptyMsg.style.color = 'var(--text-muted)';
+                emptyMsg.style.textAlign = 'center';
+                emptyMsg.style.padding = '20px';
+                emptyMsg.setAttribute('data-i18n', 'linter.none_in_filter');
+                linterList.appendChild(emptyMsg);
+            }
+            emptyMsg.innerText = isEn ? 'No warnings in this category.' : 'Keine Meldungen in dieser Kategorie.';
+            emptyMsg.style.display = 'block';
+        } else if (emptyMsg) {
+            emptyMsg.style.display = 'none';
+        }
+    }
+
     runLinter() {
         this.lintWarnings = {};
         this.speedDistribution = {};
         let currentTemp = 0;
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
         
         for (let i = 0; i < this.originalLines.length; i++) {
             const line = this.originalLines[i].trim().toUpperCase();
@@ -3829,13 +4957,13 @@ self.onmessage = async function(e) {
             const isExtruding = line.includes('E') && !line.includes('E-');
             if (isExtruding && currentTemp > 0 && currentTemp < 170) {
                 if (!this.lintWarnings[i]) this.lintWarnings[i] = [];
-                this.lintWarnings[i].push('Cold Extrusion: Extrusion bei < 170°C');
+                this.lintWarnings[i].push(isEn ? 'Cold Extrusion: Extrusion below 170°C' : 'Kaltextrusion: Extrusion bei unter 170°C');
             }
             
             // Lint Syntax Error (G1 with no parameters)
             if (line === 'G1' || line === 'G0') {
                 if (!this.lintWarnings[i]) this.lintWarnings[i] = [];
-                this.lintWarnings[i].push('Syntax: G0/G1 ohne Koordinaten');
+                this.lintWarnings[i].push(isEn ? 'Syntax: G0/G1 without coordinates' : 'Syntaxfehler: G0/G1 ohne Koordinaten');
             }
             
             // Collect Speed & Lint Extreme Feedrate
@@ -3844,27 +4972,33 @@ self.onmessage = async function(e) {
                 const f = parseFloat(fMatch[1]);
                 if (f > 18000) {
                     if (!this.lintWarnings[i]) this.lintWarnings[i] = [];
-                    this.lintWarnings[i].push(`Plausibilität: Sehr hohe Geschwindigkeit (F${f})`);
+                    this.lintWarnings[i].push(isEn ? `Plausibility: Very high speed (F${f})` : `Plausibilität: Extrem hohe Geschwindigkeit (F${f})`);
                 }
             }
         }
         
         const linterList = document.getElementById('linter-warnings-list');
-                if (linterList) {
+        if (linterList) {
             linterList.innerHTML = '';
             let hasWarnings = false;
+            const counts = { all: 0, critical: 0, warning: 0, info: 0 };
             
             const getSeverity = (msg, type) => {
-                if (type === 'thermal_risk' || type === 'klipper_home' || msg.includes('Cold Extrusion')) return { level: 'critical', bg: 'rgba(231, 76, 60, 0.15)', border: 'rgba(231, 76, 60, 0.4)', color: '#ff6b6b', icon: '🔴' };
-                if (type === 'high_flow' || msg.includes('Sehr hohe Geschwindigkeit')) return { level: 'warning', bg: 'rgba(241, 196, 15, 0.15)', border: 'rgba(241, 196, 15, 0.4)', color: '#f1c40f', icon: '🟡' };
+                if (type === 'thermal_risk_critical' || type === 'klipper_home' || msg.includes('Cold Extrusion') || msg.includes('Kaltextrusion') || msg.includes('Kritische Schmelzgefahr') || msg.includes('Critical Melting Risk')) return { level: 'critical', bg: 'rgba(231, 76, 60, 0.15)', border: 'rgba(231, 76, 60, 0.4)', color: '#ff6b6b', icon: '🔴' };
+                if (type === 'thermal_risk_warning' || type === 'thermal_risk' || type === 'high_flow' || type === 'grinding_risk' || msg.includes('Sehr hohe Geschwindigkeit') || msg.includes('Very high speed') || msg.includes('Extrem hohe Geschwindigkeit') || msg.includes('Kühlungs-Hinweis') || msg.includes('Cooling Notice') || msg.includes('Grinding') || msg.includes('Abrieb')) return { level: 'warning', bg: 'rgba(241, 196, 15, 0.15)', border: 'rgba(241, 196, 15, 0.4)', color: '#f1c40f', icon: '🟡' };
                 return { level: 'info', bg: 'rgba(52, 152, 219, 0.15)', border: 'rgba(52, 152, 219, 0.4)', color: '#3498db', icon: '🟢' };
             };
 
             if (this.workerDiagnostics && this.workerDiagnostics.warnings) {
                 this.workerDiagnostics.warnings.forEach(diag => {
                     hasWarnings = true;
-                    const sev = getSeverity(diag.msg, diag.type);
+                    const sev = getSeverity(diag.msg || '', diag.type);
+                    counts.all++;
+                    if (counts[sev.level] !== undefined) counts[sev.level]++;
+                    
                     const row = document.createElement('div');
+                    row.className = 'linter-item';
+                    row.dataset.severity = sev.level;
                     row.style.display = 'flex';
                     row.style.justifyContent = 'space-between';
                     row.style.alignItems = 'center';
@@ -3873,10 +5007,51 @@ self.onmessage = async function(e) {
                     row.style.border = '1px solid ' + sev.border;
                     row.style.borderRadius = '4px';
                     row.style.marginBottom = '6px';
+                    
+                    let messageText = diag.msg || '';
+                    const fanVal = diag.fanPercent !== undefined ? diag.fanPercent : ((diag.msg && diag.msg.match(/\((\d+)%\)/)) ? diag.msg.match(/\((\d+)%\)/)[1] : 0);
+                    const flowVal = diag.flowRate || ((diag.msg && diag.msg.match(/\(([0-9.]+) mm³\/s\)/)) ? diag.msg.match(/\(([0-9.]+) mm³\/s\)/)[1] : '15+');
+                    const angleVal = diag.angle || ((diag.msg && diag.msg.match(/\((\d+)°\)/)) ? diag.msg.match(/\((\d+)°\)/)[1] : 65);
+                    
+                    if (diag.type === 'thermal_risk_critical') {
+                        messageText = isEn 
+                            ? `Critical Melting Risk (Layer ${diag.layerIndex}): Steep overhang (${angleVal}°) with insufficient fan cooling (${fanVal}%)`
+                            : `Kritische Schmelzgefahr (Layer ${diag.layerIndex}): Steiler Überhang (${angleVal}°) bei unzureichender Lüfterkühlung (${fanVal}%)`;
+                    } else if (diag.type === 'thermal_risk_warning' || diag.type === 'thermal_risk') {
+                        messageText = isEn 
+                            ? `Cooling Notice (Layer ${diag.layerIndex}): Overhang (${angleVal}°) with reduced cooling fan (${fanVal}%)`
+                            : `Kühlungs-Hinweis (Layer ${diag.layerIndex}): Überhang (${angleVal}°) bei reduzierter Lüfterdrehzahl (${fanVal}%)`;
+                    } else if (diag.type === 'high_flow') {
+                        messageText = isEn
+                            ? `High volumetric flow (${flowVal} mm³/s) at Layer ${diag.layerIndex}`
+                            : `Hoher volumetrischer Fluss (${flowVal} mm³/s) bei Layer ${diag.layerIndex}`;
+                    } else if (diag.type === 'grinding_risk') {
+                        messageText = isEn
+                            ? `Grinding Risk (Layer ${diag.layerIndex}): Multiple rapid retractions in 15mm area`
+                            : `Filament-Abrieb / Grinding (Layer ${diag.layerIndex}): Mehrere schnelle Retraction-Zyklen im 15mm-Bereich`;
+                    } else if (diag.type === 'klipper_home') {
+                        messageText = isEn
+                            ? `Start Sequence: Homing before heating bed.`
+                            : `Start-Sequenz: Homing (G28) vor dem Aufheizen des Druckbetts.`;
+                    } else if (!isEn) {
+                        if (messageText.includes('Melting Risk')) {
+                            messageText = messageText.replace(/Melting Risk \(Layer (\d+)\): Steep overhang (\(.*?°\)\s*)?with low cooling fan \((.*?)\)/, 'Hitzestau / Schmelzgefahr (Layer $1): Steiler Überhang bei schwacher Lüfterkühlung ($3)');
+                        }
+                        if (messageText.includes('High volumetric flow')) {
+                            messageText = messageText.replace(/High volumetric flow \((.*?) mm³\/s\) at Layer (\d+)/, 'Hoher volumetrischer Fluss ($1 mm³/s) bei Layer $2');
+                        }
+                        if (messageText.includes('Grinding Risk')) {
+                            messageText = messageText.replace(/Grinding Risk \(Layer (\d+)\): Multiple rapid retractions in 15mm area/, 'Filament-Abrieb / Grinding (Layer $1): Mehrere schnelle Retractions im 15mm-Bereich');
+                        }
+                        if (messageText.includes('Homing before heating bed')) {
+                            messageText = 'Start-Sequenz: Homing (G28) vor dem Aufheizen des Druckbetts.';
+                        }
+                    }
+                    
                     const textSpan = document.createElement('span');
                     textSpan.style.color = sev.color;
                     textSpan.style.fontSize = '12px';
-                    textSpan.innerHTML = sev.icon + " <strong>Global:</strong> " + diag.msg;
+                    textSpan.innerHTML = sev.icon + " <strong>Global:</strong> " + messageText;
                     row.appendChild(textSpan);
                     
                     if (diag.layerIndex !== undefined) {
@@ -3885,7 +5060,7 @@ self.onmessage = async function(e) {
                         jumpBtn.style.padding = '4px 8px';
                         jumpBtn.style.fontSize = '11px';
                         jumpBtn.style.minWidth = 'auto';
-                        jumpBtn.innerText = window.currentLang === 'en' ? 'Jump to Layer' : 'Zum Layer springen';
+                        jumpBtn.innerText = isEn ? 'Jump to Layer' : 'Zum Layer springen';
                         jumpBtn.onclick = () => {
                             if (window.closeAllModals) window.closeAllModals();
                             this.gcodeViewMode = 'layer';
@@ -3896,7 +5071,6 @@ self.onmessage = async function(e) {
                             const slider = document.getElementById('layer-slider');
                             if (slider) {
                                 slider.value = diag.layerIndex;
-                                // update slider background color
                                 const percent = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
                                 slider.style.background = 'linear-gradient(to right, var(--accent-color) ' + percent + '%, var(--border-color) ' + percent + '%)';
                             }
@@ -3922,8 +5096,12 @@ self.onmessage = async function(e) {
                 
                 if (bulgeCorners.length > 0) {
                     hasWarnings = true;
+                    counts.all++;
+                    counts.critical++;
                     const firstLayer = bulgeCorners[0].layerIndex;
                     const row = document.createElement('div');
+                    row.className = 'linter-item';
+                    row.dataset.severity = 'critical';
                     row.style.display = 'flex';
                     row.style.justifyContent = 'space-between';
                     row.style.alignItems = 'center';
@@ -3936,7 +5114,9 @@ self.onmessage = async function(e) {
                     const textSpan = document.createElement('span');
                     textSpan.style.color = '#ff6b6b';
                     textSpan.style.fontSize = '12px';
-                    textSpan.innerHTML = `🔴 <strong>Eck-Auditor:</strong> ${bulgeCorners.length} Ecken mit hoher Wulst-Gefahr (Bulging) bei starker Verzögerung (Δv &gt; 60 mm/s) ohne Pressure Advance!`;
+                    textSpan.innerHTML = isEn
+                        ? `🔴 <strong>Corner Auditor:</strong> ${bulgeCorners.length} corners with high bulging risk during sharp deceleration (Δv &gt; 60 mm/s) without Pressure Advance!`
+                        : `🔴 <strong>Eck-Auditor:</strong> ${bulgeCorners.length} Ecken mit hoher Wulst-Gefahr (Bulging) bei starker Verzögerung (Δv &gt; 60 mm/s) ohne Pressure Advance!`;
                     row.appendChild(textSpan);
                     
                     const jumpBtn = document.createElement('button');
@@ -3944,7 +5124,7 @@ self.onmessage = async function(e) {
                     jumpBtn.style.padding = '4px 8px';
                     jumpBtn.style.fontSize = '11px';
                     jumpBtn.style.minWidth = 'auto';
-                    jumpBtn.innerText = window.currentLang === 'en' ? `Jump to Layer ${firstLayer}` : `Zu Layer ${firstLayer} springen`;
+                    jumpBtn.innerText = isEn ? `Jump to Layer ${firstLayer}` : `Zu Layer ${firstLayer} springen`;
                     jumpBtn.onclick = () => {
                         if (window.closeAllModals) window.closeAllModals();
                         this.gcodeViewMode = 'layer';
@@ -3969,8 +5149,12 @@ self.onmessage = async function(e) {
                     linterList.appendChild(row);
                 } else if (paStressCorners.length > 0) {
                     hasWarnings = true;
+                    counts.all++;
+                    counts.warning++;
                     const firstLayer = paStressCorners[0].layerIndex;
                     const row = document.createElement('div');
+                    row.className = 'linter-item';
+                    row.dataset.severity = 'warning';
                     row.style.display = 'flex';
                     row.style.justifyContent = 'space-between';
                     row.style.alignItems = 'center';
@@ -3983,7 +5167,9 @@ self.onmessage = async function(e) {
                     const textSpan = document.createElement('span');
                     textSpan.style.color = '#f1c40f';
                     textSpan.style.fontSize = '12px';
-                    textSpan.innerHTML = `🟡 <strong>Eck-Auditor:</strong> ${paStressCorners.length} PA-Belastungspunkte (Extruder-Druck durch aktives PA kompensiert).`;
+                    textSpan.innerHTML = isEn
+                        ? `🟡 <strong>Corner Auditor:</strong> ${paStressCorners.length} PA stress points (extruder pressure compensated by active PA).`
+                        : `🟡 <strong>Eck-Auditor:</strong> ${paStressCorners.length} PA-Belastungspunkte (Extruder-Druck durch aktives PA kompensiert).`;
                     row.appendChild(textSpan);
                     
                     const jumpBtn = document.createElement('button');
@@ -3991,7 +5177,7 @@ self.onmessage = async function(e) {
                     jumpBtn.style.padding = '4px 8px';
                     jumpBtn.style.fontSize = '11px';
                     jumpBtn.style.minWidth = 'auto';
-                    jumpBtn.innerText = window.currentLang === 'en' ? `Jump to Layer ${firstLayer}` : `Zu Layer ${firstLayer} springen`;
+                    jumpBtn.innerText = isEn ? `Jump to Layer ${firstLayer}` : `Zu Layer ${firstLayer} springen`;
                     jumpBtn.onclick = () => {
                         if (window.closeAllModals) window.closeAllModals();
                         this.gcodeViewMode = 'layer';
@@ -4021,7 +5207,12 @@ self.onmessage = async function(e) {
                 hasWarnings = true;
                 warnings.forEach(w => {
                     const sev = getSeverity(w, null);
+                    counts.all++;
+                    if (counts[sev.level] !== undefined) counts[sev.level]++;
+                    
                     const row = document.createElement('div');
+                    row.className = 'linter-item';
+                    row.dataset.severity = sev.level;
                     row.style.display = 'flex';
                     row.style.justifyContent = 'space-between';
                     row.style.alignItems = 'center';
@@ -4033,7 +5224,7 @@ self.onmessage = async function(e) {
                     const textSpan = document.createElement('span');
                     textSpan.style.color = sev.color;
                     textSpan.style.fontSize = '12px';
-                    const lineText = window.currentLang === 'en' ? 'Line' : 'Zeile';
+                    const lineText = isEn ? 'Line' : 'Zeile';
                     textSpan.innerHTML = sev.icon + " <strong>" + lineText + " " + (parseInt(lineIdx) + 1) + ":</strong> " + w;
                     
                     const jumpBtn = document.createElement('button');
@@ -4041,7 +5232,7 @@ self.onmessage = async function(e) {
                     jumpBtn.style.padding = '4px 8px';
                     jumpBtn.style.fontSize = '11px';
                     jumpBtn.style.minWidth = 'auto';
-                    jumpBtn.innerText = window.currentLang === 'en' ? 'Jump to Line' : 'Zur Zeile springen';
+                    jumpBtn.innerText = isEn ? 'Jump to Line' : 'Zur Zeile springen';
                     jumpBtn.onclick = () => {
                         if (window.closeAllModals) window.closeAllModals();
                         this.gcodeViewMode = 'all';
@@ -4060,8 +5251,26 @@ self.onmessage = async function(e) {
                     linterList.appendChild(row);
                 });
             }
+
+            // Update filter count badges
+            const countAll = document.getElementById('linter-count-all');
+            const countCrit = document.getElementById('linter-count-critical');
+            const countWarn = document.getElementById('linter-count-warning');
+            const countInfo = document.getElementById('linter-count-info');
+            if (countAll) countAll.innerText = counts.all;
+            if (countCrit) countCrit.innerText = counts.critical;
+            if (countWarn) countWarn.innerText = counts.warning;
+            if (countInfo) countInfo.innerText = counts.info;
+
+            // Sync active button state
+            document.querySelectorAll('.linter-filter-btn').forEach(b => {
+                b.classList.toggle('active', (b.getAttribute('data-linter-filter') || 'all') === this.linterFilter);
+            });
+
             if (!hasWarnings) {
-                linterList.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding: 20px;" data-i18n="stats.linter_ok">${window.currentLang === 'en' ? 'No errors found.' : 'Keine Fehler gefunden.'}</div>`;
+                linterList.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding: 20px;" data-i18n="stats.linter_ok">${isEn ? 'No errors found.' : 'Keine Fehler gefunden.'}</div>`;
+            } else {
+                this.applyLinterFilter();
             }
         }
         
@@ -4071,6 +5280,8 @@ self.onmessage = async function(e) {
     renderHistogram() {
         const container = document.getElementById('speed-histogram');
         if (!container) return;
+
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
 
         this.speedDistribution = {};
         if (this.layerList) {
@@ -4093,7 +5304,7 @@ self.onmessage = async function(e) {
         container.innerHTML = '';
         const buckets = Object.keys(this.speedDistribution).map(Number).sort((a,b) => a - b);
         if (buckets.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-muted);width:100%;text-align:center;">Keine Daten</div>';
+            container.innerHTML = `<div style="color:var(--text-muted);width:100%;text-align:center;">${isEn ? 'No data' : 'Keine Daten'}</div>`;
             return;
         }
         

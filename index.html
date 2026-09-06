@@ -9,11 +9,20 @@
     <meta name="keywords" content="G-Code Viewer, G-Code Analyzer, 3D Print Simulator, Online GCode Viewer, LayerSpy, G-Code Heatmap, Bambu Studio Analyzer, OrcaSlicer Gcode, PrusaSlicer Gcode, Cura Gcode Viewer, Klipper Motion Planner, VFA Radar, Pressure Advance, 3D printing software">
     <meta name="author" content="LayerSpy">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <link rel="stylesheet" href="css/style.css?v=2">
+    <link rel="stylesheet" href="css/style.css?v=3">
     <link rel="canonical" href="https://layerspy.de/" />
     <link rel="alternate" hreflang="x-default" href="https://layerspy.de/" />
     <link rel="alternate" hreflang="en" href="https://layerspy.de/" />
+    <link rel="alternate" hreflang="en-US" href="https://layerspy.de/" />
     <link rel="alternate" hreflang="de" href="https://layerspy.de/" />
+    <link rel="alternate" hreflang="de-DE" href="https://layerspy.de/" />
+
+    <script>
+        (function() {
+            var theme = localStorage.getItem('layerspy_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
@@ -21,6 +30,8 @@
     <meta property="og:url" content="https://layerspy.de/">
     <meta property="og:title" content="LayerSpy | Free Online G-Code Viewer & 3D Print Analyzer">
     <meta property="og:description" content="Inspect print speeds, VFA resonances, volumetric flow limits, and Klipper kinematics 100% locally in your browser.">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="de_DE">
     <meta property="og:image" content="https://layerspy.de/assets/logo.webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -32,6 +43,18 @@
     <meta name="twitter:title" content="LayerSpy | Free Online G-Code Viewer & 3D Print Analyzer">
     <meta name="twitter:description" content="Inspect print speeds, VFA resonances, volumetric flow limits, and Klipper kinematics 100% locally in your browser.">
     <meta name="twitter:image" content="https://layerspy.de/assets/logo.webp">
+    
+    <!-- Google Consent Mode v2 Default -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied'
+      });
+    </script>
     
     <!-- Icons & PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -46,7 +69,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
     
-    <!-- Schema.org JSON-LD (GEO / AI-Search Optimized) -->
+    <!-- Schema.org JSON-LD (GEO / AI-Search & FAQPage Optimized) -->
     <script type="application/ld+json">
     [
       {
@@ -112,26 +135,50 @@
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "Is LayerSpy a cloud service? Does it upload my 3D files?",
+            "name": "What are Vertical Fine Artifacts (VFA) and how does the VFA Radar help?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "No. LayerSpy runs 100% locally on your computer inside your browser using Web Workers and WebGL. Your G-Code files are never transmitted to any external server."
+              "text": "VFA refers to repeating vertical ridges or surface ripples on 3D printed walls caused by stepper motor tooth resonance at specific rotational speeds. LayerSpy's VFA Radar identifies outer wall speeds falling into standard resonance corridors (typically 45–65 mm/s and 90–110 mm/s) so you can optimize slicer speeds for glass-smooth surfaces."
             }
           },
           {
             "@type": "Question",
-            "name": "Which 3D printing slicers and firmwares are supported?",
+            "name": "What is Pressure Advance (Linear Advance) and Corner Bulging?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "LayerSpy supports G-Code from all major slicers including Bambu Studio, OrcaSlicer, PrusaSlicer, Ultimaker Cura, SuperSlicer, and Creality Print. It is optimized for Klipper, Marlin, and RepRapFirmware."
+              "text": "When a 3D printer decelerates into a sharp corner, melt-zone pressure builds up, causing excess molten plastic to ooze and create swollen, rounded corners (Corner Bulging). Pressure Advance (Klipper) and Linear Advance (Marlin) dynamically decrease extruder pressure before corners. LayerSpy audits corner deceleration points (Δv > 60 mm/s) and lets you embed calibrated values directly."
             }
           },
           {
             "@type": "Question",
-            "name": "What is the VFA Radar in LayerSpy?",
+            "name": "How does the real Klipper & Marlin kinematics simulation work?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "The VFA (Vertical Fine Artifacts) Radar analyzes print speeds along visible outer perimeter walls to warn when speeds fall into stepper motor resonance corridors (typically 45-65 mm/s and 90-110 mm/s)."
+              "text": "Standard viewers simply divide line distance by nominal feedrate. LayerSpy uses a real 2D trapezoidal motion planner with forward/backward passes, taking into account printer acceleration (M201/M204), jerk and square corner velocity (M205), and junction speeds for pinpoint print duration estimates."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is Z-Seam Alignment and why should I check it?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The Z-seam is the start/stop point on every perimeter layer where the extruder begins and ends. LayerSpy's Z-Seam tool highlights all layer start points in 3D, letting you verify whether your slicer has hidden the seam in sharp inner corners or placed it away from visible aesthetic faces."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the Volumetric Flow Rate limit (mm³/s)?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Volumetric flow rate represents how many cubic millimeters of filament your hotend can melt per second (Flow = Speed × Layer Height × Line Width). If speed demands exceed hotend capacity (e.g. >15 mm³/s on standard hotends), under-extrusion and extruder clicking occur. LayerSpy's flow heatmap highlights dangerous flow spikes."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does LayerSpy upload my G-Code files or proprietary 3D models to any server?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No, absolutely zero files or 3D geometries leave your device. LayerSpy processes everything 100% locally in your browser using Web Workers and WebGL on your local GPU. It even works completely offline as an installable Progressive Web App (PWA)."
             }
           }
         ]
@@ -266,6 +313,7 @@ body {
     align-items: center;
     flex: 1;
     justify-content: flex-end;
+    gap: 10px;
 }
 
 /* Main Workspace */
@@ -333,7 +381,7 @@ body {
 .center-panel {
     flex: 1;
     position: relative;
-    background-color: #050506;
+    background-color: var(--canvas-bg, #050506);
     display: flex;
     flex-direction: column;
 }
@@ -1138,7 +1186,341 @@ html[lang="en"] .de-only { display: none !important; }
 
 .fold-btn { background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; } .fold-btn:hover { background: var(--accent-color); color: #fff; }
 
+/* --- THEME TOGGLE & LIGHT THEME --- */
+[data-theme="light"] {
+    --bg-color: #f1f4f8;
+    --panel-bg: #ffffff;
+    --panel-bg-subtle: #f8fafc;
+    --canvas-bg: #e2e7ee;
+    --accent-color: #0097a7; /* Crisp readable teal/cyan */
+    --accent-hover: #00838f;
+    --text-color: #1a1d24;
+    --text-muted: #5c6575;
+    --border-color: #e2e8f0;
+    --color-travel: #94a3b8;
+    --color-extrude: #e65100;
+    --color-retract: #d32f2f;
+    --color-unretract: #2e7d32;
+    --color-zhop: #7b1fa2;
+    --color-modified: #f57f17;
+}
 
+/* Theme switch button */
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    padding: 0;
+    outline: none;
+}
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: scale(1.05);
+    border-color: var(--accent-color);
+}
+.theme-icon-light { display: none; }
+.theme-icon-dark { display: inline-block; }
+
+[data-theme="light"] .theme-toggle-btn {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1d24;
+}
+[data-theme="light"] .theme-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    border-color: var(--accent-color);
+}
+[data-theme="light"] .theme-icon-light { display: inline-block; }
+[data-theme="light"] .theme-icon-dark { display: none; }
+
+/* Light mode specific overrides */
+[data-theme="light"] .center-panel {
+    background-color: var(--canvas-bg) !important;
+}
+[data-theme="light"] .top-navbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .brand-title {
+    color: #1a1d24 !important;
+}
+[data-theme="light"] .lang-switcher {
+    background: rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+[data-theme="light"] .lang-switcher button {
+    color: rgba(0, 0, 0, 0.6) !important;
+}
+[data-theme="light"] .lang-switcher button[style*="var(--accent-color)"] {
+    color: #ffffff !important;
+}
+[data-theme="light"] .github-link {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: #1a1d24 !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+[data-theme="light"] .github-link:hover {
+    background: rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] #welcome-hero {
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+[data-theme="light"] #welcome-hero h1 {
+    color: var(--accent-color) !important;
+}
+[data-theme="light"] .widget {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+[data-theme="light"] .widget-title {
+    color: #1a1d24;
+}
+[data-theme="light"] .slider-container {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+}
+[data-theme="light"] #print-overview-widget {
+    background: linear-gradient(135deg, rgba(0, 151, 167, 0.08), rgba(0, 151, 167, 0.02)) !important;
+    border: 1px solid rgba(0, 151, 167, 0.25) !important;
+}
+[data-theme="light"] #print-overview-widget #stat-time {
+    color: #00838f !important;
+}
+[data-theme="light"] #print-overview-widget #stat-filament {
+    color: #1a1d24 !important;
+}
+[data-theme="light"] #zoffset-overlay {
+    background: rgba(240, 243, 248, 0.82) !important;
+    border: 1px dashed rgba(0, 0, 0, 0.15);
+}
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] select {
+    background: #ffffff !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+}
+[data-theme="light"] input[type="range"] {
+    background: #e2e8f0;
+}
+
+/* Floating Toolbar & Capsules in Light Mode */
+[data-theme="light"] #canvas-top-toolbar > div {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] #canvas-top-toolbar div[style*="background: rgba(0,0,0,0.4)"] {
+    background: rgba(0, 0, 0, 0.06) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] #canvas-top-toolbar div[style*="background: rgba(255,255,255,0.15)"] {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+[data-theme="light"] #view-2d-btn.active,
+[data-theme="light"] #view-3d-btn.active {
+    background: #ffffff !important;
+    color: #1a1d24 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+[data-theme="light"] #view-2d-btn:not(.active),
+[data-theme="light"] #view-3d-btn:not(.active) {
+    background: transparent !important;
+    color: #5c6575 !important;
+}
+[data-theme="light"] #view-mode-select,
+[data-theme="light"] #filter-popover-btn,
+[data-theme="light"] #toggle-hud-btn,
+[data-theme="light"] #zen-view-btn {
+    background: #ffffff !important;
+    color: #1a1d24 !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme="light"] #color-mode-select {
+    background: rgba(0, 151, 167, 0.08) !important;
+    color: #00838f !important;
+    border: 1px solid rgba(0, 151, 167, 0.35) !important;
+}
+[data-theme="light"] #filter-popover-menu {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    color: #1a1d24 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+[data-theme="light"] #filter-popover-menu label,
+[data-theme="light"] #filter-popover-menu span {
+    color: #1a1d24 !important;
+}
+[data-theme="light"] #filter-popover-menu div[style*="background: rgba(255,255,255,0.08)"] {
+    background: rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] .panel-toggle-btn {
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: #1a1d24 !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] .panel-toggle-btn:hover {
+    background: var(--accent-color) !important;
+    color: #ffffff !important;
+}
+
+/* Floating HUD Legend in Light Mode */
+[data-theme="light"] #canvas-hud-legend {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    color: #1a1d24 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+[data-theme="light"] #canvas-hud-legend div,
+[data-theme="light"] #canvas-hud-legend span {
+    color: #1a1d24;
+}
+[data-theme="light"] #canvas-hud-legend #hud-legend-title,
+[data-theme="light"] #canvas-hud-legend #hud-legend-title span {
+    color: var(--accent-color) !important;
+}
+[data-theme="light"] #hud-legend-close {
+    color: #5c6575 !important;
+}
+
+/* Docked Bottom Timeline Bar in Light Mode */
+[data-theme="light"] #main-control-bar {
+    background: #ffffff !important;
+    border-top: 1px solid var(--border-color) !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] #main-control-bar button {
+    background: #f1f4f8 !important;
+    color: #1a1d24 !important;
+    border: 1px solid #d0d7de !important;
+}
+[data-theme="light"] #play-toggle {
+    background: rgba(0, 151, 167, 0.15) !important;
+    color: #00838f !important;
+    border-color: rgba(0, 151, 167, 0.4) !important;
+}
+[data-theme="light"] #playback-speed {
+    background: #ffffff !important;
+    color: #1a1d24 !important;
+    border: 1px solid #d0d7de !important;
+}
+[data-theme="light"] #main-control-bar div[style*="background: rgba(255,255,255,0.1)"] {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Right Panel (G-Code Inspector & Tabs) in Light Mode */
+[data-theme="light"] .pagination-bar {
+    background: #f8fafc !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+[data-theme="light"] #gcode-view {
+    background: #ffffff;
+    border-color: var(--border-color);
+}
+[data-theme="light"] .gcode-line {
+    color: #1a1d24;
+}
+[data-theme="light"] .gcode-line:hover {
+    background: #f1f5f9;
+}
+[data-theme="light"] .gcode-line.active {
+    background: rgba(0, 151, 167, 0.12);
+}
+[data-theme="light"] .gcode-line .line-num {
+    color: #8c95a6;
+}
+[data-theme="light"] .explanation-box {
+    background: rgba(0, 151, 167, 0.06) !important;
+    border-top: 1px solid rgba(0, 151, 167, 0.2) !important;
+    color: #1a1d24 !important;
+}
+[data-theme="light"] .analyse-card {
+    background: #f8fafc !important;
+    border: 1px solid var(--border-color) !important;
+}
+[data-theme="light"] .k-input {
+    background: #ffffff !important;
+    color: #1a1d24 !important;
+    border: 1px solid var(--border-color) !important;
+}
+[data-theme="light"] .filter-btn {
+    background: #f1f4f8 !important;
+    color: #5c6575 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+[data-theme="light"] .filter-btn.active {
+    background: var(--accent-color) !important;
+    color: #ffffff !important;
+}
+
+/* SEO & Modals in Light Mode */
+[data-theme="light"] .seo-container,
+[data-theme="light"] .seo-card,
+[data-theme="light"] .seo-feature-card,
+[data-theme="light"] .faq-item,
+[data-theme="light"] .guide-step-card {
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+}
+[data-theme="light"] .faq-question {
+    color: #1a1d24 !important;
+}
+[data-theme="light"] .faq-answer {
+    color: #4a5568 !important;
+}
+[data-theme="light"] .custom-modal {
+    background: #ffffff !important;
+    color: #1a1d24 !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15) !important;
+}
+[data-theme="light"] .custom-modal h1,
+[data-theme="light"] .custom-modal h2,
+[data-theme="light"] .custom-modal h3 {
+    color: #1a1d24 !important;
+}
+[data-theme="light"] .custom-modal p,
+[data-theme="light"] .custom-modal li {
+    color: #4a5568 !important;
+}
+[data-theme="light"] .cookie-banner {
+    background: #ffffff !important;
+    color: #1a1d24 !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+[data-theme="light"] footer {
+    background: #ffffff !important;
+    border-top: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+[data-theme="light"] footer a {
+    color: var(--text-muted) !important;
+}
+[data-theme="light"] footer a:hover {
+    color: var(--accent-color) !important;
+}
+
+.seo-details summary::-webkit-details-marker { display: none !important; }
+.seo-details summary { list-style: none !important; }
+.seo-details[open] .seo-chevron { transform: rotate(180deg); }
+.seo-details[open] .seo-summary { background: rgba(0, 188, 212, 0.06); }
+.seo-details:hover { border-color: rgba(0, 188, 212, 0.35) !important; }
 
     /* Prevent transitions on page load */
     .preload * {
@@ -1149,35 +1531,39 @@ html[lang="en"] .de-only { display: none !important; }
     <!-- Three.js (Deferred to avoid render blocking) -->
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-    <script defer src="js/translations.js?v=8"></script>
-    <script src="js/app_v5.js?v=28" defer></script>
+    <script defer src="js/translations.js?v=15"></script>
+    <script src="js/app_v5.js?v=43" defer></script>
 </head>
 <body class="dark-mode preload">
 
     <!-- LOADING OVERLAY -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
-        <div class="loading-text">G-Code wird analysiert...</div>
+        <div class="loading-text" data-i18n="loading.text">Analyzing G-Code...</div>
     </div>
 
     <div class="app-layout">
         <!-- HEADER -->
         <header class="top-navbar">
-            <div class="nav-left" style="display: flex; align-items: center; gap: 12px;">
+            <a href="/" class="nav-left" style="display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer;" title="LayerSpy Startseite">
                 <img src="assets/logo.webp" alt="LayerSpy Logo" width="48" height="48" style="height: 48px; width: 48px; object-fit: contain; border-radius: 8px; mix-blend-mode: lighten; filter: brightness(0.8) contrast(1.2);">
                 <div class="brand-title" style="font-size: 1.6rem; margin: 0; color: #ffffff; font-weight: 700; letter-spacing: 0.5px;">layerspy<span style="color: #00bcd4;">.de</span></div>
-            </div>
+            </a>
             <div class="nav-center">
                 <label for="file-input" class="upload-btn" title="Or just drag & drop a file into the window" data-i18n-title="title.1" data-i18n="nav.upload">📁 Upload file or Drag & Drop</label>
                 <input type="file" id="file-input" accept=".gcode" aria-label="G-Code File Upload">
             </div>
             
             <div class="nav-right" style="display: flex; gap: 10px; align-items: center;">
-                <div class="lang-switcher" style="display:flex; align-items:center; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px; margin-right: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                <div class="lang-switcher" style="display:flex; align-items:center; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
                     <button id="lang-en" style="background:var(--accent-color); color:#fff; border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">EN</button>
                     <button id="lang-de" style="background:transparent; color:rgba(255,255,255,0.5); border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">DE</button>
                 </div>
-                <a href="https://github.com/Exulizer/LayerSpy" target="_blank" title="View Source on GitHub" data-i18n-title="title.2" style="color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; transition: background 0.2s;">
+                <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="window.toggleTheme()" title="Toggle light / dark mode" data-i18n-title="theme.toggle" aria-label="Design wechseln">
+                    <span class="theme-icon-dark">🌙</span>
+                    <span class="theme-icon-light">☀️</span>
+                </button>
+                <a href="https://github.com/Exulizer/LayerSpy" target="_blank" class="github-link" title="View Source on GitHub" data-i18n-title="title.2" style="color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; transition: background 0.2s;">
                     <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
                 </a>
                 <button class="upload-btn" id="demo-btn" style="background: var(--accent-color); color: #fff; border-color: var(--accent-color);" data-i18n="nav.demo">✨ Load Demo</button>
@@ -1186,14 +1572,17 @@ html[lang="en"] .de-only { display: none !important; }
         </header>
 
         <!-- WELCOME HERO FOR SEO & USER -->
-        <div id="welcome-hero" style="width: 100%; min-height: 160px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 30px 20px; box-sizing: border-box;">
+        <div id="welcome-hero" style="width: 100%; min-height: 160px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 26px 20px; box-sizing: border-box;">
             <div style="max-width: 900px; margin: 0 auto; text-align: center;">
-                <h1 style="color: var(--accent-color); margin-bottom: 15px; font-size: 1.5rem;" data-i18n="hero.title">LayerSpy – Free Online G-Code Viewer, Analyzer & 3D Simulator</h1>
+                <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.35); padding: 5px 14px; border-radius: 20px; margin-bottom: 12px; font-size: 0.85rem; color: #00e676; font-weight: 600;">
+                    <span style="font-size: 0.95rem;">🔒</span> <span data-i18n="hero.badge">100% Local & Private – Files never leave your browser</span>
+                </div>
+                <h1 style="color: var(--accent-color); margin-bottom: 12px; font-size: 1.5rem;" data-i18n="hero.title">LayerSpy – Free Online G-Code Viewer, Analyzer & 3D Simulator</h1>
                 <p style="line-height: 1.6; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
                     <span data-i18n="hero.desc_p1">Upload your file from slicers like Bambu Studio, OrcaSlicer, PrusaSlicer, or Cura</span>
                     <span data-i18n="hero.desc_p2">(or via drag & drop) and inspect every single toolpath layer by layer.</span>
-                    <span data-i18n="hero.desc_p3">100% Client-Side WebGL engine.</span>
-                    <strong data-i18n="hero.desc_p4" style="color: var(--accent-color);">Your G-Code never leaves your PC.</strong>
+                    <span data-i18n="hero.desc_p3">100% Client-Side WebGL engine & offline storage.</span>
+                    <strong data-i18n="hero.desc_p4" style="color: var(--accent-color);">All files & settings are processed locally on your PC – zero server uploads.</strong>
                 </p>
             </div>
         </div>
@@ -1216,6 +1605,23 @@ html[lang="en"] .de-only { display: none !important; }
                 </div>
                 
                 <div class="settings-grid">
+                    <!-- Print Overview Bento Card (Time & Filament) -->
+                    <div class="widget" id="print-overview-widget" style="background: linear-gradient(135deg, rgba(0, 188, 212, 0.12), rgba(0, 188, 212, 0.03)); border: 1px solid rgba(0, 188, 212, 0.35); padding: 12px 14px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                                <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" data-i18n="stats.total_time">⏱️ Druckzeit</span>
+                                <strong id="stat-time" style="font-size: 1.15rem; color: #00e5ff; font-weight: 700; line-height: 1.2;">--:--</strong>
+                                <div id="stat-saved-box" style="display: none; font-size: 0.68rem; margin-top: 2px; align-items: center; gap: 4px;">
+                                    <span class="stat-label" data-i18n="stats.save">⚡ Du sparst</span>: <strong id="stat-saved" style="color: #4caf50;">--:--</strong>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                                <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" data-i18n="stats.filament">🧵 Filament</span>
+                                <strong id="stat-filament" style="font-size: 0.95rem; color: #fff; font-weight: 700; line-height: 1.2; word-break: break-word;" data-i18n="stats.fil_val">-- g (-- m)</strong>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Düse -->
                     <div class="widget">
                         <div class="widget-title"><span data-tooltip="Temperatur des Hotends. Höhere Werte verbessern die Layerhaftung, zu hohe Werte verursachen Stringing." data-i18n-tooltip="tooltip.2" data-i18n="tuning.nozzle">Düse (Hotend)</span><span id="temp-val" class="accent" data-i18n="temp.nozzle">205 °C</span></div>
@@ -1266,15 +1672,15 @@ html[lang="en"] .de-only { display: none !important; }
                             </div>
                             <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 4px;">
                                 <input type="checkbox" id="vfa-outer-only-btn" checked style="cursor: pointer;">
-                                <span data-i18n="tuning.vfa_outer_only">Nur Außenwand fokussieren</span>
+                                <span data-i18n="tuning.vfa_outer_only">Focus Outer Walls Only</span>
                             </label>
                             <div id="vfa-stats-box" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
                                 <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-muted);">🔴 Außenwand (Sichtbar):</span>
+                                    <span style="color: var(--text-muted);" data-i18n="vfa.outer">🔴 Outer Wall (Visible):</span>
                                     <strong id="vfa-outer-stat" style="color: #ff007f;">0.0%</strong>
                                 </div>
                                 <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-muted);">🟡 Innenwand (Struktur):</span>
+                                    <span style="color: var(--text-muted);" data-i18n="vfa.inner">🟡 Inner Wall (Structure):</span>
                                     <strong id="vfa-inner-stat" style="color: #f1c40f;">0.0%</strong>
                                 </div>
                             </div>
@@ -1284,22 +1690,85 @@ html[lang="en"] .de-only { display: none !important; }
                     <!-- Corner & Deceleration Auditor -->
                     <div class="widget" id="corner-audit-widget">
                         <label class="widget-title" style="display: flex; justify-content: space-between;">
-                            <span data-tooltip="Lokalisiert scharfe Ecken mit starker Verzögerung und prüft den Pressure Advance Status." data-i18n-tooltip="tooltip.corner_audit" data-i18n="tuning.corner_audit">Eck- & Verzögerungs-Auditor</span>
+                            <span data-tooltip="Detects sharp corners with heavy deceleration and checks Pressure Advance status." data-i18n-tooltip="tooltip.corner_audit" data-i18n="tuning.corner_audit">Corner &amp; Deceleration Auditor</span>
                         </label>
                         <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: var(--text-muted);">Pressure Advance:</span>
-                                <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(231,76,60,0.2); color: #ff6b6b; border: 1px solid rgba(231,76,60,0.4);">Inaktiv</span>
+                                <span style="color: var(--text-muted);" data-i18n="corner.pa_label">Pressure Advance:</span>
+                                <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(231,76,60,0.2); color: #ff6b6b; border: 1px solid rgba(231,76,60,0.4);" data-i18n="corner.inactive">Inactive</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>🔴 Bulge-Gefahr (Δv &gt; 60):</span>
-                                <strong id="corner-bulge-count" style="color: #ff6b6b;">0 Ecken</strong>
+                                <span data-i18n="corner.bulge_label">🔴 Bulge Risk (Δv &gt; 60):</span>
+                                <strong id="corner-bulge-count" style="color: #ff6b6b;">0 Corners</strong>
                             </div>
                             <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>🟡 PA-Belastung (Δv &gt; 60):</span>
-                                <strong id="corner-stress-count" style="color: #f1c40f;">0 Ecken</strong>
+                                <span data-i18n="corner.stress_label">🟡 PA Stress (Δv &gt; 60):</span>
+                                <strong id="corner-stress-count" style="color: #f1c40f;">0 Corners</strong>
                             </div>
-                            <div id="corner-audit-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;">Keine Ecken analysiert.</div>
+                            <div id="corner-audit-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="corner.note_none">No corners analyzed.</div>
+                        </div>
+                    </div>
+                    <!-- Z-Seam Quality & Alignment Auditor -->
+                    <div class="widget" id="zseam-widget">
+                        <label class="widget-title" style="display: flex; justify-content: space-between;">
+                            <span data-tooltip="Analyzes layer start points (seams) to detect surface pimples and verify corner concealment." data-i18n-tooltip="tooltip.zseam" data-i18n="tuning.zseam">Z-Seam Alignment &amp; Quality</span>
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-muted);" data-i18n="seam.ratio">Corner Ratio:</span>
+                                <span id="zseam-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(0, 229, 255, 0.2); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4);" data-i18n="seam.badge_corner">100% Corner</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>🟢 <span data-i18n="seam.in_corner">In Corner:</span></span>
+                                <strong id="zseam-corner-count" style="color: #00e676;">0 seams</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>🔴 <span data-i18n="seam.on_flat">On Flat Wall:</span></span>
+                                <strong id="zseam-flat-count" style="color: #ff3d00;">0 seams</strong>
+                            </div>
+                            <div id="zseam-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="seam.note_none">No file loaded.</div>
+                        </div>
+                    </div>
+                    <!-- 3D Overhang & Bridge Inspector -->
+                    <div class="widget" id="overhang-widget">
+                        <label class="widget-title" style="display: flex; justify-content: space-between;">
+                            <span data-tooltip="Analyzes overhang angles and bridges per layer to verify cooling and support requirements." data-i18n-tooltip="tooltip.overhang" data-i18n="tuning.overhang">Overhang &amp; Bridge Inspector</span>
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-muted);" data-i18n="overhang.support_status">Support Status:</span>
+                                <span id="overhang-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.4);" data-i18n="overhang.support_none">No Supports Needed</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>📐 <span data-i18n="overhang.max_angle">Max. Overhang:</span></span>
+                                <strong id="overhang-max-angle" style="color: var(--text-color);">0°</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>🌉 <span data-i18n="overhang.bridge_length">Bridge Total:</span></span>
+                                <strong id="overhang-bridge-stat" style="color: #e91e63;">0.0 mm (0)</strong>
+                            </div>
+                            <div id="overhang-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="overhang.cooling_good">Cooling: 100% Optimal</div>
+                        </div>
+                    </div>
+                    <!-- Pressure Advance & Retraction Audit Widget -->
+                    <div class="widget" id="pa-widget">
+                        <label class="widget-title" style="display: flex; justify-content: space-between;">
+                            <span data-tooltip="Audits melt zone pressure buildup in corners and retraction clusters against filament grinding." data-i18n-tooltip="tooltip.pa" data-i18n="tuning.pa_audit">Pressure Advance &amp; Retraction</span>
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-muted);" data-i18n="pa.status_label">G-Code Status:</span>
+                                <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: bold; background: rgba(0, 229, 255, 0.15); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.35);">Standard (No PA)</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>🎯 <span data-i18n="pa.corner_bulge">Corner Pressure Risk:</span></span>
+                                <strong id="pa-corner-count" style="color: var(--text-color);">0 Corners</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                <span>⚙️ <span data-i18n="pa.grinding_status">Retract Health:</span></span>
+                                <strong id="pa-retract-score" style="color: #4caf50;">100% (Optimal)</strong>
+                            </div>
+                            <div id="pa-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="pa.note_optimal">No filament grinding detected.</div>
                         </div>
                     </div>
                     <!-- Z-Offset -->
@@ -1326,20 +1795,6 @@ html[lang="en"] .de-only { display: none !important; }
 
             <!-- CENTER: CANVAS PREVIEW -->
             <main class="center-panel">
-                <div class="stats-banner">
-                    <div class="stat-box">
-                        <span class="stat-label" data-i18n="stats.total_time">⏱️ Druckzeit</span>
-                        <span class="stat-value" id="stat-time">--:--</span>
-                    </div>
-                    <div class="stat-box highlight-box" style="display:none;" id="stat-saved-box">
-                        <span class="stat-label" data-i18n="stats.save">⚡ Du sparst</span>
-                        <span class="stat-value" id="stat-saved">--:--</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-label" data-i18n="stats.filament">🧵 Filament</span>
-                        <span class="stat-value" id="stat-filament" data-i18n="stats.fil_val">-- g (-- m)</span>
-                    </div>
-                </div>
                 <div id="canvas-container" style="position: relative; flex: 1; display: flex; flex-direction: column; width: 100%; min-height: 0; overflow: hidden;">
                 
                 <canvas id="gcode-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
@@ -1357,113 +1812,162 @@ html[lang="en"] .de-only { display: none !important; }
                     </div>
                 </div>
                 
-                <!-- DISABLE INTERACTION BTN -->
-                <button id="disable-interaction-btn" class="icon-btn" style="display: none; position: absolute; top: 15px; right: 15px; z-index: 15; background: var(--error-color); color: white; border: none; padding: 8px 15px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" aria-label="3D Interaktion deaktivieren" data-i18n="view.deactivate">❌ Interaktion beenden</button>
-
-                
-                </div>
-                <!-- DOCKED CONTROL BAR -->
-                <div id="main-control-bar" class="control-bar" style="background: #111115; display: flex; flex-direction: column; gap: 12px; width: 100%; z-index: 10; max-height: 0; opacity: 0; transform: translateY(50px); transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); overflow: hidden; padding: 0 25px; border-top: none;">
+                <!-- FLOATING TOP VIEWPORT TOOLBAR (CAD / Slicer Capsule) -->
+                <div id="canvas-top-toolbar" style="position: absolute; top: 12px; left: 12px; right: 12px; z-index: 20; display: flex; justify-content: space-between; align-items: center; pointer-events: none; gap: 10px;">
                     
-                    <!-- Top Row: Toggles & Heatmap -->
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <!-- Row 1: View Modes -->
-                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
-                            <!-- 2D / 3D Toggle -->
-                            <div style="display: flex; gap: 6px;">
-                                <button id="view-2d-btn" class="icon-btn active" style="padding: 4px 12px; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color);" aria-label="2D Ansicht umschalten">2D</button>
-                                <button id="view-3d-btn" class="icon-btn" style="padding: 4px 12px; border-radius: 4px; font-weight: bold; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-color);" aria-label="3D Ansicht umschalten">3D</button>
-                            </div>
-                            
-                            <select id="view-mode-select" class="theme-select" style="display: none; padding: 4px 8px; font-size: 0.85rem; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-color);">
-                                <option value="lines" data-i18n="view.lines">Lines (Fast)</option>
-                                <option value="solid" data-i18n="view.solid">Solid (Tubes)</option>
-                            </select>
-
-                            <div id="color-mode-group" style="display: flex; gap: 6px;">
-                                <button class="mode-btn active" data-mode="normal" style="padding: 4px 10px; font-size: 0.8rem; background: var(--accent-color); color: white; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.normal">Normal</button>
-                                <button class="mode-btn" data-mode="feature" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.feature">Feature</button>
-                                <button class="mode-btn" data-mode="heatmap" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.speed_mode">Speed</button>
-                                <button class="mode-btn" data-mode="kinematics" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.kinematics">Echte Kinematik</button>
-                                <button class="mode-btn" data-mode="risk" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.risk_mode">Risiko</button>
-                                <button class="mode-btn" data-mode="vfa" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,0,0,0.3); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s;" data-i18n="view.vfa">VFA Radar</button>
-                            </div>
+                    <!-- Left Capsule: View, Mode, Filters, Legend -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: rgba(18, 20, 26, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 5px 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.45); pointer-events: auto; flex-shrink: 0;">
+                        
+                        <!-- 2D / 3D Segmented Switch -->
+                        <div style="display: flex; gap: 2px; background: rgba(0,0,0,0.4); padding: 2px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">
+                            <button id="view-2d-btn" class="icon-btn active" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; font-weight: 700; background: rgba(255,255,255,0.15); border: none; color: #fff; cursor: pointer;" aria-label="2D Ansicht">2D</button>
+                            <button id="view-3d-btn" class="icon-btn" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; font-weight: 700; background: transparent; border: none; color: var(--text-muted); cursor: pointer;" aria-label="3D Ansicht">3D</button>
                         </div>
 
-                        <!-- Row 2: Options and Legend -->
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 40px;">
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="filter-outer-wall" checked>
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ff8c00; display: inline-block;"></span>
-                                <span data-i18n="view.filter_outer">Außenwand</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="filter-inner-wall" checked>
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ffeb3b; display: inline-block;"></span>
-                                <span data-i18n="view.filter_inner">Innenwand</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="filter-infill" checked>
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #f44336; display: inline-block;"></span>
-                                <span data-i18n="view.filter_infill">Infill</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="filter-bottom" checked>
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #9c27b0; display: inline-block;"></span>
-                                <span data-i18n="view.filter_bottom">Boden</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="filter-top" checked>
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #e91e63; display: inline-block;"></span>
-                                <span data-i18n="view.filter_top">Decke</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="filter-support" checked>
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #4caf50; display: inline-block;"></span>
-                                <span data-i18n="view.filter_support">Support</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="show-travel-btn">
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #00bcd4; display: inline-block;"></span>
-                                <span data-i18n="view.travels">Leerfahrten</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: fit-content;">
-                                <input type="checkbox" id="show-corner-audit-btn" checked>
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #e91e63; display: inline-block;"></span>
-                                <span data-i18n="view.corner_overlay">Ecken-Warnungen</span>
-                            </label>
+                        <!-- 3D Render Style (Only visible in 3D) -->
+                        <select id="view-mode-select" class="theme-select" style="display: none; padding: 4px 8px; font-size: 0.78rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: var(--text-color); cursor: pointer;">
+                            <option value="lines" data-i18n="view.lines">⚡ Lines (Fast)</option>
+                            <option value="solid" selected data-i18n="view.solid">🧊 Solid (Tubes)</option>
+                        </select>
 
-                            <div id="heatmap-legend" style="display: none; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
-                                <span id="legend-low" data-i18n="view.speed_low">10 mm/s</span>
-                                <div style="width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, hsl(240, 100%, 50%), hsl(120, 100%, 50%), hsl(0, 100%, 50%));"></div>
-                                <span id="legend-high" data-i18n="view.speed_high">50+ mm/s</span>
-                            </div>
-                        </div>
-                    </div>
+                        <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15);"></div>
 
-                    <!-- Middle Row: Layer Slider -->
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span id="layer-val" style="min-width: 140px; text-align: left; color: var(--accent-color); font-weight: 600;" data-i18n="view.layer0">Layer: 0</span>
-                        <input type="range" class="slider" id="layer-slider" min="0" max="0" value="0" style="flex: 1;" aria-label="Schicht auswählen">
-                    </div>
-
-                    <!-- Bottom Row: Playback -->
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div style="display: flex; gap: 8px;">
-                            <button id="play-step-back" class="icon-btn" style="padding: 4px 10px;" aria-label="Vorheriger Schritt">⏮️</button>
-                            <button id="play-toggle" class="icon-btn" style="font-size: 1.2rem; padding: 4px 15px;" aria-label="Abspielen oder Pausieren">▶️</button>
-                            <button id="play-step-fwd" class="icon-btn" style="padding: 4px 10px;" aria-label="Nächster Schritt">⏭️</button>
-                            <select id="playback-speed" class="upload-btn" style="width: auto; padding: 4px 8px; font-size: 12px; margin-left: 5px; cursor: pointer; min-width: 65px; height: 32px;">
-                                <option value="0.1">0.1x</option>
-                                <option value="0.25">0.25x</option>
-                                <option value="0.5">0.5x</option>
-                                <option value="1" selected>1.0x</option>
-                                <option value="2">2.0x</option>
-                                <option value="5">5.0x</option>
-                                <option value="10">10.0x</option>
+                        <!-- Color Mode Dropdown -->
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <select id="color-mode-select" class="theme-select" style="padding: 4px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; border: 1px solid rgba(0, 229, 255, 0.35); background: rgba(0, 229, 255, 0.08); color: #00e5ff; cursor: pointer; outline: none;">
+                                <option value="normal" selected data-i18n="view.normal">🎨 Normal</option>
+                                <option value="feature" data-i18n="view.feature">🧱 Feature Type</option>
+                                <option value="heatmap" data-i18n="view.speed_mode">🏎️ Speed (G-Code)</option>
+                                <option value="kinematics" data-i18n="view.kinematics">⚡ Echte Kinematik</option>
+                                <option value="risk" data-i18n="view.risk_mode">⚠️ Risiko & Flow</option>
+                                <option value="vfa" data-i18n="view.vfa">📡 VFA Radar</option>
+                                <option value="overhang" data-i18n="view.overhang">📐 Überhang & Bridge</option>
                             </select>
                         </div>
-                        <input type="range" class="slider" id="playback-slider" min="0" max="100" value="100" style="flex: 1;" aria-label="Wiedergabeposition">
+
+                        <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15);"></div>
+
+                        <!-- Layer & Visibility Filter Popover Trigger -->
+                        <div style="position: relative;">
+                            <button id="filter-popover-btn" class="icon-btn" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 0.78rem; font-weight: 500; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12); color: var(--text-color); cursor: pointer;" title="Filter Layers &amp; Paths" data-i18n-title="view.filter_tooltip">
+                                <span>👁️</span>
+                                <span data-i18n="view.filter_title">Filter</span>
+                                <span id="filter-count-badge" style="background: var(--accent-color); color: #000; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 10px;">6/6</span>
+                                <span style="font-size: 0.6rem; opacity: 0.7;">▼</span>
+                            </button>
+
+                            <!-- Filter Popover Card -->
+                            <div id="filter-popover-menu" style="display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 220px; background: rgba(18, 20, 26, 0.95); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 50; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
+                                    <span style="font-weight: 700; font-size: 0.75rem; color: var(--accent-color);" data-i18n="view.layer_filters">Visible Features</span>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button id="filter-all-btn" style="background: none; border: none; color: var(--accent-color); font-size: 0.7rem; cursor: pointer; text-decoration: underline;" data-i18n="filter.all">All</button>
+                                        <span style="color: var(--text-muted); font-size: 0.7rem;">|</span>
+                                        <button id="filter-none-btn" style="background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; text-decoration: underline;" data-i18n="filter.none">None</button>
+                                    </div>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
+                                    <input type="checkbox" id="filter-outer-wall" checked>
+                                    <span style="width: 9px; height: 9px; border-radius: 50%; background: #ff8c00;"></span>
+                                    <span data-i18n="view.filter_outer">Outer Wall</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
+                                    <input type="checkbox" id="filter-inner-wall" checked>
+                                    <span style="width: 9px; height: 9px; border-radius: 50%; background: #ffeb3b;"></span>
+                                    <span data-i18n="view.filter_inner">Inner Wall</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
+                                    <input type="checkbox" id="filter-infill" checked>
+                                    <span style="width: 9px; height: 9px; border-radius: 50%; background: #f44336;"></span>
+                                    <span data-i18n="view.filter_infill">Infill</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
+                                    <input type="checkbox" id="filter-top" checked>
+                                    <span style="width: 9px; height: 9px; border-radius: 50%; background: #e91e63;"></span>
+                                    <span data-i18n="view.filter_top">Top Surface</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
+                                    <input type="checkbox" id="filter-bottom" checked>
+                                    <span style="width: 9px; height: 9px; border-radius: 50%; background: #9c27b0;"></span>
+                                    <span data-i18n="view.filter_bottom">Bottom Surface</span>
+                                </label>
+                                <div style="width: 100%; height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
+                                    <input type="checkbox" id="show-travel-btn">
+                                    <span style="width: 9px; height: 9px; border-radius: 50%; background: #00bcd4;"></span>
+                                    <span data-i18n="view.travels">Travel Moves</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
+                                    <input type="checkbox" id="show-seam-btn" checked>
+                                    <span style="width: 9px; height: 9px; border-radius: 50%; background: #00e5ff; box-shadow: 0 0 6px #00e5ff;"></span>
+                                    <span data-i18n="view.filter_seam">Z-Seam Points</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Toggle HUD Legend -->
+                        <button id="toggle-hud-btn" class="icon-btn" style="display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 0.78rem; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12); color: var(--text-color); cursor: pointer;" title="Toggle Legend" data-i18n-title="view.legend_tooltip">
+                            <span>📊</span> <span data-i18n="view.toggle_legend">Legend</span>
+                        </button>
+                    </div>
+
+                    <!-- Right Capsule: Zen / Maximize Viewport -->
+                    <div style="display: flex; align-items: center; gap: 6px; pointer-events: auto;">
+                        <button id="zen-view-btn" class="icon-btn" style="background: rgba(18, 20, 26, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.45); transition: all 0.2s;" title="Maximize View" data-i18n-title="view.zen_tooltip">
+                            <span>⛶</span><span data-i18n="view.zen_mode">Maximize View</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- FLOATING HUD LEGEND (Upper Left below toolbar) -->
+                <div id="canvas-hud-legend" style="position: absolute; top: 56px; left: 12px; z-index: 18; background: rgba(15, 17, 23, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 8px 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.55); pointer-events: auto; display: none; min-width: 200px; max-width: 320px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px;">
+                        <div id="hud-legend-title" style="font-weight: 700; font-size: 0.8rem; color: var(--accent-color); display: flex; align-items: center; gap: 6px;">
+                            <span>📐</span><span>Overhang</span>
+                        </div>
+                        <button id="hud-legend-close" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 0 4px; line-height: 1;" title="Close" data-i18n-title="title.close">✕</button>
+                    </div>
+                    <div id="hud-legend-content" style="font-size: 0.75rem;">
+                        <!-- Dynamic Content -->
+                    </div>
+                </div>
+
+                <!-- DISABLE INTERACTION BTN -->
+                <button id="disable-interaction-btn" class="icon-btn" style="display: none; position: absolute; top: 12px; right: 140px; z-index: 25; background: var(--error-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" aria-label="3D Interaktion deaktivieren" data-i18n="view.deactivate">❌ Interaktion beenden</button>
+
+                </div>
+
+                <!-- DOCKED CLEAN TIMELINE CONTROL BAR -->
+                <div id="main-control-bar" class="control-bar" style="background: #111116; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 14px; width: 100%; z-index: 10; max-height: 0; opacity: 0; transform: translateY(50px); transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); overflow: hidden; padding: 0 16px;">
+                    
+                    <!-- Playback Controls -->
+                    <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                        <button id="play-step-back" class="icon-btn" style="padding: 4px 8px; font-size: 0.85rem; border-radius: 5px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; cursor: pointer;" aria-label="Vorheriger Schritt" title="Schritt zurück">⏮️</button>
+                        <button id="play-toggle" class="icon-btn" style="font-size: 0.95rem; padding: 4px 12px; border-radius: 5px; background: rgba(0, 229, 255, 0.2); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff; cursor: pointer; font-weight: bold;" aria-label="Abspielen oder Pausieren" title="Play/Pause">▶️</button>
+                        <button id="play-step-fwd" class="icon-btn" style="padding: 4px 8px; font-size: 0.85rem; border-radius: 5px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; cursor: pointer;" aria-label="Nächster Schritt" title="Schritt vor">⏭️</button>
+                        <select id="playback-speed" class="theme-select" style="padding: 3px 6px; font-size: 0.75rem; border-radius: 5px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); cursor: pointer; height: 28px;">
+                            <option value="0.25">0.25x</option>
+                            <option value="0.5">0.5x</option>
+                            <option value="1" selected>1.0x</option>
+                            <option value="2">2.0x</option>
+                            <option value="5">5.0x</option>
+                        </select>
+                    </div>
+
+                    <div style="width: 1px; height: 22px; background: rgba(255,255,255,0.1); flex-shrink: 0;"></div>
+
+                    <!-- Layer Display & Scrubber -->
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                        <span id="layer-val" style="min-width: 125px; text-align: left; color: var(--accent-color); font-weight: 700; font-size: 0.82rem; white-space: nowrap; flex-shrink: 0; font-family: monospace;" data-i18n="view.layer0">Layer: 0</span>
+                        <input type="range" class="slider" id="layer-slider" min="0" max="0" value="0" style="flex: 1; min-width: 80px; height: 6px; cursor: pointer;" aria-label="Schicht auswählen">
+                    </div>
+
+                    <div style="width: 1px; height: 22px; background: rgba(255,255,255,0.1); flex-shrink: 0;"></div>
+
+                    <!-- Step / Progress Micro-Scrubber -->
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; width: 140px;">
+                        <span style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap;">Step</span>
+                        <input type="range" class="slider" id="playback-slider" min="0" max="100" value="100" style="width: 100%; height: 5px; cursor: pointer;" aria-label="Wiedergabeposition" title="Schritt-Wiedergabe">
                     </div>
                 </div>
             </main>
@@ -1471,11 +1975,11 @@ html[lang="en"] .de-only { display: none !important; }
             <!-- RIGHT PANEL: G-CODE LIST -->
             <aside class="sidebar right-panel">
                 <div class="panel-header" style="flex-direction: column; align-items: stretch; gap: 15px; padding-bottom: 0;">
-                    <h2 data-i18n="tab.inspector">🔎 G-Code Inspektor</h2>
+                    <h2 data-i18n="tab.inspector">🔎 G-Code Inspector</h2>
                     <div class="tabs-nav">
                         <button class="tab-btn active" data-tab="tab-list" data-i18n="tab.explorer">G-Code Explorer</button>
-                        <button class="tab-btn" data-tab="tab-mods" data-i18n="tab.mods">Modifikationen</button>
-                        <button class="tab-btn" data-tab="tab-analyse" data-i18n="tab.tuning">Tuning & Analyse</button>
+                        <button class="tab-btn" data-tab="tab-mods" data-i18n="tab.mods">Modifications</button>
+                        <button class="tab-btn" data-tab="tab-analyse" data-i18n="tab.tuning">Tuning &amp; Analysis</button>
                     </div>
                 </div>
                 
@@ -1484,59 +1988,59 @@ html[lang="en"] .de-only { display: none !important; }
                     
                     <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <select id="gcode-view-mode" aria-label="Anzeigemodus für G-Code" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
-                                <option value="layer" data-i18n="tab.current_layer">Aktueller Layer</option>
-                                <option value="all" data-i18n="select.file.entire">Gesamte Datei</option>
+                            <select id="gcode-view-mode" aria-label="G-Code View Mode" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                                <option value="layer" data-i18n="tab.current_layer">Current Layer</option>
+                                <option value="all" data-i18n="select.file.entire">Entire File</option>
                             </select>
-                            <select id="gcode-page-size" aria-label="Zeilen pro Seite" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
-                                <option value="50" data-i18n="select.lines.50">50 Zeilen</option>
-                                <option value="100" data-i18n="select.lines.100">100 Zeilen</option>
-                                <option value="500" data-i18n="select.lines.500">500 Zeilen</option>
-                                <option value="all" data-i18n="filter.all">Alle</option>
+                            <select id="gcode-page-size" aria-label="Lines Per Page" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                                <option value="50" data-i18n="select.lines.50">50 Lines</option>
+                                <option value="100" data-i18n="select.lines.100">100 Lines</option>
+                                <option value="500" data-i18n="select.lines.500">500 Lines</option>
+                                <option value="all" data-i18n="filter.all">All</option>
                             </select>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <button id="gcode-page-prev" class="icon-btn" style="padding: 4px 12px; font-size: 11px;" disabled aria-label="Vorherige G-Code Seite">◀</button>
+                            <button id="gcode-page-prev" class="icon-btn" style="padding: 4px 12px; font-size: 11px;" disabled aria-label="Previous G-Code Page">◀</button>
                             <span id="gcode-page-info" style="font-size: 11px; color: var(--text-muted); min-width: 40px; text-align: center;">1 / 1</span>
-                            <button id="gcode-page-next" class="icon-btn" style="padding: 4px 12px; font-size: 11px;" disabled aria-label="Nächste G-Code Seite">▶</button>
+                            <button id="gcode-page-next" class="icon-btn" style="padding: 4px 12px; font-size: 11px;" disabled aria-label="Next G-Code Page">▶</button>
                         </div>
                     </div>
 
                     <ul class="gcode-list" id="gcode-view" style="margin-top: 0; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
-                        <li style="color: var(--text-muted); padding: 20px; text-align: center;" data-i18n="msg.upload">Bitte lade eine G-Code-Datei hoch.<br><br>
-                            👉 Nutze <code>gcode/example.gcode</code> zum Testen!
+                        <li style="color: var(--text-muted); padding: 20px; text-align: center;" data-i18n="msg.upload">Please upload a G-Code file.<br><br>
+                            👉 Use <code>gcode/example.gcode</code> to test!
                         </li>
                     </ul>
 
                     <div style="padding: 10px 20px 10px 20px; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2);">
                         <span style="background: rgba(255, 179, 0, 0.15); border-left: 2px solid var(--color-modified); width: 16px; height: 10px; display: inline-block;"></span>
-                        <span data-i18n="msg.modified">Markierte Zeilen wurden durch deine Slider modifiziert</span>
+                        <span data-i18n="msg.modified">Marked lines were modified by your sliders</span>
                     </div>
 
                     <div class="explanation-box" id="explanation-output">
-                        <span data-i18n="msg.explanation">💡 <strong>Erklärung:</strong> Klicke auf eine Zeile oder einen Pfad in der Vorschau, um Details zu sehen.</span>
+                        <span data-i18n="msg.explanation">💡 <strong>Explanation:</strong> Click on a line or path in the preview to see details.</span>
                     </div>
                 </div>
 
                 <!-- TAB: MODIFIKATIONEN -->
                 <div id="tab-mods" class="tab-content" style="display: none; flex-direction: column; flex: 1; overflow: hidden;">
                     <div style="background: rgba(255, 179, 0, 0.1); border: 1px solid rgba(255, 179, 0, 0.3); border-radius: 6px; padding: 10px 15px; margin: 15px 20px 15px 20px; font-size: 12px; display: flex; align-items: center; gap: 10px;">
-                        <span data-i18n="mods.info">Hier siehst du ausschließlich Zeilen, die durch deine Slider verändert wurden. Nutze die Filter, um Änderungen gezielt zu finden.</span>
+                        <span data-i18n="mods.info">Here you only see lines that were modified by your sliders. Use filters to find specific changes.</span>
                     </div>
 
                     <div class="mod-filters" id="mod-filter-bar">
-                        <button class="filter-btn active" data-filter="all" data-i18n="filter.all">Alle</button>
+                        <button class="filter-btn active" data-filter="all" data-i18n="filter.all">All</button>
                         <button class="filter-btn" data-filter="temp" data-i18n="filter.hotend">Hotend</button>
                         <button class="filter-btn" data-filter="bed" data-i18n="filter.bed">Bed</button>
                         <button class="filter-btn" data-filter="fan" data-i18n="filter.fan">Fan</button>
                         <button class="filter-btn" data-filter="retract" data-i18n="filter.retract">Retract</button>
     
-                        <button class="filter-btn" data-filter="speed" data-i18n="view.speed_mode" data-i18n="filter.speed">Speed</button>
+                        <button class="filter-btn" data-filter="speed" data-i18n="filter.speed">Speed</button>
                         <button class="filter-btn" data-filter="offset" data-i18n="filter.offset">Offset</button>
                     </div>
 
                     <ul class="gcode-list" id="mod-view">
-                        <li style="color: var(--text-muted); padding: 20px; text-align: center;" data-i18n="mods.none">Keine Modifikationen vorhanden.</li>
+                        <li style="color: var(--text-muted); padding: 20px; text-align: center;" data-i18n="mods.none">No modifications found.</li>
                     </ul>
                 </div>
 
@@ -1546,43 +2050,90 @@ html[lang="en"] .de-only { display: none !important; }
                         
                         <!-- STATISTIK -->
                         <div class="analyse-card">
-                            <h3 data-tooltip="Zusammenfassung der Bauteilgröße und des Materialverbrauchs" data-i18n-tooltip="tooltip.8">📊 Statistik</h3>
-                            <div class="prop-row"><span data-tooltip="Breite des Modells auf der X-Achse" data-i18n-tooltip="tooltip.9">X-Range:</span> <strong id="ana-x">-- mm</strong></div>
-                            <div class="prop-row"><span data-tooltip="Tiefe des Modells auf der Y-Achse" data-i18n-tooltip="tooltip.10">Y-Range:</span> <strong id="ana-y">-- mm</strong></div>
-                            <div class="prop-row"><span data-tooltip="Höhe des höchsten Punktes im Modell" data-i18n-tooltip="tooltip.11">Z-Max:</span> <strong id="ana-z">-- mm</strong></div>
-                            <div class="prop-row"><span data-tooltip="Gesamtlänge des geförderten Filaments" data-i18n-tooltip="tooltip.12" data-i18n="stats.total_e">Gesamt E:</span> <strong id="ana-e">-- mm</strong></div>
-                            <div class="prop-row"><span data-tooltip="Geschätztes Volumen des gedruckten Objekts" data-i18n-tooltip="tooltip.13" data-i18n="stats.volume">Objekt-Volumen:</span> <strong id="ana-vol">-- cm³</strong></div>
+                            <h3 data-tooltip="Summary of part size and material consumption" data-i18n-tooltip="tooltip.8" data-i18n="stats.heading">📊 Statistics</h3>
+                            <div class="prop-row"><span data-tooltip="Width of the model on the X-axis" data-i18n-tooltip="tooltip.9" data-i18n="stats.x_range">X-Range:</span> <strong id="ana-x">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Depth of the model on the Y-axis" data-i18n-tooltip="tooltip.10" data-i18n="stats.y_range">Y-Range:</span> <strong id="ana-y">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Height of the highest point in the model" data-i18n-tooltip="tooltip.11" data-i18n="stats.z_max">Z-Max:</span> <strong id="ana-z">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Total length of extruded filament" data-i18n-tooltip="tooltip.12" data-i18n="stats.total_e">Total E:</span> <strong id="ana-e">-- mm</strong></div>
+                            <div class="prop-row"><span data-tooltip="Estimated volume of the printed object" data-i18n-tooltip="tooltip.13" data-i18n="stats.volume">Object Volume:</span> <strong id="ana-vol">-- cm³</strong></div>
                         </div>
 
                         <!-- HISTOGRAMM -->
                         <div class="analyse-card" style="grid-column: 1 / -1;">
-                            <h3 data-tooltip="Verteilung der Druckgeschwindigkeiten" data-i18n-tooltip="tooltip.speed_dist" data-i18n="stats.speed_dist">📊 Geschwindigkeits-Verteilung</h3>
+                            <h3 data-tooltip="Distribution of printing speeds" data-i18n-tooltip="tooltip.speed_dist" data-i18n="stats.speed_dist">📊 Speed Distribution</h3>
                             <div id="speed-histogram" style="display: flex; align-items: flex-end; justify-content: space-between; gap: 2px; height: 120px; margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">
                                 <!-- Bars will be injected here -->
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 5px;">
-                                <span data-i18n="stats.speed_slow">Langsam (0 mm/s)</span>
-                                <span data-i18n="stats.speed_fast">Schnell</span>
+                                <span data-i18n="stats.speed_slow">Slow (0 mm/s)</span>
+                                <span data-i18n="stats.speed_fast">Fast</span>
                             </div>
                         </div>
 
                         <!-- LINTER WARNINGS -->
                         <div class="analyse-card" style="grid-column: 1 / -1;">
-                            <h3 data-i18n="stats.linter_warnings">⚠️ G-Code Warnungen (Linter)</h3>
-                            <div id="linter-warnings-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto;">
-                                <div style="color:var(--text-muted); text-align:center; padding: 20px;" data-i18n="stats.linter_ok">Keine Fehler gefunden.</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                                <h3 style="margin: 0;" data-i18n="stats.linter_warnings">⚠️ G-Code Warnings (Linter)</h3>
+                                <div class="linter-filters" id="linter-filter-bar" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                    <button class="linter-filter-btn active" data-linter-filter="all" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 20px; cursor: pointer; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-color); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                                        <span data-i18n="linter.filter_all">All</span> <span id="linter-count-all" class="badge-count" style="font-size: 0.68rem; padding: 1px 6px; border-radius: 10px; background: rgba(255,255,255,0.12);">0</span>
+                                    </button>
+                                    <button class="linter-filter-btn" data-linter-filter="critical" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 20px; cursor: pointer; border: 1px solid rgba(231, 76, 60, 0.35); background: rgba(231, 76, 60, 0.1); color: #ff6b6b; font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                                        <span>🔴</span> <span data-i18n="linter.filter_critical">Critical</span> <span id="linter-count-critical" class="badge-count" style="font-size: 0.68rem; padding: 1px 6px; border-radius: 10px; background: rgba(231, 76, 60, 0.25);">0</span>
+                                    </button>
+                                    <button class="linter-filter-btn" data-linter-filter="warning" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 20px; cursor: pointer; border: 1px solid rgba(241, 196, 15, 0.35); background: rgba(241, 196, 15, 0.1); color: #f1c40f; font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                                        <span>🟡</span> <span data-i18n="linter.filter_warning">Warning</span> <span id="linter-count-warning" class="badge-count" style="font-size: 0.68rem; padding: 1px 6px; border-radius: 10px; background: rgba(241, 196, 15, 0.25);">0</span>
+                                    </button>
+                                    <button class="linter-filter-btn" data-linter-filter="info" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 20px; cursor: pointer; border: 1px solid rgba(52, 152, 219, 0.35); background: rgba(52, 152, 219, 0.1); color: #3498db; font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                                        <span>🟢</span> <span data-i18n="linter.filter_info">Info</span> <span id="linter-count-info" class="badge-count" style="font-size: 0.68rem; padding: 1px 6px; border-radius: 10px; background: rgba(52, 152, 219, 0.25);">0</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="linter-warnings-list" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+                                <div style="color:var(--text-muted); text-align:center; padding: 20px;" data-i18n="stats.linter_ok">No errors found.</div>
+                            </div>
+                        </div>
+
+                        <!-- PRESSURE ADVANCE & RETRACTION TUNING -->
+                        <div class="analyse-card" style="grid-column: 1 / -1;" id="pa-tuning-card">
+                            <h3 data-tooltip="Calibrate and preview Klipper Pressure Advance or Marlin Linear Advance against corner bulging." data-i18n-tooltip="tooltip.pa_tuning" data-i18n="pa.tuning_title">🎯 Pressure Advance &amp; Retraction Simulator</h3>
+                            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 6px 0 12px 0; line-height: 1.4;" data-i18n="pa.tuning_desc">
+                                Calibrate melt-zone pressure compensation for sharp corners. Increase if corners bulge/blob, decrease if under-extruding after corners.
+                            </p>
+                            
+                            <!-- Presets -->
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+                                <button class="pa-preset-btn" data-val="0.020" style="flex: 1; min-width: 90px; padding: 5px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); color: #00e5ff; cursor: pointer; font-weight: 500;">Direct Drive (0.020s)</button>
+                                <button class="pa-preset-btn" data-val="0.035" style="flex: 1; min-width: 90px; padding: 5px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); cursor: pointer; font-weight: 500;">Sprite/Hemera (0.035s)</button>
+                                <button class="pa-preset-btn" data-val="0.450" style="flex: 1; min-width: 90px; padding: 5px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); cursor: pointer; font-weight: 500;">Bowden (0.450s)</button>
+                            </div>
+
+                            <!-- Interactive Slider & Value -->
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.8rem; font-weight: 600;" data-i18n="pa.advance_val">Klipper ADVANCE / Marlin K:</span>
+                                    <span id="pa-slider-val" style="font-weight: 700; color: var(--accent-color); font-size: 0.9rem; font-family: monospace;">0.025 s</span>
+                                </div>
+                                <input type="range" class="slider" id="pa-interactive-slider" min="0.000" max="0.100" step="0.001" value="0.025" style="width: 100%;">
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div style="display: flex; gap: 8px; margin-top: 14px;">
+                                <button id="embed-pa-btn" class="upload-btn" style="flex: 1; padding: 8px 12px; font-size: 0.8rem; font-weight: 600; background: linear-gradient(135deg, #00bcd4, #008ba3); border: none; border-radius: 6px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                    <span>💾</span> <span data-i18n="pa.embed_btn">Embed PA in G-Code</span>
+                                </button>
                             </div>
                         </div>
 
                         <!-- OFFSETS -->
                         <div class="analyse-card">
-                            <h3 data-tooltip="Verschiebt das gesamte Bauteil virtuell auf dem Druckbett" data-i18n-tooltip="tooltip.14">📐 Geometrie-Offsets</h3>
+                            <h3 data-tooltip="Virtually shifts the entire part on the build plate" data-i18n-tooltip="tooltip.14" data-i18n="offset.heading">📐 Geometry Offsets</h3>
                             <div class="offset-group" style="margin-top: 10px;">
-                                <div class="widget-title"><span data-tooltip="Verschiebung nach links/rechts" data-i18n-tooltip="tooltip.15" data-i18n="offset.x">X-Verschiebung</span><span id="xoffset-val" class="accent">0.0 mm</span></div>
+                                <div class="widget-title"><span data-tooltip="Shift left/right" data-i18n-tooltip="tooltip.15" data-i18n="offset.x">X-Offset</span><span id="xoffset-val" class="accent">0.0 mm</span></div>
                                 <input type="range" class="slider" id="xoffset-slider" min="-100" max="100" step="1" value="0" aria-label="X-Offset">
                             </div>
                             <div class="offset-group" style="margin-top: 15px;">
-                                <div class="widget-title"><span data-tooltip="Verschiebung nach vorne/hinten" data-i18n-tooltip="tooltip.16" data-i18n="offset.y">Y-Verschiebung</span><span id="yoffset-val" class="accent">0.0 mm</span></div>
+                                <div class="widget-title"><span data-tooltip="Shift front/back" data-i18n-tooltip="tooltip.16" data-i18n="offset.y">Y-Offset</span><span id="yoffset-val" class="accent">0.0 mm</span></div>
                                 <input type="range" class="slider" id="yoffset-slider" min="-100" max="100" step="1" value="0" aria-label="Y-Offset">
                             </div>
                         </div>
@@ -1591,25 +2142,25 @@ html[lang="en"] .de-only { display: none !important; }
                         <div class="analyse-card kinematics-card" style="grid-column: 1 / -1;">
                             
                             <details>
-                                <summary style="cursor: pointer; font-weight: 600; font-size: 1.1rem; color: var(--accent-color);" data-i18n="kinematics.heading">🚀 Drucker-Kinematik (Erweitert)</summary>
+                                <summary style="cursor: pointer; font-weight: 600; font-size: 1.1rem; color: var(--accent-color);" data-i18n="kinematics.heading">🚀 Printer Kinematics (Advanced)</summary>
                                 <div style="margin-top: 15px; overflow-x: auto;">
-                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;" data-i18n="kinematics.info">Wird für die exakte Druckzeitberechnung genutzt.</p>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;" data-i18n="kinematics.info">Used for exact print time calculation.</p>
 
                             
                             <table class="kinematics-table">
                                 <thead>
                                     <tr>
                                         <th></th>
-                                        <th data-tooltip="Links/Rechts Achse" data-i18n-tooltip="tooltip.17">X</th>
-                                        <th data-tooltip="Vorne/Hinten Achse" data-i18n-tooltip="tooltip.18">Y</th>
-                                        <th data-tooltip="Hoch/Runter Achse" data-i18n-tooltip="tooltip.19">Z</th>
-                                        <th data-tooltip="Extruder (Filamentvorschub)" data-i18n-tooltip="tooltip.20">E</th>
+                                        <th data-tooltip="Left/Right Axis" data-i18n-tooltip="tooltip.17">X</th>
+                                        <th data-tooltip="Front/Back Axis" data-i18n-tooltip="tooltip.18">Y</th>
+                                        <th data-tooltip="Up/Down Axis" data-i18n-tooltip="tooltip.19">Z</th>
+                                        <th data-tooltip="Extruder (Filament feed)" data-i18n-tooltip="tooltip.20">E</th>
                                         <th>Unit</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td data-tooltip="Das absolute Geschwindigkeitslimit der Achse (M203)" data-i18n-tooltip="tooltip.21">Max Speed</td>
+                                        <td data-tooltip="The absolute speed limit of the axis (M203)" data-i18n-tooltip="tooltip.21">Max Speed</td>
                                         <td><input type="number" class="k-input" id="k-vmax-x" value="500" aria-label="Max Velocity X"></td>
                                         <td><input type="number" class="k-input" id="k-vmax-y" value="500" aria-label="Max Velocity Y"></td>
                                         <td><input type="number" class="k-input" id="k-vmax-z" value="10" aria-label="Max Velocity Z"></td>
@@ -1617,7 +2168,7 @@ html[lang="en"] .de-only { display: none !important; }
                                         <td class="k-unit">mm/s</td>
                                     </tr>
                                     <tr>
-                                        <td data-tooltip="Beschleunigung während Filament gefördert wird (M201)" data-i18n-tooltip="tooltip.22">Print Accel</td>
+                                        <td data-tooltip="Acceleration while filament is extruded (M201)" data-i18n-tooltip="tooltip.22">Print Accel</td>
                                         <td><input type="number" class="k-input" id="k-accel-x" value="1000" aria-label="Acceleration X"></td>
                                         <td><input type="number" class="k-input" id="k-accel-y" value="1000" aria-label="Acceleration Y"></td>
                                         <td><input type="number" class="k-input" id="k-accel-z" value="100" aria-label="Acceleration Z"></td>
@@ -1625,7 +2176,7 @@ html[lang="en"] .de-only { display: none !important; }
                                         <td class="k-unit">mm/s²</td>
                                     </tr>
                                     <tr>
-                                        <td data-tooltip="Beschleunigung bei Leerfahrten ohne Extrusion (M204)" data-i18n-tooltip="tooltip.23">Travel Accel</td>
+                                        <td data-tooltip="Acceleration during travel moves without extrusion (M204)" data-i18n-tooltip="tooltip.23">Travel Accel</td>
                                         <td><input type="number" class="k-input" id="k-taccel-x" value="1500" aria-label="Travel Accel X"></td>
                                         <td><input type="number" class="k-input" id="k-taccel-y" value="1500" aria-label="Travel Accel Y"></td>
                                         <td><input type="number" class="k-input" id="k-taccel-z" value="100" aria-label="Travel Accel Z"></td>
@@ -1633,7 +2184,7 @@ html[lang="en"] .de-only { display: none !important; }
                                         <td class="k-unit">mm/s²</td>
                                     </tr>
                                     <tr>
-                                        <td data-tooltip="Ruck/Richtungswechsel-Geschwindigkeit, ab der sofort ohne Rampe gebremst wird (M205)" data-i18n-tooltip="tooltip.24">Jerk</td>
+                                        <td data-tooltip="Jerk/Direction change speed, at which the printer stops immediately without ramp (M205)" data-i18n-tooltip="tooltip.24">Jerk</td>
                                         <td><input type="number" class="k-input" id="k-jerk-x" value="8" aria-label="Jerk X"></td>
                                         <td><input type="number" class="k-input" id="k-jerk-y" value="8" aria-label="Jerk Y"></td>
                                         <td><input type="number" class="k-input" id="k-jerk-z" value="0.4" aria-label="Jerk Z"></td>
@@ -1643,8 +2194,8 @@ html[lang="en"] .de-only { display: none !important; }
                                 </tbody>
                             </table>
                             <div style="display: flex; gap: 10px; margin-top: 15px;">
-                                <button id="recalc-time-btn" class="upload-btn" style="flex: 1;" data-i18n="kinematics.recalc">Druckzeit neu berechnen</button>
-                                <button id="reset-kinematics-btn" class="upload-btn" style="background-color: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 0 15px;" title="Zurücksetzen" data-i18n-title="title.4">🔄</button>
+                                <button id="recalc-time-btn" class="upload-btn" style="flex: 1;" data-i18n="kinematics.recalc">Recalculate Print Time</button>
+                                <button id="reset-kinematics-btn" class="upload-btn" style="background-color: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 0 15px;" title="Reset" data-i18n-title="title.4">🔄</button>
                             </div>
                                 </div>
                             </details>
@@ -1655,25 +2206,76 @@ html[lang="en"] .de-only { display: none !important; }
         </main>
     
         <!-- SEO SECTION -->
-        <section class="seo-content" style="max-width: 1200px; margin: 0 auto; padding: 20px; color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;">
-            <details style="cursor: pointer; background: var(--panel-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <summary style="color: var(--accent-color); font-weight: 600; outline: none;" data-i18n="info.more">Learn more about LayerSpy &amp; G-Code Analysis...</summary>
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 15px;">
-                    <div>
-                        <h2 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.2rem;" data-i18n="info.title1">The ultimate G-Code analysis for your 3D print</h2>
-                        <p data-i18n="info.desc1">LayerSpy is a state-of-the-art, browser-based <strong>G-Code editor and analyzer</strong> specifically designed for 3D printing enthusiasts. Whether you use <strong>Marlin</strong>, <strong>Klipper firmware</strong> or RepRap, with LayerSpy you can visualize and tune the generated code from slicers like <em>Cura</em>, <em>PrusaSlicer</em>, <em>Bambu Studio</em> or <em>OrcaSlicer</em> directly in the browser.</p>
+        <section class="seo-content" style="width: 100%; max-width: 1100px; margin: 25px auto; padding: 0 20px; box-sizing: border-box;">
+            <details class="seo-details" style="cursor: pointer; background: var(--panel-bg); border-radius: 10px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.25); transition: border-color 0.2s ease;">
+                <summary class="seo-summary" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; color: var(--accent-color); font-weight: 600; outline: none; background: rgba(255,255,255,0.02); user-select: none; font-size: 0.95rem;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span>📖</span>
+                        <span data-i18n="info.more">Learn more about LayerSpy &amp; G-Code Analysis...</span>
+                    </span>
+                    <span class="seo-chevron" style="font-size: 0.85rem; color: var(--accent-color); transition: transform 0.3s ease;">▼</span>
+                </summary>
+                <div class="seo-body" style="padding: 24px; border-top: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; box-sizing: border-box; background: rgba(0,0,0,0.15);">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h2 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>📂</span> <span data-i18n="info.title1">Universal G-Code Editor &amp; Slicer Support</span></h2>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc1">LayerSpy is a browser-based analyzer for 3D printing. Seamlessly visualize, inspect, and tune G-Code generated from Bambu Studio, OrcaSlicer, PrusaSlicer, Cura, and Creality Print directly in your browser.</p>
                     </div>
-                    <div>
-                        <h3 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.1rem;" data-i18n="info.title2">Why analyze G-Code live in 3D?</h3>
-                        <p data-i18n="info.desc2">Analyzing G-Code allows you to detect errors before printing. LayerSpy provides an interactive 2D and 3D preview using WebGL that lets you scroll through your model layer by layer. The integrated heatmap function shows you critical print speeds and flow rates to effectively prevent stringing, warping or under-extrusion.</p>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🎮</span> <span data-i18n="info.title2">Interactive 2D &amp; 3D WebGL Simulator</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc2">Catch toolpath issues and slicing defects before printing. Features layer-by-layer scrolling, volumetric solid tubes, travel move filtering, and color-coded speed / flow rate heatmaps.</p>
                     </div>
-                    <div>
-                        <h3 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.1rem;" data-i18n="info.title3">VFA Radar & Corner Deceleration Auditor</h3>
-                        <p data-i18n="info.desc3">Detect Vertical Fine Artifacts (VFA) and stepper motor resonance corridors (45–65 mm/s and 90–110 mm/s) on outer walls. Audit corner decelerations to identify pressure bulging risks and verify Klipper Pressure Advance (<code>SET_PRESSURE_ADVANCE</code>) or Marlin Linear Advance (<code>M900</code>).</p>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>📡</span> <span data-i18n="info.title3">VFA Radar &amp; Resonance Corridor Analysis</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc3">Detect Vertical Fine Artifacts (VFA) and stepper motor resonance speeds (45–65 mm/s &amp; 90–110 mm/s) on outer perimeters to improve surface finish and eliminate unwanted print banding.</p>
                     </div>
-                    <div>
-                        <h3 style="color: var(--text-color); margin-bottom: 8px; font-size: 1.1rem;" data-i18n="info.title4">Universal Slicer & Firmware Compatibility</h3>
-                        <p data-i18n="info.desc4">Seamlessly parse files generated by Bambu Studio, OrcaSlicer, PrusaSlicer, Ultimaker Cura, Creality Print, SuperSlicer, and IdeaMaker. Fully compatible with Klipper, Marlin 2.0, and RepRapFirmware.</p>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🎯</span> <span data-i18n="info.title4">Pressure Advance &amp; Corner Bulge Auditor</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc4">Audit high deceleration points (&Delta;v &gt; 60 mm/s) where melt-zone pressure causes corner swelling. Live-preview and embed calibrated Klipper (<code>SET_PRESSURE_ADVANCE</code>) or Marlin (<code>M900</code>) values.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>⚡</span> <span data-i18n="info.title5">Accurate Kinematics &amp; Motion Planning</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc5">Simulate realistic print times using a 2D trapezoidal motion planner that factors in axis acceleration (M201/M204), jerk/SCV limits (M205), and feedrates for Klipper and Marlin.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🔒</span> <span data-i18n="info.title6">100% Client-Side Privacy &amp; Offline PWA</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc6">Zero server uploads: all file streaming, analysis, and rendering execute locally on your device. Works completely offline as an installable Progressive Web App with zero telemetry.</p>
+                    </div>
+                </div>
+            </details>
+
+            <!-- FAQ SECTION -->
+            <details class="seo-details" style="margin-top: 15px; cursor: pointer; background: var(--panel-bg); border-radius: 10px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.25); transition: border-color 0.2s ease;">
+                <summary class="seo-summary" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; color: var(--accent-color); font-weight: 600; outline: none; background: rgba(255,255,255,0.02); user-select: none; font-size: 0.95rem;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span>❓</span>
+                        <span data-i18n="faq.more">Frequently Asked Questions (FAQ) &amp; 3D Printing Guide...</span>
+                    </span>
+                    <span class="seo-chevron" style="font-size: 0.85rem; color: var(--accent-color); transition: transform 0.3s ease;">▼</span>
+                </summary>
+                <div class="seo-body" style="padding: 24px; border-top: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; box-sizing: border-box; background: rgba(0,0,0,0.15);">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>📡</span> <span data-i18n="faq.q1">What are Vertical Fine Artifacts (VFA) and how does the VFA Radar help?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a1">VFA refers to repeating vertical ridges or ripples on outer walls caused by stepper motor resonance at specific speeds. LayerSpy's VFA Radar identifies outer wall speeds falling into standard resonance corridors (typically 45–65 mm/s and 90–110 mm/s) so you can optimize slicer speeds for glass-smooth surfaces.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🎯</span> <span data-i18n="faq.q2">What is Pressure Advance (Linear Advance) and Corner Bulging?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a2">When a 3D printer decelerates into a sharp corner, melt-zone pressure builds up, causing excess plastic to ooze into swollen corners (Corner Bulging). Pressure Advance (Klipper) and Linear Advance (Marlin) dynamically decrease extruder pressure. LayerSpy audits corner deceleration points (&Delta;v &gt; 60 mm/s) and lets you embed calibrated values directly.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>⚡</span> <span data-i18n="faq.q3">How does the real Klipper &amp; Marlin kinematics simulation work?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a3">Standard viewers simply divide line distance by nominal feedrate. LayerSpy uses a 2D trapezoidal motion planner with forward/backward passes, calculating exact print durations based on printer acceleration (M201/M204), jerk/square corner velocity (M205), and junction speeds.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🧵</span> <span data-i18n="faq.q4">What is Z-Seam Alignment and why should I check it?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a4">The Z-seam is the start/stop point on every layer. LayerSpy's Z-Seam tool highlights all layer start points in 3D, letting you verify whether your slicer has hidden the seam in sharp inner corners or placed it away from visible aesthetic faces.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🔥</span> <span data-i18n="faq.q5">What is the Volumetric Flow Rate limit (mm³/s)?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a5">Volumetric flow rate represents how many mm³ of filament your hotend can melt per second (Flow = Speed &times; Layer Height &times; Line Width). If speed demands exceed hotend capacity (e.g. &gt;15 mm³/s on standard hotends), under-extrusion and extruder clicking occur. LayerSpy's flow heatmap highlights dangerous flow spikes.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🔒</span> <span data-i18n="faq.q6">Does LayerSpy upload my G-Code files or 3D models to any server?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a6">No, absolutely zero files or 3D geometries leave your device. LayerSpy processes everything 100% locally in your browser using Web Workers and WebGL on your local GPU. It even works completely offline as an installable Progressive Web App (PWA).</p>
                     </div>
                 </div>
             </details>
@@ -1804,7 +2406,7 @@ html[lang="en"] .de-only { display: none !important; }
         Data processing is carried out by the website operator. Details can be found in the section "Note on the responsible party".</p>
         
         <p><strong>How do we collect your data?</strong><br>
-        Ihre Daten werden zum einen erhoben, indem Sie uns diese mitteilen (z. B. im Kontaktformular). Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website durch unsere IT‑Systeme erfasst (z. B. Browser, Betriebssystem, Zeitpunkt des Seitenaufrufs).</p>
+        Your data is collected when you provide it to us (e.g., via the contact form). Other data is collected automatically or after your consent when you visit the website through our IT systems (e.g., browser, operating system, time of page access).</p>
         
         <p><strong>What do we use your data for?</strong><br>
         To ensure the error-free provision of the website, to analyze user behavior and - if contractual relationships are initiated or concluded via the website - for offers, orders or order requests.</p>
@@ -1814,68 +2416,68 @@ html[lang="en"] .de-only { display: none !important; }
         
         <h2>2. Hosting</h2>
         <p>We host the contents of our website with the following provider:<br>
-        Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen.<br>
+        Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Germany.<br>
         Details: <a href="https://www.hetzner.com/de/legal/privacy-policy/" target="_blank">https://www.hetzner.com/de/legal/privacy-policy/</a></p>
         
-        <p>Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an zuverlässiger Darstellung). Bei abgefragter Einwilligung: Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG (Speicherung von Cookies/Endgeräte‑Infos). Einwilligungen sind jederzeit widerrufbar.</p>
+        <p>Legal basis: Art. 6 (1) lit. f GDPR (legitimate interest in the reliable presentation of our website). If consent has been requested: Art. 6 (1) lit. a GDPR and § 25 (1) TDDDG (storage of cookies/terminal device information). Consent can be revoked at any time.</p>
         
-        <p><strong>Auftragsverarbeitung</strong><br>
-        Es besteht ein Vertrag über Auftragsverarbeitung (AVV) mit Hetzner.</p>
+        <p><strong>Data Processing Agreement (DPA)</strong><br>
+        We have concluded a data processing agreement with Hetzner.</p>
 
         <h2>3. General Notes and Mandatory Information</h2>
-        <p><strong>Privacy</strong><br>
-        Wir behandeln personenbezogene Daten vertraulich und gemäß den gesetzlichen Vorschriften sowie dieser Datenschutzerklärung. Die Datenübertragung im Internet kann Sicherheitslücken aufweisen.</p>
+        <p><strong>Data Protection</strong><br>
+        We treat personal data confidentially and in accordance with statutory data protection regulations and this privacy policy. Data transmission over the internet may have security vulnerabilities.</p>
         
         <p><strong>Note on the responsible party</strong><br>
-        Verantwortlich:<br>
-        Sven Harzer · Wriezenerstrasse 19 · 13055 Berlin<br>
-        Telefon: 0151 29675764 · E-Mail: <a href="mailto:info@layerspy.de">info@layerspy.de</a></p>
-        <p>Verantwortliche Stelle ist die natürliche oder juristische Person, die über Zwecke und Mittel der Verarbeitung entscheidet.</p>
+        Responsible:<br>
+        Sven Harzer · Wriezenerstrasse 19 · 13055 Berlin, Germany<br>
+        Phone: +49 (0) 151 29675764 · Email: <a href="mailto:info@layerspy.de">info@layerspy.de</a></p>
+        <p>The responsible party (controller) is the natural or legal person who decides on the purposes and means of processing personal data.</p>
         
         <p><strong>Storage Duration</strong><br>
-        Sofern keine speziellere Frist genannt ist, werden personenbezogene Daten gelöscht, sobald der Verarbeitungszweck entfällt. Gesetzliche Aufbewahrungsfristen bleiben unberührt.</p>
+        Unless a more specific storage period has been specified, your personal data will remain with us until the purpose for data processing ceases to apply. Statutory retention periods remain unaffected.</p>
         
-        <p><strong>Rechtsgrundlagen</strong><br>
-        Je nach Zweck: Art. 6 Abs. 1 lit. a (Einwilligung), Art. 6 Abs. 1 lit. b (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. c (rechtliche Pflicht), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse); bei besonderen Kategorien Art. 9 Abs. 2 lit. a DSGVO; bei Drittstaatenübertragung Art. 49 Abs. 1 lit. a DSGVO; bei Endgerätezugriff zusätzlich § 25 Abs. 1 TDDDG.</p>
+        <p><strong>Legal Bases</strong><br>
+        Depending on the purpose: Art. 6 (1) lit. a (Consent), Art. 6 (1) lit. b (Contract / pre-contractual), Art. 6 (1) lit. c (Legal obligation), Art. 6 (1) lit. f GDPR (Legitimate interest); for special categories Art. 9 (2) lit. a GDPR; for third-country transfers Art. 49 (1) lit. a GDPR; for terminal equipment access additionally § 25 (1) TDDDG.</p>
 
-        <p><strong>Empfänger von personenbezogenen Daten</strong><br>
-        Eine Weitergabe erfolgt nur bei Erforderlichkeit zur Vertragserfüllung, gesetzlicher Pflicht, berechtigtem Interesse oder anderer Rechtsgrundlage. Bei Auftragsverarbeitung besteht ein AVV; bei gemeinsamer Verarbeitung ein Vertrag über gemeinsame Verantwortlichkeit.</p>
+        <p><strong>Recipients of Personal Data</strong><br>
+        Data is only disclosed if necessary for the performance of a contract, legal obligation, legitimate interest, or other legal basis. For data processors, a Data Processing Agreement (DPA) is in place; for joint controllership, an agreement on joint responsibility.</p>
         
-        <p><strong>Widerruf Ihrer Einwilligung</strong><br>
-        Einwilligungen können jederzeit mit Wirkung für die Zukunft widerrufen werden.</p>
+        <p><strong>Revocation of Your Consent</strong><br>
+        Consents granted can be revoked at any time with future effect.</p>
         
-        <p><strong>Widerspruchsrecht (Art. 21 DSGVO)</strong><br>
-        Sie können aus Gründen Ihrer besonderen Situation der Verarbeitung aufgrund Art. 6 Abs. 1 lit. e/f DSGVO widersprechen; dies gilt auch für Profiling. Bei Direktwerbung besteht ein jederzeitiges Widerspruchsrecht; danach werden Daten nicht mehr für Werbung verwendet.</p>
+        <p><strong>Right to Object (Art. 21 GDPR)</strong><br>
+        You have the right to object at any time, on grounds relating to your particular situation, to the processing of your personal data based on Art. 6 (1) lit. e/f GDPR; this also applies to profiling. In the case of direct marketing, you have the right to object at any time; your data will then no longer be used for advertising purposes.</p>
         
-        <p><strong>Beschwerderecht</strong><br>
-        Sie haben das Recht auf Beschwerde bei der zuständigen Aufsichtsbehörde.</p>
+        <p><strong>Right to Lodge a Complaint</strong><br>
+        You have the right to lodge a complaint with the competent supervisory authority.</p>
         
-        <p><strong>Recht auf Datenübertragbarkeit</strong><br>
-        Sie können Daten, die wir automatisiert auf Grundlage von Einwilligung oder Vertrag verarbeiten, in einem gängigen, maschinenlesbaren Format erhalten oder an Dritte übertragen lassen, soweit technisch machbar.</p>
+        <p><strong>Right to Data Portability</strong><br>
+        You have the right to have data that we process automatically on the basis of your consent or in fulfillment of a contract delivered to you or to a third party in a standard, machine-readable format, where technically feasible.</p>
         
-        <p><strong>Auskunft, Berichtigung und Löschung</strong><br>
-        Sie haben das Recht auf Auskunft, Berichtigung oder Löschung Ihrer personenbezogenen Daten.</p>
+        <p><strong>Information, Rectification and Erasure</strong><br>
+        You have the right to access, rectify, or erase your personal data at any time.</p>
         
-        <p><strong>Recht auf Einschränkung der Verarbeitung</strong><br>
-        Sie können die Einschränkung der Verarbeitung verlangen, insbesondere in folgenden Fällen:<br>
-        - Bestreiten der Richtigkeit bis zur Klärung<br>
-        - Unrechtmäßige Verarbeitung statt Löschung<br>
-        - Keine Erforderlichkeit mehr, aber Bedarf zur Rechtsverfolgung<br>
-        - Widerspruch nach Art. 21 Abs. 1 bis zur Interessenabwägung</p>
+        <p><strong>Right to Restriction of Processing</strong><br>
+        You have the right to request the restriction of the processing of your personal data, particularly in the following cases:<br>
+        - If you contest the accuracy of your data until it is verified<br>
+        - If the processing is unlawful and you oppose erasure<br>
+        - If we no longer need the data, but you require it for legal claims<br>
+        - If you have objected pursuant to Art. 21 (1) GDPR pending balancing of interests</p>
         
-        <p><strong>SSL‑/TLS‑Verschlüsselung</strong><br>
-        Bei aktivierter Verschlüsselung sind übermittelte Daten für Dritte nicht lesbar.</p>
+        <p><strong>SSL / TLS Encryption</strong><br>
+        When encryption is activated, data transmitted to and from this website cannot be read by third parties.</p>
         
-        <p><strong>Widerspruch gegen Werbe-E-Mails</strong><br>
-        Der Nutzung von im Impressum veröffentlichten Kontaktdaten für unverlangte Werbung wird widersprochen.</p>
+        <p><strong>Objection to Promotional Emails</strong><br>
+        We hereby object to the use of contact data published within the scope of imprint obligations for sending unsolicited advertising.</p>
         
-        <h2>4. Datenerfassung auf dieser Website</h2>
+        <h2>4. Data Collection on this Website</h2>
         <p><strong>Cookies</strong><br>
-        Wir verwenden Session‑ und permanente Cookies sowie ggf. Third‑Party‑Cookies. Notwendige Cookies beruhen auf Art. 6 Abs. 1 lit. f DSGVO; bei Einwilligung Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG. Sie können Ihren Browser entsprechend konfigurieren; die Funktionalität kann bei Deaktivierung eingeschränkt sein.<br>
-        Welche Cookies und Dienste eingesetzt werden, ist dieser Datenschutzerklärung zu entnehmen.</p>
+        We use session and persistent cookies as well as optional third-party cookies (e.g. Google Analytics with consent). Necessary cookies are based on Art. 6 (1) lit. f GDPR; with consent Art. 6 (1) lit. a GDPR and § 25 (1) TDDDG. You can configure your browser accordingly; functionality may be restricted if cookies are disabled.<br>
+        For detailed information about cookies and services used, please refer to this privacy policy.</p>
         
-        <p><strong>Kontaktformular</strong><br>
-        Angaben aus dem Kontaktformular werden zur Bearbeitung Ihrer Anfrage und für Anschlussfragen gespeichert und ohne Einwilligung nicht weitergegeben. Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO (Vertrag/Vorvertrag), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effektiver Bearbeitung) oder Art. 6 Abs. 1 lit. a DSGVO (Einwilligung, jederzeit widerrufbar). Daten werden gelöscht, wenn der Zweck entfällt oder Sie zur Löschung auffordern; gesetzliche Pflichten bleiben unberührt.</p>
+        <p><strong>Contact Form</strong><br>
+        Information provided in the contact form will be stored to process your inquiry and for follow-up questions, and will not be shared without your consent. Legal bases: Art. 6 (1) lit. b GDPR (Contract / pre-contractual), Art. 6 (1) lit. f GDPR (Legitimate interest in effective inquiry handling), or Art. 6 (1) lit. a GDPR (Consent, revocable at any time). Data is erased when the purpose ceases to apply or when you request erasure; statutory retention obligations remain unaffected.</p>
     
 </div>
      </div>
@@ -2094,9 +2696,16 @@ html[lang="en"] .de-only { display: none !important; }
                 }
             });
             
-        // Google Analytics Logic
+        // Google Analytics Logic with Consent Mode v2
         function loadGoogleAnalytics() {
             const gaMeasurementId = 'G-7MJSHSL5PB'; 
+
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            
+            gtag('consent', 'update', {
+                'analytics_storage': 'granted'
+            });
 
             if (document.getElementById('ga-script')) return;
 
@@ -2106,11 +2715,9 @@ html[lang="en"] .de-only { display: none !important; }
             script.async = true;
             document.head.appendChild(script);
 
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', gaMeasurementId, { 'anonymize_ip': true });
-            console.log('Google Analytics loaded.');
+            console.log('Google Analytics loaded with Consent Mode v2.');
         }
 
         // Cookie Banner Logic

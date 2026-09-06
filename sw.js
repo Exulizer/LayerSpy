@@ -1,4 +1,4 @@
-const CACHE_NAME = 'layerspy-v1.7.0';
+const CACHE_NAME = 'layerspy-v2.1.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

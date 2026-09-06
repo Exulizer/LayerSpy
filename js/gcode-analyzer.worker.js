@@ -23,6 +23,7 @@ self.onmessage = async function(e) {
     let foundFan = null;
     let slicerBaseTime = 0;
     
+    let foundPA = { raw: null, type: 'none', value: null, smoothTime: null };
     let foundK = {
         vmax: {x: null, y: null, z: null, e: null},
         accel: {x: null, y: null, z: null, e: null},
@@ -30,15 +31,34 @@ self.onmessage = async function(e) {
         taccel: null
     };
     
-    // Pass 1: Find Defaults and Kinematics
+    // Pass 1: Find Defaults, Kinematics and Pressure Advance
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (!line) continue;
         const c1 = line[0];
-        if (c1 !== 'M' && c1 !== ';' && c1 !== 'G' && c1 !== 'E') continue;
+        if (c1 !== 'M' && c1 !== ';' && c1 !== 'G' && c1 !== 'E' && c1 !== 'S') continue;
 
         const cleanLine = line.trim().toUpperCase();
         const lowerLine = line.toLowerCase();
+
+        // Pressure Advance scanning
+        if (cleanLine.startsWith('SET_PRESSURE_ADVANCE')) {
+            const advMatch = cleanLine.match(/ADVANCE=([0-9.]+)/i);
+            const smMatch = cleanLine.match(/SMOOTH_TIME=([0-9.]+)/i);
+            if (advMatch) {
+                foundPA.raw = line.trim();
+                foundPA.type = 'klipper';
+                foundPA.value = parseFloat(advMatch[1]);
+                if (smMatch) foundPA.smoothTime = parseFloat(smMatch[1]);
+            }
+        } else if (cleanLine.startsWith('M900')) {
+            const kMatch = cleanLine.match(/K([0-9.]+)/i);
+            if (kMatch) {
+                foundPA.raw = line.trim();
+                foundPA.type = 'marlin';
+                foundPA.value = parseFloat(kMatch[1]);
+            }
+        }
         
         if (lowerLine.includes('time') && lowerLine.startsWith(';')) {
             if (lowerLine.includes('estimated printing time (normal mode) =')) {
@@ -199,6 +219,27 @@ self.onmessage = async function(e) {
             if (cleanLine.startsWith('G92') && cleanLine.includes('E')) {
                 const g92E = cleanLine.match(/E([-+]?[0-9]*.?[0-9]+)/);
                 if (g92E) lastE = parseFloat(g92E[1]);
+            }
+
+            if (cleanLine.startsWith('M106')) {
+                const sMatch = cleanLine.match(/S([0-9.]+)/);
+                if (sMatch) {
+                    let sVal = parseFloat(sMatch[1]);
+                    if (sVal > 0 && sVal <= 1.0 && cleanLine.includes('.')) {
+                        currentFanPWM = Math.round(sVal * 255);
+                    } else {
+                        currentFanPWM = Math.min(255, Math.round(sVal));
+                    }
+                } else {
+                    currentFanPWM = 255;
+                }
+            } else if (cleanLine.startsWith('M107')) {
+                currentFanPWM = 0;
+            } else if (cleanLine.startsWith('SET_FAN_SPEED')) {
+                const speedMatch = cleanLine.match(/SPEED=([0-9.]+)/i);
+                if (speedMatch) {
+                    currentFanPWM = Math.round(parseFloat(speedMatch[1]) * 255);
+                }
             }
 
             const isExtruding = cleanLine.includes('E') && !cleanLine.includes('E-');
@@ -372,12 +413,30 @@ self.onmessage = async function(e) {
     let a_max = (typeof foundK !== 'undefined' && foundK && foundK.accel && foundK.accel.x) ? foundK.accel.x : 3000;
     let SCV = (typeof foundK !== 'undefined' && foundK && foundK.jerk && foundK.jerk.x) ? foundK.jerk.x : 5.0;
 
-        let prevGrid = new Uint8Array(1600 * 1600);
+    let prevGrid = new Uint8Array(1600 * 1600);
     let currGrid = new Uint8Array(1600 * 1600);
+
+    let maxOverhangAngle = 0;
+    let totalBridgeLength = 0;
+    let steepCount = 0;
+    let bridgeCount = 0;
+    let firstCriticalLayer = -1;
+    let lowFanOverhangCount = 0;
+    let criticalLowFanCount = 0;
+
+    let cornerBulgeCount = 0;
+    let grindingClusterCount = 0;
+    let grindingLayers = [];
+    let recentRetracts = []; // { x, y, layer }
 
     for (let i = 0; i < layerList.length; i++) {
         let layer = layerList[i];
         let numPaths = layer.paths.length;
+        let deltaZ = 0.20;
+        if (i > 0) {
+            let dz = layer.z - layerList[i - 1].z;
+            if (dz > 0.01 && dz < 2.0) deltaZ = dz;
+        }
         
         let t_layer = 0;
         // Use TypedArrays for high-performance 2D Kinematics planner
@@ -521,7 +580,12 @@ self.onmessage = async function(e) {
                     flowRate = (eDist * Math.PI * Math.pow(1.75 / 2, 2)) / time;
                     if (flowRate > 15) {
                         if (!layer.hasHighFlowWarning) {
-                            diagnosticWarnings.push({ type: 'high_flow', layerIndex: i, msg: 'High volumetric flow (' + flowRate.toFixed(1) + ' mm³/s) at Layer ' + i });
+                            diagnosticWarnings.push({ 
+                                type: 'high_flow', 
+                                layerIndex: i, 
+                                flowRate: flowRate.toFixed(1),
+                                msg: 'High volumetric flow (' + flowRate.toFixed(1) + ' mm³/s) at Layer ' + i 
+                            });
                             layer.hasHighFlowWarning = true;
                         }
                         healthScore -= 0.1;
@@ -529,6 +593,41 @@ self.onmessage = async function(e) {
                 }
             }
             
+            // Corner Bulge check (Extrusion corner with high deceleration)
+            if (pType === 1 && j < numPaths - 1 && layer.paths[j+1] && layer.paths[j+1].type === 'extrude') {
+                let cosTheta = dirX_arr[j] * dirX_arr[j+1] + dirY_arr[j] * dirY_arr[j+1];
+                if (cosTheta < 0.76) { // Direction change > 40 degrees
+                    let v_drop = Math.abs(v_real - v_junction_arr[j]);
+                    if (v_drop > 15) {
+                        cornerBulgeCount++;
+                    }
+                }
+            } else if (pType === 0 && j > 0 && layer.paths[j-1] && layer.paths[j-1].type === 'extrude') {
+                // Retraction event
+                let rx = p.x1, ry = p.y1;
+                let nearbyCount = 0;
+                for (let r = recentRetracts.length - 1; r >= 0; r--) {
+                    let oldR = recentRetracts[r];
+                    let dist = Math.sqrt((rx - oldR.x)**2 + (ry - oldR.y)**2);
+                    if (dist < 15) nearbyCount++;
+                }
+                recentRetracts.push({ x: rx, y: ry, layer: i });
+                if (recentRetracts.length > 25) recentRetracts.shift();
+                if (nearbyCount >= 4) {
+                    grindingClusterCount++;
+                    grindingLayers.push(i);
+                    if (!layer.hasGrindingWarning) {
+                        diagnosticWarnings.push({
+                            type: 'grinding_risk',
+                            layerIndex: i,
+                            msg: 'Grinding Risk (Layer ' + i + '): Multiple rapid retractions in 15mm area'
+                        });
+                        layer.hasGrindingWarning = true;
+                    }
+                    healthScore -= 0.05;
+                }
+            }
+
             buffer[j * 12 + 0] = pType;
             buffer[j * 12 + 1] = p.x1;
             buffer[j * 12 + 2] = p.y1;
@@ -543,64 +642,154 @@ self.onmessage = async function(e) {
             t_layer += t_segment;
         }
         
-        // Thermal Trap Pass
-        let overhang_length = 0;
+        // Geometric Overhang & Bridge Analysis Pass
         for (let j = 0; j < numPaths; j++) {
             let pType = buffer[j * 12 + 0];
             let x1 = buffer[j * 12 + 1];
             let y1 = buffer[j * 12 + 2];
             let x2 = buffer[j * 12 + 3];
             let y2 = buffer[j * 12 + 4];
+            let fTypeId = buffer[j * 12 + 8];
             let fanPWM = layer.paths[j].fanPWM || 0;
             
-            let diag_flag = 0;
-            
+            let overhang_level = 0; // 0: <=45 deg, 1: 45-60 deg, 2: 60-75 deg, 3: >75 deg / bridge
+            let segmentAngle = 0;
+
             if (pType === 1) { // Extrude
                 let dx = x2 - x1;
                 let dy = y2 - y1;
-                let steps = Math.max(1, Math.ceil(Math.sqrt(dx*dx + dy*dy) * 2)); // 0.5mm steps
-                let isOverhang = (i > 0);
+                let segLen = Math.sqrt(dx*dx + dy*dy);
                 
-                for (let s = 0; s <= steps; s++) {
-                    let cx = x1 + (dx * s) / steps;
-                    let cy = y1 + (dy * s) / steps;
-                    
-                    let gx = Math.floor(cx * 2 + 800);
-                    let gy = Math.floor(cy * 2 + 800);
-                    
-                    if (gx >= 1 && gx < 1599 && gy >= 1 && gy < 1599) {
-                        currGrid[gy * 1600 + gx] = 1; // Draw to current grid
-                        
-                        // Check 3x3 neighborhood for support (approx 1.5mm)
-                        let supported = false;
-                        for(let dy=-1; dy<=1; dy++) {
-                            for(let dx=-1; dx<=1; dx++) {
-                                if (prevGrid[(gy+dy) * 1600 + (gx+dx)] === 1) supported = true;
-                            }
-                        }
-                        if (supported) {
-                            isOverhang = false;
-                        }
-                    }
-                }
-                
-                if (isOverhang) {
-                    overhang_length += Math.sqrt(dx*dx + dy*dy);
-                    if (fanPWM < 180) {
-                        if (t_layer < 6.0 || overhang_length > 15.0) {
-                            diag_flag = 1;
-                            if (!layer.hasThermalWarning) {
-                                diagnosticWarnings.push({ type: 'thermal_risk', layerIndex: i, msg: 'Melting Risk (Layer ' + i + '): Überhang bei ' + t_layer.toFixed(1) + 's Layerzeit & ' + Math.round((fanPWM/255)*100) + '% Lüfter' });
-                                layer.hasThermalWarning = true;
-                            }
-                            healthScore -= 0.01;
+                if (fTypeId === 8) { // Explicit Bridge/Overhang
+                    overhang_level = 3;
+                    segmentAngle = 80;
+                    bridgeCount++;
+                    totalBridgeLength += segLen;
+                    if (firstCriticalLayer === -1 && i > 0) firstCriticalLayer = i;
+                } else if (i === 0) {
+                    // Bed layer
+                    overhang_level = 0;
+                    segmentAngle = 0;
+                    let steps = Math.max(1, Math.ceil(segLen * 2));
+                    for (let s = 0; s <= steps; s++) {
+                        let cx = x1 + (dx * s) / steps;
+                        let cy = y1 + (dy * s) / steps;
+                        let gx = Math.floor(cx * 2 + 800);
+                        let gy = Math.floor(cy * 2 + 800);
+                        if (gx >= 2 && gx < 1598 && gy >= 2 && gy < 1598) {
+                            currGrid[gy * 1600 + gx] = 1;
                         }
                     }
                 } else {
-                    overhang_length = 0;
+                    let steps = Math.max(1, Math.ceil(segLen * 2)); // 0.5mm steps
+                    let unsuppCount = 0;
+                    let maxSampleDist = 0;
+                    
+                    for (let s = 0; s <= steps; s++) {
+                        let cx = x1 + (dx * s) / steps;
+                        let cy = y1 + (dy * s) / steps;
+                        let gx = Math.floor(cx * 2 + 800);
+                        let gy = Math.floor(cy * 2 + 800);
+                        
+                        if (gx >= 2 && gx < 1598 && gy >= 2 && gy < 1598) {
+                            currGrid[gy * 1600 + gx] = 1; // Mark on current grid
+                            
+                            // Check 1-ring (approx 0.5mm)
+                            let sup1 = false;
+                            for(let ddy=-1; ddy<=1; ddy++) {
+                                for(let ddx=-1; ddx<=1; ddx++) {
+                                    if (prevGrid[(gy+ddy) * 1600 + (gx+ddx)] === 1) {
+                                        sup1 = true;
+                                        break;
+                                    }
+                                }
+                                if (sup1) break;
+                            }
+                            
+                            if (!sup1) {
+                                // Check 2-ring (approx 1.0mm)
+                                let sup2 = false;
+                                for(let ddy=-2; ddy<=2; ddy++) {
+                                    for(let ddx=-2; ddx<=2; ddx++) {
+                                        if (prevGrid[(gy+ddy) * 1600 + (gx+ddx)] === 1) {
+                                            sup2 = true;
+                                            break;
+                                        }
+                                    }
+                                    if (sup2) break;
+                                }
+                                if (sup2) {
+                                    if (maxSampleDist < 0.6) maxSampleDist = 0.6;
+                                } else {
+                                    unsuppCount++;
+                                    if (maxSampleDist < 1.2) maxSampleDist = 1.2;
+                                }
+                            }
+                        }
+                    }
+                    
+                    let unsuppRatio = steps > 0 ? (unsuppCount / (steps + 1)) : 0;
+                    if (unsuppRatio > 0.55) {
+                        overhang_level = 3; // Critical / Bridge
+                        segmentAngle = Math.min(85, Math.round(Math.atan((maxSampleDist > 0 ? maxSampleDist : 0.8) / deltaZ) * (180 / Math.PI)));
+                        bridgeCount++;
+                        totalBridgeLength += segLen;
+                        if (firstCriticalLayer === -1) firstCriticalLayer = i;
+                    } else if (unsuppRatio > 0.2 || maxSampleDist >= 0.6) {
+                        let calcAngle = Math.atan((maxSampleDist > 0 ? maxSampleDist : 0.4) / deltaZ) * (180 / Math.PI);
+                        if (calcAngle >= 60) {
+                            overhang_level = 2; // 60-75
+                            steepCount++;
+                            segmentAngle = Math.round(calcAngle);
+                            if (firstCriticalLayer === -1) firstCriticalLayer = i;
+                        } else {
+                            overhang_level = 1; // 45-60
+                            segmentAngle = Math.round(calcAngle);
+                        }
+                    } else {
+                        overhang_level = 0;
+                        segmentAngle = Math.round(Math.atan(0.12 / deltaZ) * (180 / Math.PI));
+                    }
+                }
+                
+                if (segmentAngle > maxOverhangAngle) {
+                    maxOverhangAngle = segmentAngle;
+                }
+                
+                // Fan cooling audit on steep / bridge overhangs (Traffic Light System / Ampelsystem)
+                if (i >= 2) {
+                    let fanPct = Math.round((fanPWM / 255) * 100);
+                    if (overhang_level >= 2 && fanPWM < 75) { // Critical Red: Steep (>60°) with < 30% fan
+                        lowFanOverhangCount++;
+                        criticalLowFanCount++;
+                        if (!layer.hasThermalCriticalWarning) {
+                            diagnosticWarnings.push({
+                                type: 'thermal_risk_critical',
+                                layerIndex: i,
+                                angle: segmentAngle,
+                                fanPercent: fanPct,
+                                msg: 'Melting Risk (Layer ' + i + '): Steep overhang (' + segmentAngle + '°) with insufficient cooling fan (' + fanPct + '%)'
+                            });
+                            layer.hasThermalCriticalWarning = true;
+                        }
+                        healthScore -= 0.04;
+                    } else if ((overhang_level >= 2 && fanPWM < 180) || (overhang_level === 1 && fanPWM < 25)) { // Moderate Yellow: 30-70% fan on steep or 0% on moderate
+                        lowFanOverhangCount++;
+                        if (!layer.hasThermalWarning && !layer.hasThermalCriticalWarning) {
+                            diagnosticWarnings.push({
+                                type: 'thermal_risk_warning',
+                                layerIndex: i,
+                                angle: segmentAngle,
+                                fanPercent: fanPct,
+                                msg: 'Cooling Notice (Layer ' + i + '): Overhang (' + segmentAngle + '°) with reduced cooling fan (' + fanPct + '%)'
+                            });
+                            layer.hasThermalWarning = true;
+                        }
+                        healthScore -= 0.01;
+                    }
                 }
             }
-            buffer[j * 12 + 11] = diag_flag;
+            buffer[j * 12 + 11] = overhang_level;
         }
         
         // Swap grids
@@ -628,15 +817,37 @@ self.onmessage = async function(e) {
     
     healthScore = Math.max(0, healthScore);
     
+    stats.overhang = {
+        maxAngle: maxOverhangAngle,
+        totalBridgeLengthMm: Math.round(totalBridgeLength * 10) / 10,
+        steepCount: steepCount,
+        bridgeCount: bridgeCount,
+        firstCriticalLayer: firstCriticalLayer,
+        lowFanCount: lowFanOverhangCount,
+        criticalLowFanCount: criticalLowFanCount
+    };
+
+    stats.pressureAdvance = {
+        detected: foundPA.value !== null,
+        type: foundPA.type,
+        value: foundPA.value,
+        smoothTime: foundPA.smoothTime,
+        raw: foundPA.raw,
+        cornerBulgeCount: cornerBulgeCount,
+        totalRetracts: totalRetracts,
+        grindingClusters: grindingClusterCount,
+        grindingLayers: Array.from(new Set(grindingLayers)).slice(0, 8),
+        retractScore: Math.max(0, Math.min(100, Math.round(100 - grindingClusterCount * 6)))
+    };
+    
     self.postMessage({
-            type: 'done',
-            layerList: layerList,
-            stats: stats,
-            defaults: defaults,
-            foundK: foundK
-        , 
-            diagnostics: { warnings: diagnosticWarnings, score: healthScore }
-        }, transferables);
+        type: 'done',
+        layerList: layerList,
+        stats: stats,
+        defaults: defaults,
+        foundK: foundK, 
+        diagnostics: { warnings: diagnosticWarnings, score: healthScore }
+    }, transferables);
     };
 
     processChunk(0);
