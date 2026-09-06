@@ -62,22 +62,6 @@ Unlike cloud-based slicers or online converters, LayerSpy processes, analyzes, a
 
 ---
 
-## 🚀 Getting Started
-
-### Run in Browser
-Simply open [https://layerspy.de](https://layerspy.de) and drag & drop any `.gcode` file (from Bambu Studio, OrcaSlicer, PrusaSlicer, Cura, IdeaMaker, etc.).
-
-### Run Locally / Self-Host
-Clone the repository and serve the files with any static web server:
-
-```bash
-git clone https://github.com/Exulizer/LayerSpy.git
-cd LayerSpy
-npx serve -l 3000 .
-```
-
-Open `http://localhost:3000` in your browser.
-
 ---
 
 ## 📄 License
