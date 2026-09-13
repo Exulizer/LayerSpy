@@ -250,6 +250,23 @@ select.upload-btn option, select.theme-select option {
     border-color: rgba(76, 175, 80, 0.6);
     box-shadow: 0 6px 20px rgba(76, 175, 80, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
 }
+.download-btn.has-unsaved-changes {
+    background: linear-gradient(135deg, rgba(255, 179, 0, 0.28), rgba(255, 152, 0, 0.42)) !important;
+    border: 1px solid rgba(255, 179, 0, 0.85) !important;
+    color: #ffca28 !important;
+    box-shadow: 0 0 14px rgba(255, 179, 0, 0.45) !important;
+    animation: pulse-save-btn 1.8s infinite alternate;
+}
+.download-btn.has-unsaved-changes:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(255, 179, 0, 0.45), rgba(255, 152, 0, 0.6)) !important;
+    border-color: #ffb300 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 20px rgba(255, 179, 0, 0.6) !important;
+}
+@keyframes pulse-save-btn {
+    0% { box-shadow: 0 0 6px rgba(255, 179, 0, 0.3); }
+    100% { box-shadow: 0 0 16px rgba(255, 179, 0, 0.75); }
+}
 .download-btn:disabled {
     background: rgba(255,255,255,0.02);
     border-color: rgba(255,255,255,0.05);
@@ -307,8 +324,24 @@ select.upload-btn option, select.theme-select option {
     border-color: rgba(0, 188, 212, 0.4);
 }
 .pending-update {
-    border-color: rgba(255, 179, 0, 0.6) !important;
-    box-shadow: 0 0 10px rgba(255, 179, 0, 0.15);
+    border: 1.5px solid rgba(255, 179, 0, 0.85) !important;
+    box-shadow: 0 0 14px rgba(255, 179, 0, 0.25) !important;
+    background: rgba(255, 179, 0, 0.06) !important;
+}
+.modified-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 7px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #111116 !important;
+    background: #ffb300 !important;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(255, 179, 0, 0.6);
+    vertical-align: middle;
+    line-height: 1.3;
 }
 .widget-title {
     display: flex;
@@ -326,6 +359,12 @@ select.upload-btn option, select.theme-select option {
     color: var(--color-modified);
     font-weight: bold;
 }
+.widget-num-input.is-modified {
+    border: 1.5px solid #ffb300 !important;
+    color: #ffb300 !important;
+    background: rgba(255, 179, 0, 0.15) !important;
+    box-shadow: 0 0 8px rgba(255, 179, 0, 0.35);
+}
 .slider {
     -webkit-appearance: none;
     width: 100%;
@@ -333,6 +372,14 @@ select.upload-btn option, select.theme-select option {
     border-radius: 3px;
     background: var(--border-color);
     outline: none;
+}
+.slider.is-modified::-webkit-slider-thumb {
+    background: #ffb300 !important;
+    box-shadow: 0 0 8px #ffb300 !important;
+}
+.slider.is-modified::-moz-range-thumb {
+    background: #ffb300 !important;
+    box-shadow: 0 0 8px #ffb300 !important;
 }
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -766,113 +813,598 @@ canvas {
     right: 10px;
 }
 
-@media (max-width: 1024px) {
+/* --- WIDGET NUMBER INPUTS & UNITS --- */
+.widget-num-input {
+    width: 62px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--accent-color);
+    font-weight: 700;
+    font-family: 'Inter', monospace;
+    font-size: 0.85rem;
+    text-align: right;
+    padding: 2px 6px;
+    outline: none;
+    touch-action: manipulation;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.widget-num-input:focus {
+    border-color: var(--accent-color);
+    background: rgba(0, 188, 212, 0.08);
+}
+.widget-unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-right: 2px;
+}
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+.mobile-nav-bar {
+    display: none;
+}
+.mobile-canvas-hint {
+    display: none;
+}
+
+/* --- RESPONSIVE & MOBILE BREAKPOINTS --- */
+
+/* Tablet (769px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
     .panel-toggle-btn {
         display: none !important;
     }
-    /* 1. Lift 100vh lock to allow native scrolling */
     body {
         overflow-y: auto;
     }
-    
     .app-layout {
         display: block;
         height: auto;
         min-height: 100vh;
+        min-height: 100dvh;
     }
-    
-    /* 2. Stack panels vertically and remove fixed widths */
     .main-workspace {
         flex-direction: column;
         overflow: visible !important;
         height: auto !important;
     }
-    
     .sidebar {
         width: 100% !important;
-        overflow-y: visible; /* Let the body handle the scroll */
+        overflow-y: visible;
         border: none;
     }
-    
-    /* 3. Reorder elements so Canvas is top, Settings middle, G-Code bottom */
     .center-panel {
         order: 1;
-        flex: none; /* Disable flex-grow/shrink so it strictly takes 60vh */
-        height: 60vh; /* Fixed height to allow flex/absolute children to resolve */
+        flex: none;
+        height: 55vh;
         border-bottom: 2px solid var(--border-color);
     }
-    
     .left-panel {
         order: 2;
         border-bottom: 2px solid var(--border-color);
         height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
     }
-    
     .right-panel {
         order: 3;
         height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
         display: flex;
         flex-direction: column;
     }
-
-    /* 4. Fix Navbar */
     .top-navbar {
         flex-wrap: wrap;
         padding: 10px 15px;
-        gap: 15px;
+        gap: 12px;
         height: auto;
     }
-    
-    .nav-center, .nav-right {
-        flex: 1 1 100%; /* Force onto new lines or take full width */
+    .nav-center {
+        position: static !important;
+        transform: none !important;
+        left: auto !important;
+        flex: 1 1 100%;
         display: flex;
         justify-content: stretch;
-        position: static;
-        transform: none;
+        order: 3;
     }
-    
-    .nav-center .upload-btn, .nav-right .download-btn {
+    .nav-right {
+        flex: 0 0 auto;
+        display: flex;
+        gap: 10px;
+        order: 2;
+    }
+    .nav-center .upload-btn {
         width: 100%;
         text-align: center;
         justify-content: center;
     }
+}
 
-    /* 5. Mobile Canvas Touch Behavior */
-    #canvas-container {
-        /* Default: 1 finger scrolls page, 2 fingers pinch/pan (browser native) */
-        touch-action: pan-y;
+.pa-preset-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 0.72rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-color);
+    cursor: pointer;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.25;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+.pa-preset-btn:hover {
+    background: rgba(0, 188, 212, 0.15);
+    border-color: rgba(0, 188, 212, 0.4);
+    color: #00e5ff;
+}
+.pa-preset-btn.active {
+    background: rgba(0, 229, 255, 0.18);
+    border-color: rgba(0, 229, 255, 0.5);
+    color: #00e5ff;
+}
+
+/* Mobile Smartphones (<= 768px) */
+@media (max-width: 768px) {
+    :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
     }
-    
-    /* When interaction is locked via the button */
-    body.canvas-interaction-locked {
-        overflow: hidden; /* Prevent page scroll */
+
+    html, body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        min-height: 100vh;
+        min-height: 100dvh;
     }
-    
-    body.canvas-interaction-locked #canvas-container {
-        touch-action: none; /* Let ThreeJS/2D handle all touch events */
+
+    .app-layout {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding-top: var(--sat);
     }
-    
-    body.canvas-interaction-locked #mobile-canvas-overlay {
+
+    /* Prevent iOS auto-zoom on focus by enforcing >= 16px */
+    input, select, textarea, button, .k-input, .widget-num-input, .theme-select {
+        font-size: 16px !important;
+        touch-action: manipulation;
+    }
+
+    .panel-toggle-btn {
         display: none !important;
     }
-    
-    body.canvas-interaction-locked #disable-interaction-btn {
-        display: block !important;
+
+    /* Top Navbar */
+    .top-navbar {
+        height: auto !important;
+        padding: 8px 12px !important;
+        padding-top: max(8px, env(safe-area-inset-top)) !important;
+        padding-left: max(12px, env(safe-area-inset-left)) !important;
+        padding-right: max(12px, env(safe-area-inset-right)) !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 2000 !important;
+        box-sizing: border-box !important;
     }
-    
-    /* 6. Move stats banner under navbar on mobile */
+    .nav-left {
+        flex: 0 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+    .nav-left img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+    .brand-title {
+        font-size: 1.15rem !important;
+        white-space: nowrap !important;
+    }
+    .nav-center {
+        position: static !important;
+        transform: none !important;
+        left: auto !important;
+        top: auto !important;
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        order: 3 !important;
+        margin: 2px 0 0 0 !important;
+        display: flex !important;
+        align-items: stretch !important;
+    }
+    .nav-center .upload-btn {
+        width: 100% !important;
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+        min-height: 42px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .nav-right {
+        flex: 0 0 auto !important;
+        order: 2 !important;
+        gap: 6px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+    }
+    .lang-switcher {
+        padding: 2px !important;
+    }
+    .lang-switcher button {
+        padding: 3px 8px !important;
+        font-size: 0.78rem !important;
+    }
+    .theme-toggle-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.95rem !important;
+    }
+    .github-link {
+        display: none !important;
+    }
+    #demo-btn {
+        display: none !important;
+    }
+    #download-btn {
+        padding: 4px 10px !important;
+        font-size: 0.75rem !important;
+        min-height: 32px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Workspace Stacked Layout */
+    .main-workspace {
+        display: flex;
+        flex-direction: column;
+        overflow: visible !important;
+        height: auto !important;
+        flex: 1;
+    }
+
+    /* 1. 3D/2D Viewport on Top (Bounded Height) */
+    .center-panel {
+        order: 1;
+        flex: none;
+        height: clamp(260px, 45dvh, 400px);
+        max-height: 50dvh;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+        background: #050506;
+    }
+    #canvas-container {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        touch-action: pan-y;
+    }
+
+    /* Canvas Overlays & Floating Capsules */
+    #canvas-top-toolbar {
+        top: 6px !important;
+        left: 6px !important;
+        right: 6px !important;
+        max-width: calc(100% - 12px) !important;
+        gap: 4px !important;
+        box-sizing: border-box !important;
+    }
+    #canvas-top-toolbar > div:first-child {
+        padding: 3px 5px !important;
+        gap: 3px !important;
+        border-radius: 8px !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    #view-2d-btn, #view-3d-btn {
+        padding: 3px 6px !important;
+        font-size: 0.72rem !important;
+        min-height: 30px !important;
+    }
+    #color-mode-select {
+        padding: 3px 5px !important;
+        font-size: 0.72rem !important;
+        max-width: 95px !important;
+        min-height: 30px !important;
+    }
+    #filter-popover-btn, #toggle-hud-btn {
+        padding: 3px 5px !important;
+        font-size: 0.72rem !important;
+        min-height: 30px !important;
+    }
+    #zen-view-btn {
+        display: none !important;
+    }
+    #filter-popover-menu {
+        max-width: calc(100vw - 20px) !important;
+        left: 0 !important;
+    }
+    #canvas-hud-legend {
+        top: 44px !important;
+        left: 6px !important;
+        right: auto !important;
+        max-width: calc(100% - 12px) !important;
+        z-index: 30 !important;
+        box-sizing: border-box !important;
+        padding: 6px 10px !important;
+    }
+    .pa-preset-btn {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        padding: 6px 3px !important;
+        font-size: 0.7rem !important;
+        text-align: center !important;
+        line-height: 1.25 !important;
+        word-break: break-word !important;
+        hyphens: auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Mobile Canvas Hint */
+    .mobile-canvas-hint {
+        display: block !important;
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 17, 23, 0.88);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        pointer-events: none;
+        z-index: 15;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        opacity: 0.95;
+        transition: opacity 0.5s ease;
+    }
+
+    /* Timeline Control Bar */
+    #main-control-bar {
+        padding: 6px 10px !important;
+        gap: 8px !important;
+        max-height: 52px !important;
+    }
+    #playback-speed {
+        display: none !important;
+    }
+    #play-step-back, #play-step-fwd {
+        padding: 6px 8px !important;
+        font-size: 0.85rem !important;
+        min-height: 36px;
+        min-width: 36px;
+    }
+    #play-toggle {
+        padding: 6px 12px !important;
+        font-size: 0.95rem !important;
+        min-height: 36px;
+    }
+    #layer-val {
+        min-width: 85px !important;
+        font-size: 0.75rem !important;
+    }
+    #main-control-bar > div:last-child {
+        display: none !important;
+    }
+    #main-control-bar > div:nth-child(4) {
+        display: none !important;
+    }
+
+    /* 2. Sticky Mobile Navigation Bar */
+    .mobile-nav-bar {
+        display: flex !important;
+        order: 2;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(22, 22, 26, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-color);
+        padding: 6px 8px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+        gap: 6px;
+        justify-content: space-around;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+    }
+    .mobile-nav-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 8px 6px;
+        min-height: 44px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: all 0.2s ease;
+    }
+    .mobile-nav-btn.active {
+        background: rgba(0, 188, 212, 0.15);
+        border-color: rgba(0, 188, 212, 0.45);
+        color: var(--accent-color);
+        box-shadow: 0 2px 8px rgba(0, 188, 212, 0.18);
+    }
+    .mobile-nav-btn.has-changes {
+        border-color: rgba(255, 179, 0, 0.5) !important;
+    }
+    .mobile-nav-btn.has-changes .mobile-nav-icon {
+        position: relative;
+        display: inline-block;
+    }
+    .mobile-nav-btn.has-changes .mobile-nav-icon::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        right: -5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ffb300;
+        box-shadow: 0 0 8px #ffb300, 0 0 2px rgba(0,0,0,0.8);
+        animation: pulse-dot 1.5s infinite alternate;
+    }
+    @keyframes pulse-dot {
+        0% { transform: scale(0.85); opacity: 0.8; }
+        100% { transform: scale(1.2); opacity: 1; }
+    }
+    .mobile-nav-icon {
+        font-size: 0.95rem;
+        line-height: 1;
+    }
+
+    /* 3. Panel Visibility on Mobile */
+    .sidebar {
+        width: 100% !important;
+        border: none !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .left-panel {
+        order: 3;
+    }
+    .right-panel {
+        order: 4;
+    }
+
+    /* Hide desktop panel headers on mobile since mobile nav handles it */
+    .left-panel .panel-header {
+        padding: 12px 16px !important;
+    }
+    .right-panel .panel-header {
+        padding: 12px 16px !important;
+    }
+
+    /* Slider Touch Optimization (Apple HIG >= 44px Hit Target) */
+    .slider {
+        height: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    .slider::-webkit-slider-thumb {
+        width: 28px;
+        height: 28px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    .slider::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+    }
+    .widget-num-input {
+        min-height: 38px;
+        min-width: 68px;
+        padding: 4px 8px;
+    }
+    .widget {
+        padding: 14px !important;
+        gap: 8px !important;
+    }
+    .widget-title {
+        font-size: 0.92rem !important;
+    }
+
+    /* Action buttons min-height 44px */
+    .upload-btn, .download-btn, #apply-btn, #reset-btn, #embed-pa-btn {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    /* Welcome Hero on Mobile */
+    #welcome-hero {
+        padding: 16px 12px !important;
+        min-height: auto !important;
+    }
+    #welcome-hero h1 {
+        font-size: 1.22rem !important;
+        line-height: 1.35 !important;
+        margin-bottom: 8px !important;
+    }
+    #welcome-hero p {
+        font-size: 0.82rem !important;
+        line-height: 1.45 !important;
+    }
+
+    /* Stats banner */
     .stats-banner {
         position: static;
         transform: none;
         flex-wrap: wrap;
         justify-content: center;
         width: 100%;
-        margin-top: 15px;
-        padding-bottom: 15px;
+        margin-top: 10px;
+        padding-bottom: 10px;
+    }
+}
+
+/* Small Screens (< 480px & < 380px) */
+@media (max-width: 480px) {
+    .mobile-nav-btn {
+        font-size: 0.78rem;
+        padding: 6px 3px;
+        gap: 4px;
+    }
+    .mobile-nav-icon {
+        font-size: 0.9rem;
+    }
+    #color-mode-select {
+        max-width: 95px !important;
+    }
+}
+@media (max-width: 380px) {
+    #filter-popover-btn span:nth-child(2),
+    #toggle-hud-btn span:nth-child(2) {
+        display: none !important;
+    }
+    #color-mode-select {
+        max-width: 80px !important;
+    }
+    .mobile-nav-text {
+        font-size: 0.72rem;
+    }
+}
+
+/* Landscape Phones */
+@media (max-height: 500px) and (orientation: landscape) {
+    .center-panel {
+        height: clamp(180px, 50dvh, 260px) !important;
     }
 }
 
@@ -1118,8 +1650,14 @@ html[lang="en"] .de-only { display: none !important; }
     color: #1a1d24 !important;
 }
 [data-theme="light"] #zoffset-overlay {
-    background: rgba(240, 243, 248, 0.82) !important;
-    border: 1px dashed rgba(0, 0, 0, 0.15);
+    background: rgba(240, 243, 248, 0.85) !important;
+    border: 1px dashed rgba(0, 0, 0, 0.2);
+}
+[data-theme="light"] #zoffset-overlay span {
+    background: rgba(0, 151, 167, 0.15) !important;
+    border: 1px solid rgba(0, 151, 167, 0.45) !important;
+    color: #00838f !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
 }
 [data-theme="light"] input[type="text"],
 [data-theme="light"] input[type="number"],
@@ -1133,10 +1671,16 @@ html[lang="en"] .de-only { display: none !important; }
 }
 
 /* Floating Toolbar & Capsules in Light Mode */
-[data-theme="light"] #canvas-top-toolbar > div {
+[data-theme="light"] #canvas-top-toolbar > div:first-child {
     background: rgba(255, 255, 255, 0.96) !important;
     border: 1px solid rgba(0, 0, 0, 0.12) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 8px !important;
+}
+[data-theme="light"] #canvas-top-toolbar > div:last-child {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 [data-theme="light"] #canvas-top-toolbar div[style*="background: rgba(0,0,0,0.4)"] {
     background: rgba(0, 0, 0, 0.06) !important;
@@ -1159,7 +1703,7 @@ html[lang="en"] .de-only { display: none !important; }
 [data-theme="light"] #view-mode-select,
 [data-theme="light"] #filter-popover-btn,
 [data-theme="light"] #toggle-hud-btn,
-[data-theme="light"] #zen-view-btn {
+[data-theme="light"] #zen-view-btn:not(.active) {
     background: #ffffff !important;
     color: #1a1d24 !important;
     border: 1px solid rgba(0, 0, 0, 0.12) !important;

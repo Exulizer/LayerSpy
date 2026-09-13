@@ -1,6 +1,6 @@
 {
   "name": "layerspy",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "LayerSpy - Professional 3D Printing G-Code Analyzer & Simulator",
   "main": "electron-main.js",
   "scripts": {

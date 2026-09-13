@@ -447,6 +447,23 @@ select.upload-btn option, select.theme-select option {
     border-color: rgba(76, 175, 80, 0.6);
     box-shadow: 0 6px 20px rgba(76, 175, 80, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
 }
+.download-btn.has-unsaved-changes {
+    background: linear-gradient(135deg, rgba(255, 179, 0, 0.28), rgba(255, 152, 0, 0.42)) !important;
+    border: 1px solid rgba(255, 179, 0, 0.85) !important;
+    color: #ffca28 !important;
+    box-shadow: 0 0 14px rgba(255, 179, 0, 0.45) !important;
+    animation: pulse-save-btn 1.8s infinite alternate;
+}
+.download-btn.has-unsaved-changes:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(255, 179, 0, 0.45), rgba(255, 152, 0, 0.6)) !important;
+    border-color: #ffb300 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 20px rgba(255, 179, 0, 0.6) !important;
+}
+@keyframes pulse-save-btn {
+    0% { box-shadow: 0 0 6px rgba(255, 179, 0, 0.3); }
+    100% { box-shadow: 0 0 16px rgba(255, 179, 0, 0.75); }
+}
 .download-btn:disabled {
     background: rgba(255,255,255,0.02);
     border-color: rgba(255,255,255,0.05);
@@ -504,8 +521,24 @@ select.upload-btn option, select.theme-select option {
     border-color: rgba(0, 188, 212, 0.4);
 }
 .pending-update {
-    border-color: rgba(255, 179, 0, 0.6) !important;
-    box-shadow: 0 0 10px rgba(255, 179, 0, 0.15);
+    border: 1.5px solid rgba(255, 179, 0, 0.85) !important;
+    box-shadow: 0 0 14px rgba(255, 179, 0, 0.25) !important;
+    background: rgba(255, 179, 0, 0.06) !important;
+}
+.modified-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 7px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #111116 !important;
+    background: #ffb300 !important;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(255, 179, 0, 0.6);
+    vertical-align: middle;
+    line-height: 1.3;
 }
 .widget-title {
     display: flex;
@@ -523,6 +556,12 @@ select.upload-btn option, select.theme-select option {
     color: var(--color-modified);
     font-weight: bold;
 }
+.widget-num-input.is-modified {
+    border: 1.5px solid #ffb300 !important;
+    color: #ffb300 !important;
+    background: rgba(255, 179, 0, 0.15) !important;
+    box-shadow: 0 0 8px rgba(255, 179, 0, 0.35);
+}
 .slider {
     -webkit-appearance: none;
     width: 100%;
@@ -530,6 +569,14 @@ select.upload-btn option, select.theme-select option {
     border-radius: 3px;
     background: var(--border-color);
     outline: none;
+}
+.slider.is-modified::-webkit-slider-thumb {
+    background: #ffb300 !important;
+    box-shadow: 0 0 8px #ffb300 !important;
+}
+.slider.is-modified::-moz-range-thumb {
+    background: #ffb300 !important;
+    box-shadow: 0 0 8px #ffb300 !important;
 }
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -950,113 +997,598 @@ canvas {
     right: 10px;
 }
 
-@media (max-width: 1024px) {
+/* --- WIDGET NUMBER INPUTS & UNITS --- */
+.widget-num-input {
+    width: 62px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--accent-color);
+    font-weight: 700;
+    font-family: 'Inter', monospace;
+    font-size: 0.85rem;
+    text-align: right;
+    padding: 2px 6px;
+    outline: none;
+    touch-action: manipulation;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.widget-num-input:focus {
+    border-color: var(--accent-color);
+    background: rgba(0, 188, 212, 0.08);
+}
+.widget-unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-right: 2px;
+}
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+.mobile-nav-bar {
+    display: none;
+}
+.mobile-canvas-hint {
+    display: none;
+}
+
+/* --- RESPONSIVE & MOBILE BREAKPOINTS --- */
+
+/* Tablet (769px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
     .panel-toggle-btn {
         display: none !important;
     }
-    /* 1. Lift 100vh lock to allow native scrolling */
     body {
-        overflow-y: scroll;
+        overflow-y: auto;
     }
-    
     .app-layout {
         display: block;
         height: auto;
         min-height: 100vh;
+        min-height: 100dvh;
     }
-    
-    /* 2. Stack panels vertically and remove fixed widths */
     .main-workspace {
         flex-direction: column;
         overflow: visible !important;
         height: auto !important;
     }
-    
     .sidebar {
         width: 100% !important;
-        overflow-y: visible; /* Let the body handle the scroll */
+        overflow-y: visible;
         border: none;
     }
-    
-    /* 3. Reorder elements so Canvas is top, Settings middle, G-Code bottom */
     .center-panel {
         order: 1;
-        flex: none; /* Disable flex-grow/shrink so it strictly takes 60vh */
-        height: 60vh; /* Fixed height to allow flex/absolute children to resolve */
+        flex: none;
+        height: 55vh;
         border-bottom: 2px solid var(--border-color);
     }
-    
     .left-panel {
         order: 2;
         border-bottom: 2px solid var(--border-color);
         height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
     }
-    
     .right-panel {
         order: 3;
         height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
         display: flex;
         flex-direction: column;
     }
-
-    /* 4. Fix Navbar */
     .top-navbar {
         flex-wrap: wrap;
         padding: 10px 15px;
-        gap: 15px;
+        gap: 12px;
         height: auto;
     }
-    
-    .nav-center, .nav-right {
-        flex: 1 1 100%; /* Force onto new lines or take full width */
+    .nav-center {
+        position: static !important;
+        transform: none !important;
+        left: auto !important;
+        flex: 1 1 100%;
         display: flex;
         justify-content: stretch;
-        position: static;
-        transform: none;
+        order: 3;
     }
-    
-    .nav-center .upload-btn, .nav-right .download-btn {
+    .nav-right {
+        flex: 0 0 auto;
+        display: flex;
+        gap: 10px;
+        order: 2;
+    }
+    .nav-center .upload-btn {
         width: 100%;
         text-align: center;
         justify-content: center;
     }
+}
 
-    /* 5. Mobile Canvas Touch Behavior */
-    #canvas-container {
-        /* Default: 1 finger scrolls page, 2 fingers pinch/pan (browser native) */
-        touch-action: pan-y;
+.pa-preset-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 0.72rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-color);
+    cursor: pointer;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.25;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+.pa-preset-btn:hover {
+    background: rgba(0, 188, 212, 0.15);
+    border-color: rgba(0, 188, 212, 0.4);
+    color: #00e5ff;
+}
+.pa-preset-btn.active {
+    background: rgba(0, 229, 255, 0.18);
+    border-color: rgba(0, 229, 255, 0.5);
+    color: #00e5ff;
+}
+
+/* Mobile Smartphones (<= 768px) */
+@media (max-width: 768px) {
+    :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
     }
-    
-    /* When interaction is locked via the button */
-    body.canvas-interaction-locked {
-        overflow: hidden; /* Prevent page scroll */
+
+    html, body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        min-height: 100vh;
+        min-height: 100dvh;
     }
-    
-    body.canvas-interaction-locked #canvas-container {
-        touch-action: none; /* Let ThreeJS/2D handle all touch events */
+
+    .app-layout {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding-top: var(--sat);
     }
-    
-    body.canvas-interaction-locked #mobile-canvas-overlay {
+
+    /* Prevent iOS auto-zoom on focus by enforcing >= 16px */
+    input, select, textarea, button, .k-input, .widget-num-input, .theme-select {
+        font-size: 16px !important;
+        touch-action: manipulation;
+    }
+
+    .panel-toggle-btn {
         display: none !important;
     }
-    
-    body.canvas-interaction-locked #disable-interaction-btn {
-        display: block !important;
+
+    /* Top Navbar */
+    .top-navbar {
+        height: auto !important;
+        padding: 8px 12px !important;
+        padding-top: max(8px, env(safe-area-inset-top)) !important;
+        padding-left: max(12px, env(safe-area-inset-left)) !important;
+        padding-right: max(12px, env(safe-area-inset-right)) !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 2000 !important;
+        box-sizing: border-box !important;
     }
-    
-    /* 6. Move stats banner under navbar on mobile */
+    .nav-left {
+        flex: 0 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+    .nav-left img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+    .brand-title {
+        font-size: 1.15rem !important;
+        white-space: nowrap !important;
+    }
+    .nav-center {
+        position: static !important;
+        transform: none !important;
+        left: auto !important;
+        top: auto !important;
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        order: 3 !important;
+        margin: 2px 0 0 0 !important;
+        display: flex !important;
+        align-items: stretch !important;
+    }
+    .nav-center .upload-btn {
+        width: 100% !important;
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+        min-height: 42px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .nav-right {
+        flex: 0 0 auto !important;
+        order: 2 !important;
+        gap: 6px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+    }
+    .lang-switcher {
+        padding: 2px !important;
+    }
+    .lang-switcher button {
+        padding: 3px 8px !important;
+        font-size: 0.78rem !important;
+    }
+    .theme-toggle-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.95rem !important;
+    }
+    .github-link {
+        display: none !important;
+    }
+    #demo-btn {
+        display: none !important;
+    }
+    #download-btn {
+        padding: 4px 10px !important;
+        font-size: 0.75rem !important;
+        min-height: 32px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Workspace Stacked Layout */
+    .main-workspace {
+        display: flex;
+        flex-direction: column;
+        overflow: visible !important;
+        height: auto !important;
+        flex: 1;
+    }
+
+    /* 1. 3D/2D Viewport on Top (Bounded Height) */
+    .center-panel {
+        order: 1;
+        flex: none;
+        height: clamp(260px, 45dvh, 400px);
+        max-height: 50dvh;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+        background: #050506;
+    }
+    #canvas-container {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        touch-action: pan-y;
+    }
+
+    /* Canvas Overlays & Floating Capsules */
+    #canvas-top-toolbar {
+        top: 6px !important;
+        left: 6px !important;
+        right: 6px !important;
+        max-width: calc(100% - 12px) !important;
+        gap: 4px !important;
+        box-sizing: border-box !important;
+    }
+    #canvas-top-toolbar > div:first-child {
+        padding: 3px 5px !important;
+        gap: 3px !important;
+        border-radius: 8px !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    #view-2d-btn, #view-3d-btn {
+        padding: 3px 6px !important;
+        font-size: 0.72rem !important;
+        min-height: 30px !important;
+    }
+    #color-mode-select {
+        padding: 3px 5px !important;
+        font-size: 0.72rem !important;
+        max-width: 95px !important;
+        min-height: 30px !important;
+    }
+    #filter-popover-btn, #toggle-hud-btn {
+        padding: 3px 5px !important;
+        font-size: 0.72rem !important;
+        min-height: 30px !important;
+    }
+    #zen-view-btn {
+        display: none !important;
+    }
+    #filter-popover-menu {
+        max-width: calc(100vw - 20px) !important;
+        left: 0 !important;
+    }
+    #canvas-hud-legend {
+        top: 44px !important;
+        left: 6px !important;
+        right: auto !important;
+        max-width: calc(100% - 12px) !important;
+        z-index: 30 !important;
+        box-sizing: border-box !important;
+        padding: 6px 10px !important;
+    }
+    .pa-preset-btn {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        padding: 6px 3px !important;
+        font-size: 0.7rem !important;
+        text-align: center !important;
+        line-height: 1.25 !important;
+        word-break: break-word !important;
+        hyphens: auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Mobile Canvas Hint */
+    .mobile-canvas-hint {
+        display: block !important;
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 17, 23, 0.88);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        pointer-events: none;
+        z-index: 15;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        opacity: 0.95;
+        transition: opacity 0.5s ease;
+    }
+
+    /* Timeline Control Bar */
+    #main-control-bar {
+        padding: 6px 10px !important;
+        gap: 8px !important;
+        max-height: 52px !important;
+    }
+    #playback-speed {
+        display: none !important;
+    }
+    #play-step-back, #play-step-fwd {
+        padding: 6px 8px !important;
+        font-size: 0.85rem !important;
+        min-height: 36px;
+        min-width: 36px;
+    }
+    #play-toggle {
+        padding: 6px 12px !important;
+        font-size: 0.95rem !important;
+        min-height: 36px;
+    }
+    #layer-val {
+        min-width: 85px !important;
+        font-size: 0.75rem !important;
+    }
+    #main-control-bar > div:last-child {
+        display: none !important;
+    }
+    #main-control-bar > div:nth-child(4) {
+        display: none !important;
+    }
+
+    /* 2. Sticky Mobile Navigation Bar */
+    .mobile-nav-bar {
+        display: flex !important;
+        order: 2;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(22, 22, 26, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-color);
+        padding: 6px 8px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+        gap: 6px;
+        justify-content: space-around;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+    }
+    .mobile-nav-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 8px 6px;
+        min-height: 44px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: all 0.2s ease;
+    }
+    .mobile-nav-btn.active {
+        background: rgba(0, 188, 212, 0.15);
+        border-color: rgba(0, 188, 212, 0.45);
+        color: var(--accent-color);
+        box-shadow: 0 2px 8px rgba(0, 188, 212, 0.18);
+    }
+    .mobile-nav-btn.has-changes {
+        border-color: rgba(255, 179, 0, 0.5) !important;
+    }
+    .mobile-nav-btn.has-changes .mobile-nav-icon {
+        position: relative;
+        display: inline-block;
+    }
+    .mobile-nav-btn.has-changes .mobile-nav-icon::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        right: -5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ffb300;
+        box-shadow: 0 0 8px #ffb300, 0 0 2px rgba(0,0,0,0.8);
+        animation: pulse-dot 1.5s infinite alternate;
+    }
+    @keyframes pulse-dot {
+        0% { transform: scale(0.85); opacity: 0.8; }
+        100% { transform: scale(1.2); opacity: 1; }
+    }
+    .mobile-nav-icon {
+        font-size: 0.95rem;
+        line-height: 1;
+    }
+
+    /* 3. Panel Visibility on Mobile */
+    .sidebar {
+        width: 100% !important;
+        border: none !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .left-panel {
+        order: 3;
+    }
+    .right-panel {
+        order: 4;
+    }
+
+    /* Hide desktop panel headers on mobile since mobile nav handles it */
+    .left-panel .panel-header {
+        padding: 12px 16px !important;
+    }
+    .right-panel .panel-header {
+        padding: 12px 16px !important;
+    }
+
+    /* Slider Touch Optimization (Apple HIG >= 44px Hit Target) */
+    .slider {
+        height: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    .slider::-webkit-slider-thumb {
+        width: 28px;
+        height: 28px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    .slider::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+    }
+    .widget-num-input {
+        min-height: 38px;
+        min-width: 68px;
+        padding: 4px 8px;
+    }
+    .widget {
+        padding: 14px !important;
+        gap: 8px !important;
+    }
+    .widget-title {
+        font-size: 0.92rem !important;
+    }
+
+    /* Action buttons min-height 44px */
+    .upload-btn, .download-btn, #apply-btn, #reset-btn, #embed-pa-btn {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    /* Welcome Hero on Mobile */
+    #welcome-hero {
+        padding: 16px 12px !important;
+        min-height: auto !important;
+    }
+    #welcome-hero h1 {
+        font-size: 1.22rem !important;
+        line-height: 1.35 !important;
+        margin-bottom: 8px !important;
+    }
+    #welcome-hero p {
+        font-size: 0.82rem !important;
+        line-height: 1.45 !important;
+    }
+
+    /* Stats banner */
     .stats-banner {
         position: static;
         transform: none;
         flex-wrap: wrap;
         justify-content: center;
         width: 100%;
-        margin-top: 15px;
-        padding-bottom: 15px;
+        margin-top: 10px;
+        padding-bottom: 10px;
+    }
+}
+
+/* Small Screens (< 480px & < 380px) */
+@media (max-width: 480px) {
+    .mobile-nav-btn {
+        font-size: 0.78rem;
+        padding: 6px 3px;
+        gap: 4px;
+    }
+    .mobile-nav-icon {
+        font-size: 0.9rem;
+    }
+    #color-mode-select {
+        max-width: 95px !important;
+    }
+}
+@media (max-width: 380px) {
+    #filter-popover-btn span:nth-child(2),
+    #toggle-hud-btn span:nth-child(2) {
+        display: none !important;
+    }
+    #color-mode-select {
+        max-width: 80px !important;
+    }
+    .mobile-nav-text {
+        font-size: 0.72rem;
+    }
+}
+
+/* Landscape Phones */
+@media (max-height: 500px) and (orientation: landscape) {
+    .center-panel {
+        height: clamp(180px, 50dvh, 260px) !important;
     }
 }
 
@@ -1317,10 +1849,16 @@ html[lang="en"] .de-only { display: none !important; }
 }
 
 /* Floating Toolbar & Capsules in Light Mode */
-[data-theme="light"] #canvas-top-toolbar > div {
+[data-theme="light"] #canvas-top-toolbar > div:first-child {
     background: rgba(255, 255, 255, 0.96) !important;
     border: 1px solid rgba(0, 0, 0, 0.12) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 8px !important;
+}
+[data-theme="light"] #canvas-top-toolbar > div:last-child {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 [data-theme="light"] #canvas-top-toolbar div[style*="background: rgba(0,0,0,0.4)"] {
     background: rgba(0, 0, 0, 0.06) !important;
@@ -1343,11 +1881,21 @@ html[lang="en"] .de-only { display: none !important; }
 [data-theme="light"] #view-mode-select,
 [data-theme="light"] #filter-popover-btn,
 [data-theme="light"] #toggle-hud-btn,
-[data-theme="light"] #zen-view-btn {
+[data-theme="light"] #zen-view-btn:not(.active) {
     background: #ffffff !important;
     color: #1a1d24 !important;
     border: 1px solid rgba(0, 0, 0, 0.12) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+#zen-view-btn.active {
+    background: rgba(0, 229, 255, 0.2) !important;
+    border-color: rgba(0, 229, 255, 0.5) !important;
+    color: #00e5ff !important;
+}
+[data-theme="light"] #zen-view-btn.active {
+    background: rgba(0, 151, 167, 0.15) !important;
+    border-color: rgba(0, 151, 167, 0.4) !important;
+    color: #00838f !important;
 }
 [data-theme="light"] #color-mode-select {
     background: rgba(0, 151, 167, 0.08) !important;
@@ -1531,8 +2079,8 @@ html[lang="en"] .de-only { display: none !important; }
     <!-- Three.js (Deferred to avoid render blocking) -->
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-    <script defer src="js/translations.js?v=15"></script>
-    <script src="js/app_v5.js?v=43" defer></script>
+    <script defer src="js/translations.js?v=17"></script>
+    <script src="js/app_v5.js?v=46" defer></script>
 </head>
 <body class="dark-mode preload">
 
@@ -1605,189 +2153,241 @@ html[lang="en"] .de-only { display: none !important; }
                 </div>
                 
                 <div class="settings-grid">
-                    <!-- Print Overview Bento Card (Time & Filament) -->
-                    <div class="widget" id="print-overview-widget" style="background: linear-gradient(135deg, rgba(0, 188, 212, 0.12), rgba(0, 188, 212, 0.03)); border: 1px solid rgba(0, 188, 212, 0.35); padding: 12px 14px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div style="display: flex; flex-direction: column; gap: 3px;">
-                                <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" data-i18n="stats.total_time">⏱️ Druckzeit</span>
-                                <strong id="stat-time" style="font-size: 1.15rem; color: #00e5ff; font-weight: 700; line-height: 1.2;">--:--</strong>
-                                <div id="stat-saved-box" style="display: none; font-size: 0.68rem; margin-top: 2px; align-items: center; gap: 4px;">
-                                    <span class="stat-label" data-i18n="stats.save">⚡ Du sparst</span>: <strong id="stat-saved" style="color: #4caf50;">--:--</strong>
+                    <!-- SECTION 1: PARAMETER TUNING -->
+                    <div id="section-tuning-params" class="settings-section">
+                        <!-- Print Overview Bento Card (Time & Filament) -->
+                        <div class="widget" id="print-overview-widget" style="background: linear-gradient(135deg, rgba(0, 188, 212, 0.12), rgba(0, 188, 212, 0.03)); border: 1px solid rgba(0, 188, 212, 0.35); padding: 12px 14px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                    <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" data-i18n="stats.total_time">⏱️ Druckzeit</span>
+                                    <strong id="stat-time" style="font-size: 1.15rem; color: #00e5ff; font-weight: 700; line-height: 1.2;">--:--</strong>
+                                    <div id="stat-saved-box" style="display: none; font-size: 0.68rem; margin-top: 2px; align-items: center; gap: 4px;">
+                                        <span class="stat-label" data-i18n="stats.save">⚡ Du sparst</span>: <strong id="stat-saved" style="color: #4caf50;">--:--</strong>
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                    <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" data-i18n="stats.filament">🧵 Filament</span>
+                                    <strong id="stat-filament" style="font-size: 0.95rem; color: #fff; font-weight: 700; line-height: 1.2; word-break: break-word;" data-i18n="stats.fil_val">-- g (-- m)</strong>
                                 </div>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 3px;">
-                                <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" data-i18n="stats.filament">🧵 Filament</span>
-                                <strong id="stat-filament" style="font-size: 0.95rem; color: #fff; font-weight: 700; line-height: 1.2; word-break: break-word;" data-i18n="stats.fil_val">-- g (-- m)</strong>
-                            </div>
                         </div>
-                    </div>
 
-                    <!-- Düse -->
-                    <div class="widget">
-                        <div class="widget-title"><span data-tooltip="Temperatur des Hotends. Höhere Werte verbessern die Layerhaftung, zu hohe Werte verursachen Stringing." data-i18n-tooltip="tooltip.2" data-i18n="tuning.nozzle">Düse (Hotend)</span><span id="temp-val" class="accent" data-i18n="temp.nozzle">205 °C</span></div>
-                        <input type="range" class="slider" id="temp-slider" min="150" max="300" step="5" value="205" aria-label="Hotend Temperatur">
-                    </div>
-                    <!-- Druckbett -->
-                    <div class="widget">
-                        <div class="widget-title"><span data-tooltip="Beheiztes Druckbett. Verhindert das Ablösen des Objekts während des Drucks (Warping)." data-i18n-tooltip="tooltip.3" data-i18n="tuning.bed">Druckbett (Bed)</span><span id="bed-val" class="accent" data-i18n="temp.bed">60 °C</span></div>
-                        <input type="range" class="slider" id="bed-slider" min="0" max="120" step="5" value="60" aria-label="Heizbett Temperatur">
-                    </div>
-                    <!-- Retract -->
-                    <div class="widget">
-                        <div class="widget-title"><span data-tooltip="Rückzug des Filaments bei Leerfahrten. Zu wenig führt zu Fäden (Stringing), zu viel zu Verstopfungen." data-i18n-tooltip="tooltip.4" data-i18n="tuning.retract">Retract (Einzug)</span><span id="retract-val" class="accent" data-i18n="retract.val">0.8 mm</span></div>
-                        <input type="range" class="slider" id="retract-slider" min="0" max="5" step="0.1" value="0.8" aria-label="Retract Länge">
-                    </div>
-                    <!-- Lüfter -->
-                    <div class="widget">
-                        <label class="widget-title" for="fan-slider" style="display: flex; justify-content: space-between;"><span data-tooltip="Kühlung des extrudierten Materials. Wichtig für Überhänge (PLA = 100%, ABS/PETG = wenig)." data-i18n-tooltip="tooltip.5" data-i18n="widget.fan">Bauteillüfter</span><span id="fan-val" class="accent">100 %</span></label>
-                        <input type="range" class="slider" id="fan-slider" min="0" max="100" step="1" value="100" aria-label="Lüfterdrehzahl">
-                    </div>
+                        <!-- Düse -->
+                        <div class="widget">
+                            <div class="widget-title">
+                                <span data-tooltip="Temperatur des Hotends. Höhere Werte verbessern die Layerhaftung, zu hohe Werte verursachen Stringing." data-i18n-tooltip="tooltip.2" data-i18n="tuning.nozzle">Düse (Hotend)</span>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="number" id="temp-input" class="widget-num-input" value="205" min="150" max="300" step="5" inputmode="numeric" aria-label="Hotend Temperatur">
+                                    <span class="widget-unit">°C</span>
+                                    <span id="temp-val" class="accent" style="display:none;" data-i18n="temp.nozzle">205 °C</span>
+                                </div>
+                            </div>
+                            <input type="range" class="slider" id="temp-slider" min="150" max="300" step="5" value="205" aria-label="Hotend Temperatur">
+                        </div>
+                        <!-- Druckbett -->
+                        <div class="widget">
+                            <div class="widget-title">
+                                <span data-tooltip="Beheiztes Druckbett. Verhindert das Ablösen des Objekts während des Drucks (Warping)." data-i18n-tooltip="tooltip.3" data-i18n="tuning.bed">Druckbett (Bed)</span>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="number" id="bed-input" class="widget-num-input" value="60" min="0" max="120" step="5" inputmode="numeric" aria-label="Heizbett Temperatur">
+                                    <span class="widget-unit">°C</span>
+                                    <span id="bed-val" class="accent" style="display:none;" data-i18n="temp.bed">60 °C</span>
+                                </div>
+                            </div>
+                            <input type="range" class="slider" id="bed-slider" min="0" max="120" step="5" value="60" aria-label="Heizbett Temperatur">
+                        </div>
+                        <!-- Retract -->
+                        <div class="widget">
+                            <div class="widget-title">
+                                <span data-tooltip="Rückzug des Filaments bei Leerfahrten. Zu wenig führt zu Fäden (Stringing), zu viel zu Verstopfungen." data-i18n-tooltip="tooltip.4" data-i18n="tuning.retract">Retract (Einzug)</span>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="number" id="retract-input" class="widget-num-input" value="0.8" min="0" max="5" step="0.1" inputmode="decimal" aria-label="Retract Länge">
+                                    <span class="widget-unit">mm</span>
+                                    <span id="retract-val" class="accent" style="display:none;" data-i18n="retract.val">0.8 mm</span>
+                                </div>
+                            </div>
+                            <input type="range" class="slider" id="retract-slider" min="0" max="5" step="0.1" value="0.8" aria-label="Retract Länge">
+                        </div>
+                        <!-- Lüfter -->
+                        <div class="widget">
+                            <div class="widget-title">
+                                <span data-tooltip="Kühlung des extrudierten Materials. Wichtig für Überhänge (PLA = 100%, ABS/PETG = wenig)." data-i18n-tooltip="tooltip.5" data-i18n="widget.fan">Bauteillüfter</span>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="number" id="fan-input" class="widget-num-input" value="100" min="0" max="100" step="1" inputmode="numeric" aria-label="Lüfterdrehzahl">
+                                    <span class="widget-unit">%</span>
+                                    <span id="fan-val" class="accent" style="display:none;">100 %</span>
+                                </div>
+                            </div>
+                            <input type="range" class="slider" id="fan-slider" min="0" max="100" step="1" value="100" aria-label="Lüfterdrehzahl">
+                        </div>
 
-                    <!-- Speed -->
-                    <div class="widget">
-                        <label class="widget-title" for="speed-slider" style="display: flex; justify-content: space-between;"><span data-tooltip="Globale Druckgeschwindigkeit. Ein Wert unter 100% verlangsamt den Druck, darüber beschleunigt ihn." data-i18n-tooltip="tooltip.6" data-i18n="speed.label">Geschwindigkeit</span><span id="speed-val" class="accent">100 %</span></label>
-                        <input type="range" class="slider" id="speed-slider" min="50" max="200" step="5" value="100" aria-label="Druckgeschwindigkeit">
-                    </div>
-                    <!-- VFA Radar -->
-                    <div class="widget" id="vfa-widget">
-                        <label class="widget-title" style="display: flex; justify-content: space-between;">
-                            <span data-tooltip="Zeigt Außenwände, die in bekannten Resonanz- oder Schrittmotor-Vibrationsbereichen (Ghosting) gedruckt werden." data-i18n-tooltip="tooltip.vfa" data-i18n="tuning.vfa">VFA & Ghosting Radar</span>
-                        </label>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
-                                <span>Band 1 (mm/s):</span>
-                                <span id="vfa1-val" class="accent">45 - 65</span>
-                            </div>
-                            <div style="display: flex; gap: 5px;">
-                                <input type="number" id="vfa1-min" value="45" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
-                                <input type="number" id="vfa1-max" value="65" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
-                                <span>Band 2 (mm/s):</span>
-                                <span id="vfa2-val" class="accent">90 - 110</span>
-                            </div>
-                            <div style="display: flex; gap: 5px;">
-                                <input type="number" id="vfa2-min" value="90" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
-                                <input type="number" id="vfa2-max" value="110" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;">
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 4px;">
-                                <input type="checkbox" id="vfa-outer-only-btn" checked style="cursor: pointer;">
-                                <span data-i18n="tuning.vfa_outer_only">Focus Outer Walls Only</span>
-                            </label>
-                            <div id="vfa-stats-box" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-muted);" data-i18n="vfa.outer">🔴 Outer Wall (Visible):</span>
-                                    <strong id="vfa-outer-stat" style="color: #ff007f;">0.0%</strong>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-muted);" data-i18n="vfa.inner">🟡 Inner Wall (Structure):</span>
-                                    <strong id="vfa-inner-stat" style="color: #f1c40f;">0.0%</strong>
+                        <!-- Speed -->
+                        <div class="widget">
+                            <div class="widget-title">
+                                <span data-tooltip="Globale Druckgeschwindigkeit. Ein Wert unter 100% verlangsamt den Druck, darüber beschleunigt ihn." data-i18n-tooltip="tooltip.6" data-i18n="speed.label">Geschwindigkeit</span>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="number" id="speed-input" class="widget-num-input" value="100" min="50" max="200" step="5" inputmode="numeric" aria-label="Druckgeschwindigkeit">
+                                    <span class="widget-unit">%</span>
+                                    <span id="speed-val" class="accent" style="display:none;">100 %</span>
                                 </div>
                             </div>
-                            <div id="vfa-warning" style="display: none; color: #ff007f; font-size: 0.75rem; margin-top: 2px; font-weight: bold; line-height: 1.3;"></div>
+                            <input type="range" class="slider" id="speed-slider" min="50" max="200" step="5" value="100" aria-label="Druckgeschwindigkeit">
                         </div>
-                    </div>
-                    <!-- Corner & Deceleration Auditor -->
-                    <div class="widget" id="corner-audit-widget">
-                        <label class="widget-title" style="display: flex; justify-content: space-between;">
-                            <span data-tooltip="Detects sharp corners with heavy deceleration and checks Pressure Advance status." data-i18n-tooltip="tooltip.corner_audit" data-i18n="tuning.corner_audit">Corner &amp; Deceleration Auditor</span>
-                        </label>
-                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: var(--text-muted);" data-i18n="corner.pa_label">Pressure Advance:</span>
-                                <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(231,76,60,0.2); color: #ff6b6b; border: 1px solid rgba(231,76,60,0.4);" data-i18n="corner.inactive">Inactive</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span data-i18n="corner.bulge_label">🔴 Bulge Risk (Δv &gt; 60):</span>
-                                <strong id="corner-bulge-count" style="color: #ff6b6b;">0 Corners</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span data-i18n="corner.stress_label">🟡 PA Stress (Δv &gt; 60):</span>
-                                <strong id="corner-stress-count" style="color: #f1c40f;">0 Corners</strong>
-                            </div>
-                            <div id="corner-audit-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="corner.note_none">No corners analyzed.</div>
-                        </div>
-                    </div>
-                    <!-- Z-Seam Quality & Alignment Auditor -->
-                    <div class="widget" id="zseam-widget">
-                        <label class="widget-title" style="display: flex; justify-content: space-between;">
-                            <span data-tooltip="Analyzes layer start points (seams) to detect surface pimples and verify corner concealment." data-i18n-tooltip="tooltip.zseam" data-i18n="tuning.zseam">Z-Seam Alignment &amp; Quality</span>
-                        </label>
-                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: var(--text-muted);" data-i18n="seam.ratio">Corner Ratio:</span>
-                                <span id="zseam-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(0, 229, 255, 0.2); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4);" data-i18n="seam.badge_corner">100% Corner</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>🟢 <span data-i18n="seam.in_corner">In Corner:</span></span>
-                                <strong id="zseam-corner-count" style="color: #00e676;">0 seams</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>🔴 <span data-i18n="seam.on_flat">On Flat Wall:</span></span>
-                                <strong id="zseam-flat-count" style="color: #ff3d00;">0 seams</strong>
-                            </div>
-                            <div id="zseam-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="seam.note_none">No file loaded.</div>
-                        </div>
-                    </div>
-                    <!-- 3D Overhang & Bridge Inspector -->
-                    <div class="widget" id="overhang-widget">
-                        <label class="widget-title" style="display: flex; justify-content: space-between;">
-                            <span data-tooltip="Analyzes overhang angles and bridges per layer to verify cooling and support requirements." data-i18n-tooltip="tooltip.overhang" data-i18n="tuning.overhang">Overhang &amp; Bridge Inspector</span>
-                        </label>
-                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: var(--text-muted);" data-i18n="overhang.support_status">Support Status:</span>
-                                <span id="overhang-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.4);" data-i18n="overhang.support_none">No Supports Needed</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>📐 <span data-i18n="overhang.max_angle">Max. Overhang:</span></span>
-                                <strong id="overhang-max-angle" style="color: var(--text-color);">0°</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>🌉 <span data-i18n="overhang.bridge_length">Bridge Total:</span></span>
-                                <strong id="overhang-bridge-stat" style="color: #e91e63;">0.0 mm (0)</strong>
-                            </div>
-                            <div id="overhang-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="overhang.cooling_good">Cooling: 100% Optimal</div>
-                        </div>
-                    </div>
-                    <!-- Pressure Advance & Retraction Audit Widget -->
-                    <div class="widget" id="pa-widget">
-                        <label class="widget-title" style="display: flex; justify-content: space-between;">
-                            <span data-tooltip="Audits melt zone pressure buildup in corners and retraction clusters against filament grinding." data-i18n-tooltip="tooltip.pa" data-i18n="tuning.pa_audit">Pressure Advance &amp; Retraction</span>
-                        </label>
-                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: var(--text-muted);" data-i18n="pa.status_label">G-Code Status:</span>
-                                <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: bold; background: rgba(0, 229, 255, 0.15); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.35);">Standard (No PA)</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>🎯 <span data-i18n="pa.corner_bulge">Corner Pressure Risk:</span></span>
-                                <strong id="pa-corner-count" style="color: var(--text-color);">0 Corners</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
-                                <span>⚙️ <span data-i18n="pa.grinding_status">Retract Health:</span></span>
-                                <strong id="pa-retract-score" style="color: #4caf50;">100% (Optimal)</strong>
-                            </div>
-                            <div id="pa-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="pa.note_optimal">No filament grinding detected.</div>
-                        </div>
-                    </div>
-                    <!-- Z-Offset -->
-                    <div class="widget" style="grid-column: 1 / -1;" id="zoffset-widget">
-                        <label class="widget-title" for="zoffset-slider" style="display: flex; flex-direction: column; gap: 4px;">
-                            <div style="display: flex; justify-content: space-between;">
+
+                        <!-- Z-Offset -->
+                        <div class="widget" id="zoffset-widget">
+                            <div class="widget-title" style="display: flex; justify-content: space-between; align-items: center;">
                                 <span data-tooltip="Höhenkorrektur der Düse. Negativer Wert: Düse näher ans Bett. Positiver Wert: Düse weiter weg." data-i18n-tooltip="tooltip.7" data-i18n="widget.zoffset">Z-Offset</span>
-                                <span id="zoffset-val" class="accent" data-i18n="zoffset.val">0.00 mm</span>
-                            </div>
-                        </label>
-                        
-                        <div style="position: relative; margin-top: 5px; padding: 5px 0;">
-                            <!-- Minimalistisches Lock Overlay -->
-                            <div id="zoffset-overlay" style="position: absolute; top: -5px; left: -10px; right: -10px; bottom: -5px; backdrop-filter: blur(4px); background: rgba(20, 24, 34, 0.4); z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; transition: opacity 0.3s;" onclick="this.style.opacity='0'; setTimeout(() => this.style.display='none', 300);" title="Klicken zum Entsperren" data-i18n-title="title.3">
-                                <span style="font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🔒</span>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="number" id="zoffset-input" class="widget-num-input" value="0.00" min="-2.0" max="2.0" step="0.05" inputmode="decimal" aria-label="Z-Offset">
+                                    <span class="widget-unit">mm</span>
+                                    <span id="zoffset-val" class="accent" style="display:none;" data-i18n="zoffset.val">0.00 mm</span>
+                                </div>
                             </div>
                             
-                            <div style="font-size: 0.75rem; color: #ff5252; font-weight: 500; margin-bottom: 12px; display: block;"><span data-i18n="widget.zoffset.warn">⚠️ Vorsicht: Falsche Werte können das Druckbett beschädigen!</span></div>
-                            <input type="range" class="slider" id="zoffset-slider" min="-2.0" max="2.0" step="0.05" value="0.00" aria-label="Z-Offset">
+                            <div style="position: relative; margin-top: 5px; padding: 5px 0;">
+                                <!-- Lock Overlay -->
+                                <div id="zoffset-overlay" style="position: absolute; inset: -4px; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); background: rgba(20, 24, 34, 0.65); z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; transition: opacity 0.25s;" onclick="this.style.opacity='0'; setTimeout(() => this.style.display='none', 250);" title="Klicken zum Entsperren" data-i18n-title="title.3">
+                                    <span style="background: rgba(0, 188, 212, 0.2); border: 1px solid rgba(0, 188, 212, 0.5); padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #00e5ff; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);" data-i18n="widget.zoffset.unlock">🔒 Entsperren</span>
+                                </div>
+                                
+                                <div style="font-size: 0.75rem; color: #ff5252; font-weight: 500; margin-bottom: 8px; display: block;"><span data-i18n="widget.zoffset.warn">⚠️ Vorsicht: Falsche Werte können das Druckbett beschädigen!</span></div>
+                                <input type="range" class="slider" id="zoffset-slider" min="-2.0" max="2.0" step="0.05" value="0.00" aria-label="Z-Offset">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: AUDIT & DIAGNOSTIC TOOLS -->
+                    <div id="section-audit-tools" class="settings-section">
+                        <!-- Section Header: Diagnostics & Audits -->
+                        <div style="margin: 0 0 4px 0; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                            <span style="flex: 1; height: 1px; background: var(--border-color);"></span>
+                            <span data-i18n="tuning.audit_heading">🔍 Audit &amp; Diagnose</span>
+                            <span style="flex: 1; height: 1px; background: var(--border-color);"></span>
+                        </div>
+
+                        <!-- VFA Radar -->
+                        <div class="widget" id="vfa-widget">
+                            <label class="widget-title" style="display: flex; justify-content: space-between;">
+                                <span data-tooltip="Zeigt Außenwände, die in bekannten Resonanz- oder Schrittmotor-Vibrationsbereichen (Ghosting) gedruckt werden." data-i18n-tooltip="tooltip.vfa" data-i18n="tuning.vfa">VFA & Ghosting Radar</span>
+                            </label>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+                                    <span>Band 1 (mm/s):</span>
+                                    <span id="vfa1-val" class="accent">45 - 65</span>
+                                </div>
+                                <div style="display: flex; gap: 5px;">
+                                    <input type="number" id="vfa1-min" value="45" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
+                                    <input type="number" id="vfa1-max" value="65" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                                    <span>Band 2 (mm/s):</span>
+                                    <span id="vfa2-val" class="accent">90 - 110</span>
+                                </div>
+                                <div style="display: flex; gap: 5px;">
+                                    <input type="number" id="vfa2-min" value="90" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
+                                    <input type="number" id="vfa2-max" value="110" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 4px;">
+                                    <input type="checkbox" id="vfa-outer-only-btn" checked style="cursor: pointer;">
+                                    <span data-i18n="tuning.vfa_outer_only">Focus Outer Walls Only</span>
+                                </label>
+                                <div id="vfa-stats-box" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-muted);" data-i18n="vfa.outer">🔴 Outer Wall (Visible):</span>
+                                        <strong id="vfa-outer-stat" style="color: #ff007f;">0.0%</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-muted);" data-i18n="vfa.inner">🟡 Inner Wall (Structure):</span>
+                                        <strong id="vfa-inner-stat" style="color: #f1c40f;">0.0%</strong>
+                                    </div>
+                                </div>
+                                <div id="vfa-warning" style="display: none; color: #ff007f; font-size: 0.75rem; margin-top: 2px; font-weight: bold; line-height: 1.3;"></div>
+                            </div>
+                        </div>
+                        <!-- Corner & Deceleration Auditor -->
+                        <div class="widget" id="corner-audit-widget">
+                            <label class="widget-title" style="display: flex; justify-content: space-between;">
+                                <span data-tooltip="Detects sharp corners with heavy deceleration and checks Pressure Advance status." data-i18n-tooltip="tooltip.corner_audit" data-i18n="tuning.corner_audit">Corner &amp; Deceleration Auditor</span>
+                            </label>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-muted);" data-i18n="corner.pa_label">Pressure Advance:</span>
+                                    <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(231,76,60,0.2); color: #ff6b6b; border: 1px solid rgba(231,76,60,0.4);" data-i18n="corner.inactive">Inactive</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span data-i18n="corner.bulge_label">🔴 Bulge Risk (Δv &gt; 60):</span>
+                                    <strong id="corner-bulge-count" style="color: #ff6b6b;">0 Corners</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span data-i18n="corner.stress_label">🟡 PA Stress (Δv &gt; 60):</span>
+                                    <strong id="corner-stress-count" style="color: #f1c40f;">0 Corners</strong>
+                                </div>
+                                <div id="corner-audit-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="corner.note_none">No corners analyzed.</div>
+                            </div>
+                        </div>
+                        <!-- Z-Seam Quality & Alignment Auditor -->
+                        <div class="widget" id="zseam-widget">
+                            <label class="widget-title" style="display: flex; justify-content: space-between;">
+                                <span data-tooltip="Analyzes layer start points (seams) to detect surface pimples and verify corner concealment." data-i18n-tooltip="tooltip.zseam" data-i18n="tuning.zseam">Z-Seam Alignment &amp; Quality</span>
+                            </label>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-muted);" data-i18n="seam.ratio">Corner Ratio:</span>
+                                    <span id="zseam-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(0, 229, 255, 0.2); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4);" data-i18n="seam.badge_corner">100% Corner</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span>🟢 <span data-i18n="seam.in_corner">In Corner:</span></span>
+                                    <strong id="zseam-corner-count" style="color: #00e676;">0 seams</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span>🔴 <span data-i18n="seam.on_flat">On Flat Wall:</span></span>
+                                    <strong id="zseam-flat-count" style="color: #ff3d00;">0 seams</strong>
+                                </div>
+                                <div id="zseam-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="seam.note_none">No file loaded.</div>
+                            </div>
+                        </div>
+                        <!-- 3D Overhang & Bridge Inspector -->
+                        <div class="widget" id="overhang-widget">
+                            <label class="widget-title" style="display: flex; justify-content: space-between;">
+                                <span data-tooltip="Analyzes overhang angles and bridges per layer to verify cooling and support requirements." data-i18n-tooltip="tooltip.overhang" data-i18n="tuning.overhang">Overhang &amp; Bridge Inspector</span>
+                            </label>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-muted);" data-i18n="overhang.support_status">Support Status:</span>
+                                    <span id="overhang-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.4);" data-i18n="overhang.support_none">No Supports Needed</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span>📐 <span data-i18n="overhang.max_angle">Max. Overhang:</span></span>
+                                    <strong id="overhang-max-angle" style="color: var(--text-color);">0°</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span>🌉 <span data-i18n="overhang.bridge_length">Bridge Total:</span></span>
+                                    <strong id="overhang-bridge-stat" style="color: #e91e63;">0.0 mm (0)</strong>
+                                </div>
+                                <div id="overhang-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="overhang.cooling_good">Cooling: 100% Optimal</div>
+                            </div>
+                        </div>
+                        <!-- Pressure Advance & Retraction Audit Widget -->
+                        <div class="widget" id="pa-widget">
+                            <label class="widget-title" style="display: flex; justify-content: space-between;">
+                                <span data-tooltip="Audits melt zone pressure buildup in corners and retraction clusters against filament grinding." data-i18n-tooltip="tooltip.pa" data-i18n="tuning.pa_audit">Pressure Advance &amp; Retraction</span>
+                            </label>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-muted);" data-i18n="pa.status_label">G-Code Status:</span>
+                                    <span id="pa-status-badge" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: bold; background: rgba(0, 229, 255, 0.15); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.35);">Standard (No PA)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span>🎯 <span data-i18n="pa.corner_bulge">Corner Pressure Risk:</span></span>
+                                    <strong id="pa-corner-count" style="color: var(--text-color);">0 Corners</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                    <span>⚙️ <span data-i18n="pa.grinding_status">Retract Health:</span></span>
+                                    <strong id="pa-retract-score" style="color: #4caf50;">100% (Optimal)</strong>
+                                </div>
+                                <div id="pa-status-note" style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;" data-i18n="pa.note_optimal">No filament grinding detected.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1803,14 +2403,7 @@ html[lang="en"] .de-only { display: none !important; }
                 <button id="toggle-left-panel" class="panel-toggle-btn left" aria-label="Toggle Left Panel">◀</button>
                 <button id="toggle-right-panel" class="panel-toggle-btn right" aria-label="Toggle Right Panel">▶</button>
 
-                <!-- MOBILE CANVAS OVERLAY (Google Maps Style) -->
-                <div id="mobile-canvas-overlay" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.3); z-index: 5; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; touch-action: pan-y;">
-                    <div style="background: rgba(0,0,0,0.85); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--accent-color); color: white; text-align: center; pointer-events: auto; display: flex; flex-direction: column; gap: 6px; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
-                        <span style="font-size: 1.2rem; line-height: 1;">👆</span>
-                        <span style="font-weight: 600; font-size: 0.9rem;" data-i18n="view.interact">Ansicht interagieren</span>
-                        <button id="enable-interaction-btn" class="upload-btn" style="margin-top: 2px; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px;" data-i18n="view.activate">Aktivieren</button>
-                    </div>
-                </div>
+
                 
                 <!-- FLOATING TOP VIEWPORT TOOLBAR (CAD / Slicer Capsule) -->
                 <div id="canvas-top-toolbar" style="position: absolute; top: 12px; left: 12px; right: 12px; z-index: 20; display: flex; justify-content: space-between; align-items: center; pointer-events: none; gap: 10px;">
@@ -1912,9 +2505,9 @@ html[lang="en"] .de-only { display: none !important; }
                     </div>
 
                     <!-- Right Capsule: Zen / Maximize Viewport -->
-                    <div style="display: flex; align-items: center; gap: 6px; pointer-events: auto;">
+                    <div style="display: flex; align-items: center; gap: 6px; pointer-events: auto; background: transparent; border: none; box-shadow: none;">
                         <button id="zen-view-btn" class="icon-btn" style="background: rgba(18, 20, 26, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.45); transition: all 0.2s;" title="Maximize View" data-i18n-title="view.zen_tooltip">
-                            <span>⛶</span><span data-i18n="view.zen_mode">Maximize View</span>
+                            <span id="zen-view-icon">⛶</span><span id="zen-view-text" data-i18n="view.zen_mode">Maximize View</span>
                         </button>
                     </div>
                 </div>
@@ -1932,8 +2525,12 @@ html[lang="en"] .de-only { display: none !important; }
                     </div>
                 </div>
 
-                <!-- DISABLE INTERACTION BTN -->
-                <button id="disable-interaction-btn" class="icon-btn" style="display: none; position: absolute; top: 12px; right: 140px; z-index: 25; background: var(--error-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" aria-label="3D Interaktion deaktivieren" data-i18n="view.deactivate">❌ Interaktion beenden</button>
+                <!-- MOBILE CANVAS HINT -->
+                <div id="mobile-canvas-hint" class="mobile-canvas-hint" style="display: none;">
+                    <span data-i18n="view.mobile_hint">✌️ 2 Finger: Drehen & Zoom • 1 Finger: Scrollen</span>
+                </div>
+
+
 
                 </div>
 
@@ -1971,6 +2568,26 @@ html[lang="en"] .de-only { display: none !important; }
                     </div>
                 </div>
             </main>
+
+            <!-- MOBILE NAVIGATION BAR (Sticky below Canvas on Mobile) -->
+            <nav id="mobile-nav-bar" class="mobile-nav-bar" aria-label="Mobile Navigation">
+                <button class="mobile-nav-btn active" data-mobile-panel="tuning" aria-label="Tuning Parameter">
+                    <span class="mobile-nav-icon">⚙️</span>
+                    <span class="mobile-nav-text" data-i18n="mobile.tuning">Tuning</span>
+                </button>
+                <button class="mobile-nav-btn" data-mobile-panel="audit" aria-label="Audit und Diagnose">
+                    <span class="mobile-nav-icon">🔍</span>
+                    <span class="mobile-nav-text" data-i18n="mobile.audit">Audit</span>
+                </button>
+                <button class="mobile-nav-btn" data-mobile-panel="analyse" aria-label="Statistiken und Analyse">
+                    <span class="mobile-nav-icon">📊</span>
+                    <span class="mobile-nav-text" data-i18n="mobile.analyse">Analyse</span>
+                </button>
+                <button class="mobile-nav-btn" data-mobile-panel="gcode" aria-label="G-Code Explorer">
+                    <span class="mobile-nav-icon">📄</span>
+                    <span class="mobile-nav-text" data-i18n="mobile.gcode">G-Code</span>
+                </button>
+            </nav>
 
             <!-- RIGHT PANEL: G-CODE LIST -->
             <aside class="sidebar right-panel">
@@ -2102,10 +2719,10 @@ html[lang="en"] .de-only { display: none !important; }
                             </p>
                             
                             <!-- Presets -->
-                            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
-                                <button class="pa-preset-btn" data-val="0.020" style="flex: 1; min-width: 90px; padding: 5px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); color: #00e5ff; cursor: pointer; font-weight: 500;">Direct Drive (0.020s)</button>
-                                <button class="pa-preset-btn" data-val="0.035" style="flex: 1; min-width: 90px; padding: 5px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); cursor: pointer; font-weight: 500;">Sprite/Hemera (0.035s)</button>
-                                <button class="pa-preset-btn" data-val="0.450" style="flex: 1; min-width: 90px; padding: 5px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); cursor: pointer; font-weight: 500;">Bowden (0.450s)</button>
+                            <div style="display: flex; gap: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box;">
+                                <button class="pa-preset-btn" data-val="0.020">Direct Drive<br>(0.020s)</button>
+                                <button class="pa-preset-btn" data-val="0.035">Sprite/Hemera<br>(0.035s)</button>
+                                <button class="pa-preset-btn" data-val="0.450">Bowden<br>(0.450s)</button>
                             </div>
 
                             <!-- Interactive Slider & Value -->
@@ -2129,11 +2746,25 @@ html[lang="en"] .de-only { display: none !important; }
                         <div class="analyse-card">
                             <h3 data-tooltip="Virtually shifts the entire part on the build plate" data-i18n-tooltip="tooltip.14" data-i18n="offset.heading">📐 Geometry Offsets</h3>
                             <div class="offset-group" style="margin-top: 10px;">
-                                <div class="widget-title"><span data-tooltip="Shift left/right" data-i18n-tooltip="tooltip.15" data-i18n="offset.x">X-Offset</span><span id="xoffset-val" class="accent">0.0 mm</span></div>
+                                <div class="widget-title">
+                                    <span data-tooltip="Shift left/right" data-i18n-tooltip="tooltip.15" data-i18n="offset.x">X-Offset</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="xoffset-input" class="widget-num-input" value="0.0" min="-100" max="100" step="1" inputmode="decimal" aria-label="X-Offset">
+                                        <span class="widget-unit">mm</span>
+                                        <span id="xoffset-val" class="accent" style="display: none;">0.0 mm</span>
+                                    </div>
+                                </div>
                                 <input type="range" class="slider" id="xoffset-slider" min="-100" max="100" step="1" value="0" aria-label="X-Offset">
                             </div>
                             <div class="offset-group" style="margin-top: 15px;">
-                                <div class="widget-title"><span data-tooltip="Shift front/back" data-i18n-tooltip="tooltip.16" data-i18n="offset.y">Y-Offset</span><span id="yoffset-val" class="accent">0.0 mm</span></div>
+                                <div class="widget-title">
+                                    <span data-tooltip="Shift front/back" data-i18n-tooltip="tooltip.16" data-i18n="offset.y">Y-Offset</span>
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="number" id="yoffset-input" class="widget-num-input" value="0.0" min="-100" max="100" step="1" inputmode="decimal" aria-label="Y-Offset">
+                                        <span class="widget-unit">mm</span>
+                                        <span id="yoffset-val" class="accent" style="display: none;">0.0 mm</span>
+                                    </div>
+                                </div>
                                 <input type="range" class="slider" id="yoffset-slider" min="-100" max="100" step="1" value="0" aria-label="Y-Offset">
                             </div>
                         </div>
@@ -2571,13 +3202,34 @@ html[lang="en"] .de-only { display: none !important; }
 <div class="lang-de">
 
             <h1 style="color: var(--accent-color); margin-bottom: 5px;">🚀 Was ist neu in LayerSpy?</h1>
-            <p id="update-version" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">Lade Updates von GitHub...</p>
+            <p id="update-version" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Version 2.2.0 (Aktuell)</p>
             
             <div style="text-align: left; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div id="update-notes" style="line-height: 1.6; color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;">
-                    Verbinde mit Server...
+                    <h3 style="margin-top: 5px; margin-bottom: 8px; color: var(--accent-color);">✨ Neue Features</h3>
+                    <ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">
+                        <li><strong>✌️ 2-Finger Touch-Steuerung:</strong> Der 3D- und 2D-Viewer wird mobil nun präzise mit 2 Fingern bedient (Drehen, Pan & Zoom). 1-Finger-Wischen scrollt die Seite uneingeschränkt und verhindert versehentliches Bewegen.</li>
+                        <li><strong>📱 Optimiertes Mobile-Layout:</strong> Neues gestapeltes Layout mit kompakter Menüleiste (Tuning, Audit, Analyse, G-Code) und optimaler Viewport-Höhe.</li>
+                        <li><strong>🏷️ Visuelle Regler-Änderungsanzeige:</strong> Geänderte Parameter erhalten sofort ein goldgelbes <code>GEÄNDERT</code>-Badge, farbigen Slider-Glow und behalten ihren Status bis zum Speichern.</li>
+                        <li><strong>🔔 Benachrichtigungs-Indikator:</strong> Mobile Navigationsbuttons und der Save-Button pulsieren bernsteinfarben, wenn ungespeicherte Änderungen vorliegen.</li>
+                        <li><strong>🔍 Linter Filter-Chips:</strong> Schnelles Filtern von G-Code Warnungen nach Kritisch (Rot), Warnung (Gelb) und Info (Grün) mit Live-Countern.</li>
+                    </ul>
+
+                    <h3 style="margin-top: 15px; margin-bottom: 8px; color: var(--accent-color);">⚡ Verbesserungen</h3>
+                    <ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">
+                        <li><strong>Header-Layout ohne Überlagerungen:</strong> Zweizeilige, aufgeräumte Kopfzeile auf Smartphones für Upload, Sprachwahl und Schnellzugriff.</li>
+                        <li><strong>Dynamische Slider-Farbverläufe:</strong> Farblich synchronisierte Schieberegler und Zahlen-Eingabefelder für intuitivere Bedienung.</li>
+                        <li><strong>Optimierter Klipper PA-Inject:</strong> Direkte Einbettung der Druckbeschleunigung und Pressure-Advance-Werte in den Startcode.</li>
+                    </ul>
+
+                    <h3 style="margin-top: 15px; margin-bottom: 8px; color: var(--accent-color);">🐛 Fehlerbehebungen</h3>
+                    <ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">
+                        <li>Behebung von Textüberlagerungen und abgeschnittenen Button-Beschriftungen auf Mobilgeräten.</li>
+                        <li>Korrektur des baseline-Status für Parameter: "Berechnen" löscht nicht mehr vorzeitig die Änderungs-Markierungen vor dem Speichern.</li>
+                        <li>Fehlerbehebung bei Touch-Scroll-Konflikten auf iOS Safari und Android Chrome.</li>
+                    </ul>
                 </div>
-                <a id="update-link" href="#" target="_blank" style="display: none; text-decoration: none;">
+                <a id="update-link" href="https://github.com/Exulizer/LayerSpy/releases" target="_blank" style="text-decoration: none;">
                     <button class="upload-btn" style="width: 100%; margin-top: 10px;">Release auf GitHub ansehen</button>
                 </a>
             </div>
@@ -2586,13 +3238,34 @@ html[lang="en"] .de-only { display: none !important; }
 <div class="lang-en">
 
             <h1 style="color: var(--accent-color); margin-bottom: 5px;">🚀 What's new in LayerSpy?</h1>
-            <p id="update-version" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">Loading updates from GitHub...</p>
+            <p id="update-version" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Version 2.2.0 (Latest)</p>
             
             <div style="text-align: left; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div id="update-notes" style="line-height: 1.6; color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;">
-                    Connecting to server...
+                    <h3 style="margin-top: 5px; margin-bottom: 8px; color: var(--accent-color);">✨ New Features</h3>
+                    <ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">
+                        <li><strong>✌️ 2-Finger Touch Controls:</strong> 3D and 2D viewports now strictly require 2 fingers for rotation, panning, and zoom. 1-finger swipes scroll the webpage natively without accidental canvas dragging.</li>
+                        <li><strong>📱 Responsive Mobile Navigation:</strong> Modern stacked interface with sticky bottom tab bar (Tuning, Audit, Analysis, G-Code) and auto-scaled viewport height.</li>
+                        <li><strong>🏷️ Parameter Change Indicators:</strong> Modified settings display an amber <code>MODIFIED</code> badge, highlighted glowing borders, and retain status until saved.</li>
+                        <li><strong>🔔 Unsaved Changes Badge:</strong> Mobile navigation tabs and the Save button pulse in amber whenever unsaved parameter adjustments exist.</li>
+                        <li><strong>🔍 Interactive Linter Filter Chips:</strong> Instant filtering of diagnostic warnings by Critical (Red), Warning (Yellow), and Info (Green) with live counters.</li>
+                    </ul>
+
+                    <h3 style="margin-top: 15px; margin-bottom: 8px; color: var(--accent-color);">⚡ Improvements</h3>
+                    <ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">
+                        <li><strong>Clean Mobile Header:</strong> Clean 2-row layout on smartphones eliminating overlapping buttons and titles.</li>
+                        <li><strong>Dynamic Slider Color Sync:</strong> Sliders and companion input boxes dynamically update fill tracks and thumb glows upon modification.</li>
+                        <li><strong>Klipper PA Injection:</strong> Seamless direct insertion of calibrated Pressure Advance and kinematics parameters into G-Code start sequence.</li>
+                    </ul>
+
+                    <h3 style="margin-top: 15px; margin-bottom: 8px; color: var(--accent-color);">🐛 Bug Fixes</h3>
+                    <ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">
+                        <li>Fixed text overflow and button truncation on mobile screens and iOS Safari.</li>
+                        <li>Fixed parameter dirty state: clicking "Calculate" no longer prematurely clears modified indicators before export.</li>
+                        <li>Resolved viewport touch-drag event capturing that prevented webpage vertical scrolling.</li>
+                    </ul>
                 </div>
-                <a id="update-link" href="#" target="_blank" style="display: none; text-decoration: none;">
+                <a id="update-link" href="https://github.com/Exulizer/LayerSpy/releases" target="_blank" style="text-decoration: none;">
                     <button class="upload-btn" style="width: 100%; margin-top: 10px;">View Release on GitHub</button>
                 </a>
             </div>
@@ -2782,7 +3455,7 @@ html[lang="en"] .de-only { display: none !important; }
                 const isEn = lang === 'en';
                 const texts = {
                     latest: isEn ? "Latest Version: " : "Neueste Version: ",
-                    local: isEn ? "Version 1.3.0 (Local)" : "Version 1.3.0 (Lokal)",
+                    local: isEn ? "Version 2.2.0 (Local)" : "Version 2.2.0 (Lokal)",
                     btn: isEn ? "View Releases on GitHub" : "Releases auf GitHub ansehen",
                     noRel: isEn ? "No releases published on GitHub yet.<br><br>As soon as a release is created, it will appear here automatically." : "Es wurden noch keine Releases auf GitHub veröffentlicht.<br><br>Sobald ein Release erstellt wird, erscheint es hier automatisch.",
                     limit: isEn ? "<b>GitHub Rate Limit Reached!</b><br><br>Because the page was reloaded very often, GitHub temporarily blocked the connection (max. 60 requests per hour).<br>This is a temporary protection from GitHub.<br><br>Please wait a few minutes, then the update check will work automatically again.<br><br>" : "<b>GitHub-Abfragelimit erreicht!</b><br><br>Da die Seite sehr oft neu geladen wurde, hat GitHub die Verbindung vorübergehend blockiert (max. 60 Abfragen pro Stunde).<br>Dies ist ein temporärer Schutz von GitHub.<br><br>Bitte warte ein paar Minuten, dann funktioniert die Update-Prüfung wieder ganz von alleine.<br><br>",
@@ -2843,7 +3516,7 @@ html[lang="en"] .de-only { display: none !important; }
                 const isEn = lang === 'en';
                 const btn = isEn ? "View Releases on GitHub" : "Releases auf GitHub ansehen";
                 const netErr = isEn ? "Could not connect to GitHub. Please check your internet connection.<br><br>" : "Es konnte keine Verbindung zu GitHub hergestellt werden. Bitte prüfe deine Internetverbindung.<br><br>";
-                updateAll('[id="update-version"]', isEn ? "Version 1.3.0 (Local)" : "Version 1.3.0 (Lokal)");
+                updateAll('[id="update-version"]', isEn ? "Version 2.2.0 (Local)" : "Version 2.2.0 (Lokal)");
                 updateAll('[id="update-notes"]', `${netErr}<a href="https://github.com/Exulizer/LayerSpy/releases" target="_blank" class="btn" style="display: inline-block; text-decoration: none; padding: 6px 12px; font-size: 0.9rem;">${btn}</a>`);
             }
         }

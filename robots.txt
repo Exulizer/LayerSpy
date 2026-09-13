@@ -1,7 +1,17 @@
 User-agent: *
 Allow: /
 
-# Allow AI & LLM Crawlers explicitly to parse our documentation and app structure
+# Search Engine Crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# AI & LLM Search Crawlers
 User-agent: Google-Extended
 Allow: /
 
@@ -14,7 +24,11 @@ Allow: /
 User-agent: ClaudeBot
 Allow: /
 
+User-agent: PerplexityBot
+Allow: /
+
 User-agent: CCBot
 Allow: /
 
 Sitemap: https://layerspy.de/sitemap.xml
+

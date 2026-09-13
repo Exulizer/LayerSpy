@@ -4,10 +4,10 @@
 function setLanguage(lang) {
     if (!window.i18n || !window.i18n[lang]) return;
     
-    // Update footer links for subpages
+    // Ensure footer links for subpages point to valid pages
     ['datenschutz', 'impressum', 'kontakt'].forEach(page => {
         document.querySelectorAll('a[href^="' + page + '"]').forEach(a => {
-            a.href = lang === 'en' ? page + '_en.html' : page + '.html';
+            a.href = page + '.html';
         });
     });
 
@@ -42,6 +42,11 @@ function setLanguage(lang) {
         langDeBtn.style.background = lang === 'de' ? 'var(--accent-color)' : 'transparent';
         langDeBtn.style.color = lang === 'de' ? '#fff' : 'rgba(255,255,255,0.5)';
     }
+
+    // Update modified badges
+    document.querySelectorAll('.modified-badge').forEach(badge => {
+        badge.innerText = lang === 'en' ? 'Modified' : 'Geändert';
+    });
 
     // Replace text for all data-i18n elements
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -97,6 +102,7 @@ function setLanguage(lang) {
         if (window.gcodeApp.updateTimeUI) window.gcodeApp.updateTimeUI();
         if (window.gcodeApp.updateLayerIndicator) window.gcodeApp.updateLayerIndicator();
         if (window.gcodeApp.updateHudLegend) window.gcodeApp.updateHudLegend();
+        if (window.gcodeApp.updateZenBtnState) window.gcodeApp.updateZenBtnState();
     }
     if (window.updateLegend) window.updateLegend();
 }
@@ -132,8 +138,8 @@ window.applyTheme = function(theme) {
                 const grid = new THREE.GridHelper(
                     window.gcodeApp.bedSize, 
                     22, 
-                    isLight ? 0x999999 : 0x444444, 
-                    isLight ? 0xd0d0d0 : 0x222222
+                    isLight ? 0x475569 : 0x444444, 
+                    isLight ? 0x94a3b8 : 0x222222
                 );
                 grid.rotation.x = Math.PI / 2;
                 window.gcodeApp.scene.add(grid);
@@ -244,6 +250,7 @@ class GCodeViewer {
         this.halfBed = this.bedSize / 2;
         
         this.appliedState = null;
+        this.saveAppliedState();
         
         // 3D View State
         this.is3DMode = false;
@@ -279,35 +286,97 @@ class GCodeViewer {
     checkPendingUpdates() {
         if (!this.appliedState) return;
         
-        const checkWidget = (inputId, valId, stateKey, currentVal) => {
+        let hasAnyChanges = false;
+        
+        const checkWidget = (sliderId, inputId, valId, stateKey, currentVal) => {
+            const slider = document.getElementById(sliderId);
             const input = document.getElementById(inputId);
             const valSpan = document.getElementById(valId);
-            if (!input) return;
-            const widget = input.closest('.widget, .analyse-card');
-            if (!widget) return;
+            const el = input || slider;
+            if (!el) return false;
+            const widget = el.closest('.widget, .analyse-card');
             
-            // Check for tiny floating point differences, especially for offsets and retracts
-            const isDifferent = Math.abs(currentVal - this.appliedState[stateKey]) > 0.001;
+            // Check difference against appliedState (which holds the saved/original baseline)
+            const isDifferent = this.appliedState[stateKey] !== undefined && Math.abs(currentVal - this.appliedState[stateKey]) > 0.001;
             
             if (isDifferent) {
-                widget.classList.add('pending-update');
+                hasAnyChanges = true;
+                if (widget) {
+                    widget.classList.add('pending-update');
+                    let badge = widget.querySelector('.modified-badge');
+                    if (!badge) {
+                        const titleEl = widget.querySelector('.widget-title');
+                        if (titleEl && titleEl.firstElementChild) {
+                            badge = document.createElement('span');
+                            badge.className = 'modified-badge';
+                            const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+                            badge.innerText = isEn ? 'Modified' : 'Geändert';
+                            titleEl.firstElementChild.appendChild(badge);
+                        }
+                    } else {
+                        badge.style.display = 'inline-block';
+                    }
+                }
+                if (input) input.classList.add('is-modified');
+                if (slider) {
+                    slider.classList.add('is-modified');
+                    if (window.updateSliderColor) window.updateSliderColor(slider);
+                }
                 if (valSpan) valSpan.classList.add('is-modified');
             } else {
+                if (input) input.classList.remove('is-modified');
+                if (slider) {
+                    slider.classList.remove('is-modified');
+                    if (window.updateSliderColor) window.updateSliderColor(slider);
+                }
                 if (valSpan) valSpan.classList.remove('is-modified');
-                if (!widget.querySelector('.is-modified')) {
-                    widget.classList.remove('pending-update');
+                if (widget) {
+                    const badge = widget.querySelector('.modified-badge');
+                    if (badge) badge.style.display = 'none';
+                    if (!widget.querySelector('.is-modified')) {
+                        widget.classList.remove('pending-update');
+                    }
                 }
             }
+            return isDifferent;
         };
 
-        checkWidget('temp-slider', 'temp-val', 'temp', this.currentTemp);
-        checkWidget('bed-slider', 'bed-val', 'bed', this.currentBed);
-        checkWidget('retract-slider', 'retract-val', 'retract', this.currentRetract);
-        checkWidget('fan-slider', 'fan-val', 'fan', this.currentFan);
-        checkWidget('speed-slider', 'speed-val', 'speed', this.currentSpeed);
-        checkWidget('zoffset-slider', 'zoffset-val', 'zoffset', this.currentZOffset);
-        checkWidget('xoffset-slider', 'xoffset-val', 'xoffset', this.currentXOffset);
-        checkWidget('yoffset-slider', 'yoffset-val', 'yoffset', this.currentYOffset);
+        checkWidget('temp-slider', 'temp-input', 'temp-val', 'temp', this.currentTemp);
+        checkWidget('bed-slider', 'bed-input', 'bed-val', 'bed', this.currentBed);
+        checkWidget('retract-slider', 'retract-input', 'retract-val', 'retract', this.currentRetract);
+        checkWidget('fan-slider', 'fan-input', 'fan-val', 'fan', this.currentFan);
+        checkWidget('speed-slider', 'speed-input', 'speed-val', 'speed', this.currentSpeed);
+        checkWidget('zoffset-slider', 'zoffset-input', 'zoffset-val', 'zoffset', this.currentZOffset);
+        checkWidget('xoffset-slider', 'xoffset-input', 'xoffset-val', 'xoffset', this.currentXOffset);
+        checkWidget('yoffset-slider', 'yoffset-input', 'yoffset-val', 'yoffset', this.currentYOffset);
+
+        // Check kinematics
+        if (this.initialKinematicsInputs) {
+            document.querySelectorAll('.k-input').forEach(kIn => {
+                const orig = this.initialKinematicsInputs[kIn.id];
+                if (orig !== undefined && kIn.value !== orig) {
+                    hasAnyChanges = true;
+                    kIn.classList.add('modified-value');
+                } else {
+                    kIn.classList.remove('modified-value');
+                }
+            });
+        }
+
+        // Update Mobile Nav Bar badge on Tuning panel button
+        const mobileTuningBtn = document.querySelector('.mobile-nav-btn[data-mobile-panel="tuning"]');
+        if (mobileTuningBtn) {
+            mobileTuningBtn.classList.toggle('has-changes', hasAnyChanges);
+        }
+
+        // Update Save button highlight on Desktop and Mobile header
+        const downloadBtn = document.getElementById('download-btn');
+        if (downloadBtn) {
+            downloadBtn.classList.toggle('has-unsaved-changes', hasAnyChanges);
+            if (hasAnyChanges && this.originalLines && this.originalLines.length > 0) {
+                downloadBtn.disabled = false;
+            }
+        }
     }
 
     liveUpdateDebounced() {
@@ -348,7 +417,7 @@ class GCodeViewer {
         this.scene.add(dirLight);
 
         // Grid/Bed
-        const grid = new THREE.GridHelper(this.bedSize, 22, isLight ? 0x999999 : 0x444444, isLight ? 0xd0d0d0 : 0x222222);
+        const grid = new THREE.GridHelper(this.bedSize, 22, isLight ? 0x475569 : 0x444444, isLight ? 0x94a3b8 : 0x222222);
         grid.rotation.x = Math.PI / 2;
         this.scene.add(grid);
         this.bed3D = grid;
@@ -357,6 +426,10 @@ class GCodeViewer {
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
         this.controls.screenSpacePanning = true; // Makes panning feel natural
+        this.controls.touches = {
+            ONE: null, // Single finger touch disabled in 3D viewer: allows smooth native page scrolling
+            TWO: THREE.TOUCH.DOLLY_ROTATE // 2 fingers rotate and pinch-zoom
+        };
         
         // Optimize mouse buttons if desired (Left = Rotate, Right = Pan, Middle = Zoom)
         this.controls.mouseButtons = {
@@ -364,6 +437,23 @@ class GCodeViewer {
             MIDDLE: THREE.MOUSE.DOLLY,
             RIGHT: THREE.MOUSE.PAN
         };
+
+        // Mobile Touch Handling for 3D canvas (Fade hint on 2-finger interaction)
+        const canvas3d = this.renderer.domElement;
+
+        const hideMobileHint = () => {
+            const hint = document.getElementById('mobile-canvas-hint');
+            if (hint && hint.style.opacity !== '0') {
+                hint.style.opacity = '0';
+                setTimeout(() => { hint.style.display = 'none'; }, 500);
+            }
+        };
+
+        canvas3d.addEventListener('touchstart', (e) => {
+            if (e.touches.length >= 2) {
+                hideMobileHint();
+            }
+        }, { passive: true });
 
         // Start render loop
         const animate = () => {
@@ -423,9 +513,98 @@ class GCodeViewer {
         }
     }
 
+    updateZenBtnState() {
+        const zenBtn = document.getElementById('zen-view-btn');
+        if (!zenBtn) return;
+        const leftPanel = document.querySelector('.left-panel');
+        const rightPanel = document.querySelector('.right-panel');
+        const isZen = leftPanel?.classList.contains('panel-collapsed') && rightPanel?.classList.contains('panel-collapsed');
+        
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+        const iconEl = document.getElementById('zen-view-icon');
+        const textEl = document.getElementById('zen-view-text');
+
+        if (isZen) {
+            zenBtn.classList.add('active');
+            if (iconEl) iconEl.innerText = '🗗';
+            if (textEl) {
+                textEl.setAttribute('data-i18n', 'view.zen_restore');
+                textEl.innerText = isEn ? 'Standard View' : 'Standardansicht';
+            }
+            const tooltip = isEn ? 'Show sidebars to restore standard view' : 'Seitenleisten wieder einblenden (Standardansicht)';
+            zenBtn.setAttribute('title', tooltip);
+            zenBtn.setAttribute('data-i18n-title', 'view.zen_restore_tooltip');
+        } else {
+            zenBtn.classList.remove('active');
+            if (iconEl) iconEl.innerText = '⛶';
+            if (textEl) {
+                textEl.setAttribute('data-i18n', 'view.zen_mode');
+                textEl.innerText = isEn ? 'Maximize View' : 'Ansicht maximieren';
+            }
+            const tooltip = isEn ? 'Hide sidebars for maximum 3D view' : 'Seitenleisten ausblenden für maximale 3D-Ansicht';
+            zenBtn.setAttribute('title', tooltip);
+            zenBtn.setAttribute('data-i18n-title', 'view.zen_tooltip');
+        }
+    }
+
+    setMobilePanel(panel) {
+        this.currentMobilePanel = panel;
+        const isMobile = window.innerWidth <= 768;
+        
+        const leftPanel = document.querySelector('.left-panel');
+        const rightPanel = document.querySelector('.right-panel');
+        const tuningSection = document.getElementById('section-tuning-params');
+        const auditSection = document.getElementById('section-audit-tools');
+        
+        if (!isMobile) {
+            if (leftPanel) leftPanel.style.display = '';
+            if (rightPanel) rightPanel.style.display = '';
+            if (tuningSection) tuningSection.style.display = '';
+            if (auditSection) auditSection.style.display = '';
+            return;
+        }
+
+        if (panel === 'tuning') {
+            if (leftPanel) leftPanel.style.display = 'flex';
+            if (rightPanel) rightPanel.style.display = 'none';
+            if (tuningSection) tuningSection.style.display = 'flex';
+            if (auditSection) auditSection.style.display = 'none';
+        } else if (panel === 'audit') {
+            if (leftPanel) leftPanel.style.display = 'flex';
+            if (rightPanel) rightPanel.style.display = 'none';
+            if (tuningSection) tuningSection.style.display = 'none';
+            if (auditSection) auditSection.style.display = 'flex';
+        } else if (panel === 'analyse') {
+            if (leftPanel) leftPanel.style.display = 'none';
+            if (rightPanel) rightPanel.style.display = 'flex';
+            const tabBtn = document.querySelector('.tab-btn[data-tab="tab-analyse"]');
+            if (tabBtn) tabBtn.click();
+        } else if (panel === 'gcode') {
+            if (leftPanel) leftPanel.style.display = 'none';
+            if (rightPanel) rightPanel.style.display = 'flex';
+            const tabBtn = document.querySelector('.tab-btn[data-tab="tab-list"]');
+            if (tabBtn) tabBtn.click();
+        }
+    }
+
     initEvents() {
+        // Mobile Navigation Bar Listeners
+        const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+        mobileNavBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                mobileNavBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-mobile-panel');
+                this.setMobilePanel(target);
+            });
+        });
+        this.setMobilePanel('tuning');
+
         // Resize handling
-        window.addEventListener('resize', () => this.resizeCanvas());
+        window.addEventListener('resize', () => {
+            this.resizeCanvas();
+            this.setMobilePanel(this.currentMobilePanel || 'tuning');
+        });
         const centerPanel = document.querySelector('.center-panel');
         if (centerPanel) {
             new ResizeObserver(() => this.resizeCanvas()).observe(centerPanel);
@@ -439,6 +618,8 @@ class GCodeViewer {
                 if (panel) {
                     panel.classList.toggle('panel-collapsed');
                     toggleLeft.innerText = panel.classList.contains('panel-collapsed') ? '▶' : '◀';
+                    this.updateZenBtnState();
+                    setTimeout(() => this.resizeCanvas(), 300);
                 }
             });
         }
@@ -450,6 +631,8 @@ class GCodeViewer {
                 if (panel) {
                     panel.classList.toggle('panel-collapsed');
                     toggleRight.innerText = panel.classList.contains('panel-collapsed') ? '◀' : '▶';
+                    this.updateZenBtnState();
+                    setTimeout(() => this.resizeCanvas(), 300);
                 }
             });
         }
@@ -466,21 +649,17 @@ class GCodeViewer {
                     rightPanel?.classList.remove('panel-collapsed');
                     if (toggleLeft) toggleLeft.innerText = '◀';
                     if (toggleRight) toggleRight.innerText = '▶';
-                    zenBtn.classList.remove('active');
-                    zenBtn.style.background = '';
-                    zenBtn.style.borderColor = '';
                 } else {
                     leftPanel?.classList.add('panel-collapsed');
                     rightPanel?.classList.add('panel-collapsed');
                     if (toggleLeft) toggleLeft.innerText = '▶';
                     if (toggleRight) toggleRight.innerText = '◀';
-                    zenBtn.classList.add('active');
-                    zenBtn.style.background = '';
-                    zenBtn.style.borderColor = '';
                 }
+                this.updateZenBtnState();
                 setTimeout(() => this.resizeCanvas(), 300);
             });
         }
+        this.updateZenBtnState();
 
         // Mausrad-Fix für alle Slider und Kinematik-Felder
         document.querySelectorAll('.slider, .k-input').forEach(input => {
@@ -514,13 +693,79 @@ class GCodeViewer {
             });
         });
 
-        // Canvas interactions
+        // Canvas interactions (Mouse)
         this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
         this.canvas.addEventListener('mouseleave', (e) => this.onMouseLeave(e));
         this.canvas.addEventListener('wheel', (e) => this.onWheel(e));
         this.canvas.addEventListener('click', (e) => this.onClick(e));
+
+        // Smart 2D Touch Interactions (2-Finger Pan & Pinch-to-zoom, 1-Finger native scroll pass-through)
+        let touchStart2D = { cx: 0, cy: 0, startOffsetX: 0, startOffsetY: 0, dist: 0, startScale: 1 };
+        let is2DTouchInteracting = false;
+
+        const hideHintOnTouch = () => {
+            const hint = document.getElementById('mobile-canvas-hint');
+            if (hint && hint.style.opacity !== '0') {
+                hint.style.opacity = '0';
+                setTimeout(() => { hint.style.display = 'none'; }, 500);
+            }
+        };
+
+        this.canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                hideHintOnTouch();
+                is2DTouchInteracting = true;
+                this.isMouseDown = false;
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                touchStart2D = {
+                    cx: cx,
+                    cy: cy,
+                    startOffsetX: this.offsetX,
+                    startOffsetY: this.offsetY,
+                    dist: Math.hypot(dx, dy),
+                    startScale: this.scale
+                };
+            } else {
+                // 1 finger: do not interact or drag canvas; allow native scrolling
+                is2DTouchInteracting = false;
+                this.isMouseDown = false;
+            }
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && is2DTouchInteracting) {
+                e.preventDefault();
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.hypot(dx, dy);
+
+                // Pan
+                this.offsetX = touchStart2D.startOffsetX + (cx - touchStart2D.cx);
+                this.offsetY = touchStart2D.startOffsetY + (cy - touchStart2D.cy);
+
+                // Pinch-to-zoom
+                if (touchStart2D.dist > 0) {
+                    const factor = dist / touchStart2D.dist;
+                    this.scale = Math.max(0.2, Math.min(20, touchStart2D.startScale * factor));
+                }
+                this.draw();
+            }
+        }, { passive: false });
+
+        const end2DTouch = () => {
+            is2DTouchInteracting = false;
+            this.isMouseDown = false;
+        };
+
+        this.canvas.addEventListener('touchend', end2DTouch, { passive: true });
+        this.canvas.addEventListener('touchcancel', end2DTouch, { passive: true });
 
         // File upload
         document.getElementById('file-input').addEventListener('change', (e) => this.onFileLoad(e));
@@ -635,75 +880,47 @@ class GCodeViewer {
             this.draw();
         });
 
-        document.getElementById('temp-slider').addEventListener('input', (e) => {
-            this.currentTemp = parseInt(e.target.value, 10);
-            document.getElementById('temp-val').innerText = `${this.currentTemp} °C`;
-        });
+        // Helper to sync slider <-> companion input <-> badge value
+        const syncSliderAndInput = (sliderId, inputId, valId, formatFn, stateSetter) => {
+            const slider = document.getElementById(sliderId);
+            const input = document.getElementById(inputId);
+            const valSpan = document.getElementById(valId);
+            
+            const updateFromVal = (val, fromInput = false) => {
+                stateSetter(val);
+                if (valSpan) valSpan.innerText = formatFn(val);
+                if (slider && !fromInput) slider.value = val;
+                if (input && fromInput !== true) input.value = val;
+                if (slider) slider.classList.add('modified-value');
+                this.checkPendingUpdates();
+            };
 
-        document.getElementById('bed-slider').addEventListener('input', (e) => {
-            this.currentBed = parseInt(e.target.value, 10);
-            document.getElementById('bed-val').innerText = `${this.currentBed} °C`;
-            e.target.classList.add('modified-value');
-            this.checkPendingUpdates();
-        });
+            if (slider) {
+                slider.addEventListener('input', (e) => {
+                    const parsed = parseFloat(e.target.value);
+                    if (input) input.value = parsed;
+                    updateFromVal(parsed, false);
+                });
+            }
+            if (input) {
+                input.addEventListener('input', (e) => {
+                    const parsed = parseFloat(e.target.value);
+                    if (!isNaN(parsed)) {
+                        if (slider) slider.value = parsed;
+                        updateFromVal(parsed, true);
+                    }
+                });
+            }
+        };
 
-        document.getElementById('retract-slider').addEventListener('input', (e) => {
-            this.currentRetract = parseFloat(e.target.value);
-            document.getElementById('retract-val').innerText = `${this.currentRetract.toFixed(1)} mm`;
-            e.target.classList.add('modified-value');
-            this.checkPendingUpdates();
-        });
-
-        document.getElementById('fan-slider').addEventListener('input', (e) => {
-            this.currentFan = parseInt(e.target.value, 10);
-            document.getElementById('fan-val').innerText = `${this.currentFan} %`;
-            e.target.classList.add('modified-value');
-            this.checkPendingUpdates();
-        });
-
-
-
-        document.getElementById('speed-slider').addEventListener('input', (e) => {
-            this.currentSpeed = parseInt(e.target.value, 10);
-            document.getElementById('speed-val').innerText = `${this.currentSpeed} %`;
-            e.target.classList.add('modified-value');
-            this.checkPendingUpdates();
-        });
-
-        document.getElementById('zoffset-slider').addEventListener('input', (e) => {
-            this.currentZOffset = parseFloat(e.target.value);
-            document.getElementById('zoffset-val').innerText = `${(this.currentZOffset > 0 ? '+' : '')}${this.currentZOffset.toFixed(2)} mm`;
-            e.target.classList.add('modified-value');
-            this.checkPendingUpdates();
-        });
-        
-        ['vfa1-min', 'vfa1-max', 'vfa2-min', 'vfa2-max'].forEach(id => {
-            document.getElementById(id)?.addEventListener('input', () => this.checkVFA());
-        });
-
-        const vfaOuterOnlyBtn = document.getElementById('vfa-outer-only-btn');
-        if (vfaOuterOnlyBtn) {
-            vfaOuterOnlyBtn.addEventListener('change', (e) => {
-                this.showVfaOuterOnly = e.target.checked;
-                this.checkVFA();
-                this.rebuild3DScene();
-                this.draw();
-            });
-        }
-
-        document.getElementById('xoffset-slider').addEventListener('input', (e) => {
-            this.currentXOffset = parseFloat(e.target.value);
-            document.getElementById('xoffset-val').innerText = `${(this.currentXOffset > 0 ? '+' : '')}${this.currentXOffset.toFixed(1)} mm`;
-            e.target.classList.add('modified-value');
-            this.checkPendingUpdates();
-        });
-
-        document.getElementById('yoffset-slider').addEventListener('input', (e) => {
-            this.currentYOffset = parseFloat(e.target.value);
-            document.getElementById('yoffset-val').innerText = `${(this.currentYOffset > 0 ? '+' : '')}${this.currentYOffset.toFixed(1)} mm`;
-            e.target.classList.add('modified-value');
-            this.checkPendingUpdates();
-        });
+        syncSliderAndInput('temp-slider', 'temp-input', 'temp-val', (v) => `${Math.round(v)} °C`, (v) => { this.currentTemp = parseInt(v, 10); });
+        syncSliderAndInput('bed-slider', 'bed-input', 'bed-val', (v) => `${Math.round(v)} °C`, (v) => { this.currentBed = parseInt(v, 10); });
+        syncSliderAndInput('retract-slider', 'retract-input', 'retract-val', (v) => `${v.toFixed(1)} mm`, (v) => { this.currentRetract = parseFloat(v); });
+        syncSliderAndInput('fan-slider', 'fan-input', 'fan-val', (v) => `${Math.round(v)} %`, (v) => { this.currentFan = parseInt(v, 10); });
+        syncSliderAndInput('speed-slider', 'speed-input', 'speed-val', (v) => `${Math.round(v)} %`, (v) => { this.currentSpeed = parseInt(v, 10); });
+        syncSliderAndInput('zoffset-slider', 'zoffset-input', 'zoffset-val', (v) => `${(v > 0 ? '+' : '')}${v.toFixed(2)} mm`, (v) => { this.currentZOffset = parseFloat(v); });
+        syncSliderAndInput('xoffset-slider', 'xoffset-input', 'xoffset-val', (v) => `${(v > 0 ? '+' : '')}${v.toFixed(1)} mm`, (v) => { this.currentXOffset = parseFloat(v); });
+        syncSliderAndInput('yoffset-slider', 'yoffset-input', 'yoffset-val', (v) => `${(v > 0 ? '+' : '')}${v.toFixed(1)} mm`, (v) => { this.currentYOffset = parseFloat(v); });
 
         // Kinematics Inputs Event Delegation
         document.querySelectorAll('.k-input').forEach(input => {
@@ -827,13 +1044,15 @@ class GCodeViewer {
             // Mark all pending widgets as actively updating
             document.querySelectorAll('.pending-update').forEach(w => {
                 w.classList.add('widget-updating');
-                // w.classList.remove('pending-update'); (will be removed by checkPendingUpdates)
             });
             
             this.updateGcodeListAsync().then(() => {
                 applyBtn.innerHTML = '<span style="font-size: 1rem; display: flex; align-items: center; line-height: 1;">⚡</span><span>Berechnen</span>';
                 applyBtn.disabled = false;
-                this.saveAppliedState();
+                document.querySelectorAll('.widget-updating').forEach(w => {
+                    w.classList.remove('widget-updating');
+                });
+                this.checkPendingUpdates();
             });
         });
 
@@ -1312,29 +1531,47 @@ class GCodeViewer {
         if (colorModeSelect) colorModeSelect.value = 'normal';
         this.showTravelMoves = false;
 
+        const setNumInput = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        };
+
         document.getElementById('temp-slider').value = this.currentTemp;
         document.getElementById('temp-val').innerText = `${this.currentTemp} °C`;
+        setNumInput('temp-input', this.currentTemp);
         
         document.getElementById('bed-slider').value = this.currentBed;
         document.getElementById('bed-val').innerText = `${this.currentBed} °C`;
+        setNumInput('bed-input', this.currentBed);
         
         document.getElementById('retract-slider').value = this.currentRetract;
         document.getElementById('retract-val').innerText = `${this.currentRetract} mm`;
+        setNumInput('retract-input', this.currentRetract);
         
         document.getElementById('fan-slider').value = this.currentFan;
         document.getElementById('fan-val').innerText = `${this.currentFan} %`;
+        setNumInput('fan-input', this.currentFan);
         
         document.getElementById('speed-slider').value = this.currentSpeed;
         document.getElementById('speed-val').innerText = `${this.currentSpeed} %`;
+        setNumInput('speed-input', this.currentSpeed);
         
         document.getElementById('zoffset-slider').value = this.currentZOffset;
         document.getElementById('zoffset-val').innerText = `0.00 mm`;
+        setNumInput('zoffset-input', this.currentZOffset);
+        const zOverlay = document.getElementById('zoffset-overlay');
+        if (zOverlay) {
+            zOverlay.style.display = 'flex';
+            zOverlay.style.opacity = '1';
+        }
         
         document.getElementById('xoffset-slider').value = this.currentXOffset;
         document.getElementById('xoffset-val').innerText = `0.0 mm`;
+        setNumInput('xoffset-input', this.currentXOffset);
         
         document.getElementById('yoffset-slider').value = this.currentYOffset;
         document.getElementById('yoffset-val').innerText = `0.0 mm`;
+        setNumInput('yoffset-input', this.currentYOffset);
 
         if (!skipUpdate) {
             this.updateGcodeListAsync().then(() => this.saveAppliedState());
@@ -2493,6 +2730,12 @@ self.onmessage = async function(e) {
                     
                     this.rebuild3DScene();
                     this.draw();
+
+                    const hint = document.getElementById('mobile-canvas-hint');
+                    if (hint && window.innerWidth <= 768) {
+                        hint.style.display = 'flex';
+                        hint.style.opacity = '1';
+                    }
                     
                     worker.terminate();
                     resolve();
@@ -4574,16 +4817,18 @@ self.onmessage = async function(e) {
 
         // 1. Draw Bed
         const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-        this.ctx.fillStyle = isLight ? '#ffffff' : '#0d0d12';
+        this.ctx.fillStyle = isLight ? '#f8fafc' : '#0d0d12';
         this.ctx.fillRect(-this.halfBed, -this.halfBed, this.bedSize, this.bedSize);
-        this.ctx.strokeStyle = isLight ? '#cbd5e1' : '#2e2e38';
-        this.ctx.lineWidth = 1 / this.scale;
+        this.ctx.strokeStyle = isLight ? '#64748b' : '#2e2e38';
+        this.ctx.lineWidth = (isLight ? 1.5 : 1) / this.scale;
         this.ctx.strokeRect(-this.halfBed, -this.halfBed, this.bedSize, this.bedSize);
 
-        // Grid
-        this.ctx.strokeStyle = isLight ? '#edf0f5' : '#1b1b22';
-        this.ctx.lineWidth = 0.5 / this.scale;
+        // Grid (20mm intervals with emphasized center lines)
+        const gridColor = isLight ? '#94a3b8' : '#1b1b22';
+        const centerColor = isLight ? '#475569' : '#2e2e38';
+        this.ctx.lineWidth = (isLight ? 0.75 : 0.5) / this.scale;
         for (let i = -this.halfBed; i <= this.halfBed; i += 20) {
+            this.ctx.strokeStyle = (i === 0) ? centerColor : gridColor;
             this.ctx.beginPath(); this.ctx.moveTo(i, -this.halfBed); this.ctx.lineTo(i, this.halfBed); this.ctx.stroke();
             this.ctx.beginPath(); this.ctx.moveTo(-this.halfBed, i); this.ctx.lineTo(this.halfBed, i); this.ctx.stroke();
         }
@@ -5430,6 +5675,19 @@ self.onmessage = async function(e) {
         a.href = url;
         a.download = 'tuned_output.gcode';
         a.click();
+
+        // Mark current settings as saved
+        this.saveAppliedState();
+        if (this.initialKinematicsInputs) {
+            document.querySelectorAll('.k-input').forEach(input => {
+                this.initialKinematicsInputs[input.id] = input.value;
+                input.classList.remove('modified-value');
+            });
+        }
+        this.checkPendingUpdates();
+
+        const isEn = (window.currentLang || localStorage.getItem('layerspy_lang')) === 'en';
+        this.showToast(isEn ? '💾 G-Code successfully exported & saved!' : '💾 G-Code erfolgreich exportiert & gespeichert!', 'success');
     }
 }
 
@@ -5440,44 +5698,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- Mobile UX: Canvas Interaction Lock ---
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        const enableBtn = document.getElementById('enable-interaction-btn');
-        const disableBtn = document.getElementById('disable-interaction-btn');
-        const overlay = document.getElementById('mobile-canvas-overlay');
-        
-        // Show overlay if on mobile screen initially
-        if (window.innerWidth <= 1024) {
-            if (overlay) overlay.style.display = 'flex';
-        }
-        
-        window.addEventListener('resize', () => {
-            if (window.innerWidth <= 1024) {
-                if (overlay && !document.body.classList.contains('canvas-interaction-locked')) {
-                    overlay.style.display = 'flex';
-                }
-            } else {
-                if (overlay) overlay.style.display = 'none';
-                document.body.classList.remove('canvas-interaction-locked');
-                if (disableBtn) disableBtn.style.display = 'none';
-            }
-        });
 
-        if (enableBtn) {
-            enableBtn.addEventListener('click', () => {
-                document.body.classList.add('canvas-interaction-locked');
-            });
-        }
-        
-        if (disableBtn) {
-            disableBtn.addEventListener('click', () => {
-                document.body.classList.remove('canvas-interaction-locked');
-                if (overlay) overlay.style.display = 'flex';
-            });
-        }
-    }, 0);
-});
 
 // Global Modal Functions
 window.openModal = function(id) {
@@ -5493,23 +5714,26 @@ window.closeAllModals = function() {
 };
 
 // --- Dynamic Slider Colors (Left side vs Right side) ---
-document.addEventListener('DOMContentLoaded', () => {
-    const updateSliderColor = (slider) => {
-        const min = parseFloat(slider.min) || 0;
-        const max = parseFloat(slider.max) || 100;
-        const val = parseFloat(slider.value) || 0;
-        // Clamp percentage between 0 and 100
-        let percent = ((val - min) / (max - min)) * 100;
-        percent = Math.max(0, Math.min(100, percent));
-        
-        slider.style.background = `linear-gradient(to right, var(--accent-color) ${percent}%, var(--border-color) ${percent}%)`;
-    };
+window.updateSliderColor = function(slider) {
+    if (!slider) return;
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const val = parseFloat(slider.value) || 0;
+    // Clamp percentage between 0 and 100
+    let percent = ((val - min) / (max - min)) * 100;
+    percent = Math.max(0, Math.min(100, percent));
+    
+    const isModified = slider.classList.contains('is-modified');
+    const fillColor = isModified ? '#ffb300' : 'var(--accent-color)';
+    slider.style.background = `linear-gradient(to right, ${fillColor} ${percent}%, var(--border-color) ${percent}%)`;
+};
 
+document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('input[type="range"].slider').forEach(slider => {
         // Update on input
-        slider.addEventListener('input', () => updateSliderColor(slider));
+        slider.addEventListener('input', () => window.updateSliderColor(slider));
         // Update on load
-        setTimeout(() => updateSliderColor(slider), 100);
+        setTimeout(() => window.updateSliderColor(slider), 100);
     });
 });
 
