@@ -1,0 +1,50 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # 1. Combined HTTPS + non-www Canonical Redirect (Single 301 Hop)
+    RewriteCond %{HTTPS} off [OR]
+    RewriteCond %{HTTP_HOST} ^www\.layerspy\.de$ [NC]
+    RewriteRule ^(.*)$ https://layerspy.de/$1 [R=301,L]
+
+    # 2. Redirect /index.html to / (Prevent Duplicate Content)
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.html [NC]
+    RewriteRule ^index\.html$ https://layerspy.de/ [R=301,L]
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Fonts (1 Year)
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+
+    # Images (1 Year)
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+
+    # CSS, JavaScript (1 Month)
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/x-javascript "access plus 1 month"
+
+    # HTML (Don't cache HTML to ensure updates propagate immediately)
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(woff2|woff|ttf|otf|jpeg|jpg|png|gif|svg|webp|ico)$">
+        Header set Cache-Control "max-age=31536000, public"
+    </FilesMatch>
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "max-age=2592000, public"
+    </FilesMatch>
+</IfModule>

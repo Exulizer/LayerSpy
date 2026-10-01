@@ -1,10 +1,11 @@
-const CACHE_NAME = 'layerspy-v2.2.0';
+const CACHE_NAME = 'layerspy-v2.3.22';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './css/style.css',
-  './js/translations.js?v=4',
-  './js/app_v5.js?v=22',
+  './css/style.css?v=13',
+  './js/translations.js?v=32',
+  './js/app_v5.js?v=70',
+  './js/gcode-analyzer.worker.js',
   './js/demo_gcode.js',
   './assets/logo.png',
   './manifest.json',
@@ -37,16 +38,34 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Network-First for HTML/Navigation to prevent stale cache issues
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Cache-First for static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(event.request).catch(() => {
-        // Fallback for offline navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
+      return fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         }
+        return networkResponse;
       });
     })
   );

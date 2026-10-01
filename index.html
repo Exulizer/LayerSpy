@@ -9,7 +9,7 @@
     <meta name="keywords" content="G-Code Viewer, G-Code Analyzer, 3D Print Simulator, Online GCode Viewer, LayerSpy, G-Code Heatmap, Bambu Studio Analyzer, OrcaSlicer Gcode, PrusaSlicer Gcode, Cura Gcode Viewer, Klipper Motion Planner, VFA Radar, Pressure Advance, 3D printing software">
     <meta name="author" content="LayerSpy">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=13">
     <link rel="canonical" href="https://layerspy.de/" />
     <link rel="alternate" hreflang="x-default" href="https://layerspy.de/" />
     <link rel="alternate" hreflang="en" href="https://layerspy.de/" />
@@ -79,7 +79,7 @@
         "operatingSystem": "Web Browser, Windows, macOS, Linux, Android, iOS",
         "applicationCategory": "DesignApplication",
         "applicationSubCategory": "3DPrintingSoftware",
-        "description": "Professional web-based 3D printing G-Code analyzer and live simulator. Visualize, inspect, and tune G-Code from Bambu Studio, OrcaSlicer, PrusaSlicer, or Cura directly in the browser with speed heatmaps, VFA resonance radar, and Klipper motion planning.",
+        "description": "Professional web-based 3D printing G-Code analyzer, viewer and live kinematics simulator. Visualize, inspect, audit stability, compare files, and tune G-Code from Bambu Studio, OrcaSlicer, PrusaSlicer, or Cura directly in the browser with speed heatmaps, VFA resonance radar, and Klipper motion planning.",
         "url": "https://layerspy.de",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
         "browserRequirements": "Requires WebGL support",
@@ -88,8 +88,10 @@
           "2D & 3D WebGL Solid Tube Toolpath Rendering",
           "VFA (Vertical Fine Artifacts) & Stepper Resonance Radar",
           "Corner Deceleration & Pressure Advance Auditor",
-          "Kinematic 2D Trapezoidal Motion Planner",
-          "Speed, Kinematics & Efficiency Heatmaps",
+          "Kinematic 2D Trapezoidal Motion Planner (Klipper/Marlin)",
+          "Center of Mass (CoM) & First-Layer Footprint Stability Check",
+          "Side-by-Side Dual G-Code A/B Comparison Diff Engine",
+          "Volumetric Flow Rate & Speed Heatmaps",
           "Individual Feature-Filter Toggles (Outer Wall, Infill, etc.)",
           "Universal Slicer Support (Bambu Studio, OrcaSlicer, PrusaSlicer, Cura)"
         ],
@@ -97,7 +99,7 @@
         "aggregateRating": {
           "@type": "AggregateRating",
           "ratingValue": "5.0",
-          "ratingCount": "128",
+          "ratingCount": "142",
           "bestRating": "5"
         }
       },
@@ -105,7 +107,7 @@
         "@context": "https://schema.org",
         "@type": "HowTo",
         "name": "How to Analyze and Simulate 3D Print G-Code Online",
-        "description": "Step-by-step guide to inspecting print speed, VFA resonance risk, and Klipper kinematics using LayerSpy.",
+        "description": "Step-by-step guide to inspecting print speed, VFA resonance risk, stability, and Klipper kinematics using LayerSpy.",
         "step": [
           {
             "@type": "HowToStep",
@@ -119,8 +121,8 @@
           },
           {
             "@type": "HowToStep",
-            "name": "Audit VFA and Corner Bulging",
-            "text": "Check the VFA Radar for stepper motor resonance speeds and the Corner Auditor for sharp deceleration points."
+            "name": "Audit VFA, Pressure Advance and Stability",
+            "text": "Check the VFA Radar for stepper resonance speeds, Corner Auditor for deceleration points, and Stability Check for tipping risks."
           },
           {
             "@type": "HowToStep",
@@ -159,10 +161,18 @@
           },
           {
             "@type": "Question",
-            "name": "What is Z-Seam Alignment and why should I check it?",
+            "name": "How does the Stability & Bed Adhesion Check work?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "The Z-seam is the start/stop point on every perimeter layer where the extruder begins and ends. LayerSpy's Z-Seam tool highlights all layer start points in 3D, letting you verify whether your slicer has hidden the seam in sharp inner corners or placed it away from visible aesthetic faces."
+              "text": "LayerSpy calculates the cumulative Center of Mass (CoM) per layer and the convex hull footprint of the first layer. It evaluates tipping angle, slenderness ratio, and specific adhesion area per gram to give a traffic-light rating (Green/Yellow/Red) and alert you to tipping risks or warping before printing."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the Dual G-Code A/B Comparison work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "LayerSpy parses two G-Code files side-by-side in your browser, comparing print times, filament weights, retraction counts, feature times, and visual toolpath differences via a 0.5mm raster diff engine."
             }
           },
           {
@@ -216,13 +226,44 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+html {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 body {
     font-family: 'Inter', -apple-system, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
-    /* Removed overflow:hidden so page can scroll to SEO content */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 /* --- LOADING OVERLAY --- */
@@ -272,6 +313,7 @@ body {
     margin: 0 auto;
     position: relative;
     background-color: var(--bg-color);
+    overflow: visible !important;
 }
 
 /* Top Navbar */
@@ -318,9 +360,11 @@ body {
 
 /* Main Workspace */
 .main-workspace {
+    position: relative;
     display: flex;
     flex: none;
-    height: calc(100vh - 60px); /* Exactly fill the viewport under header */
+    height: calc(100vh - 152px);
+    min-height: 500px;
     overflow: hidden; /* children will scroll */
 }
 
@@ -329,30 +373,46 @@ body {
     background-color: var(--panel-bg);
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
 }
-.sidebar::-webkit-scrollbar {
-    width: 8px;
+.sidebar::-webkit-scrollbar,
+.gcode-list::-webkit-scrollbar,
+.modal-content-scroll::-webkit-scrollbar {
+    width: 6px;
 }
-.sidebar::-webkit-scrollbar-thumb {
+.sidebar::-webkit-scrollbar-thumb,
+.gcode-list::-webkit-scrollbar-thumb,
+.modal-content-scroll::-webkit-scrollbar-thumb {
     background: var(--border-color);
-    border-radius: 10px;
+    border-radius: 6px;
 }
 
 .left-panel {
-    width: clamp(420px, 25%, 550px);
+    width: 340px;
     flex-shrink: 0;
+    min-width: 0;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
     border-right: 1px solid var(--border-color);
     transition: width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+    overflow-y: auto;
     overflow-x: hidden;
 }
 .right-panel {
-    width: clamp(420px, 25%, 550px);
+    width: 340px;
     flex-shrink: 0;
     min-width: 0;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
     border-left: 1px solid var(--border-color);
     transition: width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
-    overflow-x: hidden;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
 }
 .panel-collapsed {
     width: 0 !important;
@@ -600,13 +660,26 @@ select.upload-btn option, select.theme-select option {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.85rem;
     padding: 10px;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
-.gcode-list::-webkit-scrollbar {
-    width: 6px;
+.right-panel {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
-.gcode-list::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 10px;
+.right-panel * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+.gcode-list::-webkit-scrollbar,
+.right-panel::-webkit-scrollbar,
+.right-panel *::-webkit-scrollbar,
+#gcode-view::-webkit-scrollbar,
+#tab-analyse::-webkit-scrollbar,
+#mod-view::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 .gcode-line {
     padding: 6px 10px;
@@ -1045,13 +1118,15 @@ canvas {
         display: none !important;
     }
     body {
-        overflow-y: auto;
+        overflow-x: hidden;
+        overflow-y: visible;
     }
     .app-layout {
         display: block;
         height: auto;
         min-height: 100vh;
         min-height: 100dvh;
+        overflow: visible !important;
     }
     .main-workspace {
         flex-direction: column;
@@ -1144,19 +1219,29 @@ canvas {
         --sar: env(safe-area-inset-right, 0px);
     }
 
-    html, body {
-        overflow-y: auto;
+    html {
+        overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
         min-height: 100vh;
         min-height: 100dvh;
+        height: auto !important;
+    }
+
+    body {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: auto !important;
     }
 
     .app-layout {
         display: flex;
         flex-direction: column;
-        height: auto;
+        height: auto !important;
         min-height: 100vh;
         min-height: 100dvh;
+        overflow: visible !important;
         padding-top: var(--sat);
     }
 
@@ -2066,6 +2151,7 @@ html[lang="en"] .de-only { display: none !important; }
 
 .seo-details summary::-webkit-details-marker { display: none !important; }
 .seo-details summary { list-style: none !important; }
+.seo-details:not([open]) > :not(summary) { display: none !important; }
 .seo-details[open] .seo-chevron { transform: rotate(180deg); }
 .seo-details[open] .seo-summary { background: rgba(0, 188, 212, 0.06); }
 .seo-details:hover { border-color: rgba(0, 188, 212, 0.35) !important; }
@@ -2074,13 +2160,96 @@ html[lang="en"] .de-only { display: none !important; }
     .preload * {
         transition: none !important;
     }
+
+    /* Global Viewport & Container Containment (Prevents horizontal overflow on any monitor size) */
+    html {
+        max-width: 100vw;
+        overflow-x: hidden;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+    body {
+        max-width: 100vw;
+        overflow-x: hidden;
+        overflow-y: visible;
+        box-sizing: border-box;
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    .main-workspace, .center-panel, #canvas-container {
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+
+    .app-layout {
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow: visible !important;
+    }
+
+    /* Canvas Floating Top Toolbar & Badges Responsive Layout */
+    #canvas-top-toolbar {
+        max-width: calc(100% - 24px);
+        box-sizing: border-box;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    #canvas-top-toolbar > div {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    #canvas-compare-badge {
+        max-width: calc(100% - 24px);
+        box-sizing: border-box;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    @media (max-width: 1280px) {
+        #canvas-top-toolbar {
+            gap: 6px;
+        }
+        #color-mode-select {
+            max-width: 110px;
+            font-size: 0.74rem;
+            padding: 3px 6px;
+        }
+        #filter-popover-btn, #toggle-hud-btn, #zen-view-btn {
+            padding: 3px 6px;
+            font-size: 0.74rem;
+        }
+    }
+
+    @media (max-width: 600px) {
+        #canvas-top-toolbar {
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            max-width: calc(100% - 16px);
+        }
+        #canvas-compare-badge {
+            top: 50px;
+            right: 8px;
+            font-size: 0.72rem;
+            padding: 3px 8px;
+        }
+    }
 </style>
     
     <!-- Three.js (Deferred to avoid render blocking) -->
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-    <script defer src="js/translations.js?v=17"></script>
-    <script src="js/app_v5.js?v=46" defer></script>
+    <script defer src="js/translations.js?v=32"></script>
+    <script src="js/app_v5.js?v=70" defer></script>
 </head>
 <body class="dark-mode preload">
 
@@ -2093,9 +2262,9 @@ html[lang="en"] .de-only { display: none !important; }
     <div class="app-layout">
         <!-- HEADER -->
         <header class="top-navbar">
-            <a href="/" class="nav-left" style="display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer;" title="LayerSpy Startseite">
-                <img src="assets/logo.webp" alt="LayerSpy Logo" width="48" height="48" style="height: 48px; width: 48px; object-fit: contain; border-radius: 8px; mix-blend-mode: lighten; filter: brightness(0.8) contrast(1.2);">
-                <div class="brand-title" style="font-size: 1.6rem; margin: 0; color: #ffffff; font-weight: 700; letter-spacing: 0.5px;">layerspy<span style="color: #00bcd4;">.de</span></div>
+            <a href="/" class="nav-left" style="display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer;" title="LayerSpy Startseite">
+                <img src="assets/logo.webp" alt="LayerSpy Logo" width="38" height="38" style="height: 38px; width: 38px; object-fit: contain; border-radius: 6px; mix-blend-mode: lighten; filter: brightness(0.85) contrast(1.2);">
+                <div class="brand-title" style="font-size: 1.45rem; margin: 0; color: #ffffff; font-weight: 700; letter-spacing: 0.5px; line-height: 1;">layerspy<span style="color: #00bcd4;">.de</span></div>
             </a>
             <div class="nav-center">
                 <label for="file-input" class="upload-btn" title="Or just drag & drop a file into the window" data-i18n-title="title.1" data-i18n="nav.upload">📁 Upload file or Drag & Drop</label>
@@ -2105,7 +2274,7 @@ html[lang="en"] .de-only { display: none !important; }
             <div class="nav-right" style="display: flex; gap: 10px; align-items: center;">
                 <div class="lang-switcher" style="display:flex; align-items:center; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
                     <button id="lang-en" style="background:var(--accent-color); color:#fff; border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">EN</button>
-                    <button id="lang-de" style="background:transparent; color:rgba(255,255,255,0.5); border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">DE</button>
+                    <button id="lang-de" style="background:transparent; color:rgba(255,255,255,0.8); border:none; padding: 4px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; cursor:pointer; transition: all 0.3s;">DE</button>
                 </div>
                 <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="window.toggleTheme()" title="Toggle light / dark mode" data-i18n-title="theme.toggle" aria-label="Design wechseln">
                     <span class="theme-icon-dark">🌙</span>
@@ -2119,18 +2288,17 @@ html[lang="en"] .de-only { display: none !important; }
             </div>
         </header>
 
-        <!-- WELCOME HERO FOR SEO & USER -->
-        <div id="welcome-hero" style="width: 100%; min-height: 160px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 26px 20px; box-sizing: border-box;">
-            <div style="max-width: 900px; margin: 0 auto; text-align: center;">
-                <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.35); padding: 5px 14px; border-radius: 20px; margin-bottom: 12px; font-size: 0.85rem; color: #00e676; font-weight: 600;">
-                    <span style="font-size: 0.95rem;">🔒</span> <span data-i18n="hero.badge">100% Local & Private – Files never leave your browser</span>
+        <!-- WELCOME HERO / SEO H1 SUBBAR (Tool-First, non-intrusive) -->
+        <div id="welcome-hero" style="width: 100%; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 12px 20px; box-sizing: border-box;">
+            <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0, 230, 118, 0.35); padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; color: #00e676; font-weight: 600;">
+                        <span>🔒</span> <span data-i18n="hero.badge">100% Local &amp; Private – 0 Cloud Uploads</span>
+                    </div>
+                    <h1 style="color: var(--accent-color); margin: 0; font-size: 1.05rem; font-weight: 700; line-height: 1.3;" data-i18n="hero.title">LayerSpy — Online G-Code Analyzer &amp; 3D Kinematics Simulator</h1>
                 </div>
-                <h1 style="color: var(--accent-color); margin-bottom: 12px; font-size: 1.5rem;" data-i18n="hero.title">LayerSpy – Free Online G-Code Viewer, Analyzer & 3D Simulator</h1>
-                <p style="line-height: 1.6; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
-                    <span data-i18n="hero.desc_p1">Upload your file from slicers like Bambu Studio, OrcaSlicer, PrusaSlicer, or Cura</span>
-                    <span data-i18n="hero.desc_p2">(or via drag & drop) and inspect every single toolpath layer by layer.</span>
-                    <span data-i18n="hero.desc_p3">100% Client-Side WebGL engine & offline storage.</span>
-                    <strong data-i18n="hero.desc_p4" style="color: var(--accent-color);">All files & settings are processed locally on your PC – zero server uploads.</strong>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; max-width: 700px;">
+                    <span data-i18n="hero.desc_short">Inspect 3D toolpaths layer-by-layer, audit VFA resonance speeds, Pressure Advance corner bulging, and verify print stability for Bambu Studio, OrcaSlicer, PrusaSlicer &amp; Cura.</span>
                 </p>
             </div>
         </div>
@@ -2175,9 +2343,9 @@ html[lang="en"] .de-only { display: none !important; }
                         <!-- Düse -->
                         <div class="widget">
                             <div class="widget-title">
-                                <span data-tooltip="Temperatur des Hotends. Höhere Werte verbessern die Layerhaftung, zu hohe Werte verursachen Stringing." data-i18n-tooltip="tooltip.2" data-i18n="tuning.nozzle">Düse (Hotend)</span>
+                                <label for="temp-input" data-tooltip="Temperatur des Hotends. Höhere Werte verbessern die Layerhaftung, zu hohe Werte verursachen Stringing." data-i18n-tooltip="tooltip.2" data-i18n="tuning.nozzle" style="cursor: pointer;">Düse (Hotend)</label>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="number" id="temp-input" class="widget-num-input" value="205" min="150" max="300" step="5" inputmode="numeric" aria-label="Hotend Temperatur">
+                                    <input type="number" id="temp-input" name="temp_input" class="widget-num-input" value="205" min="150" max="300" step="5" inputmode="numeric" aria-label="Hotend Temperatur">
                                     <span class="widget-unit">°C</span>
                                     <span id="temp-val" class="accent" style="display:none;" data-i18n="temp.nozzle">205 °C</span>
                                 </div>
@@ -2187,9 +2355,9 @@ html[lang="en"] .de-only { display: none !important; }
                         <!-- Druckbett -->
                         <div class="widget">
                             <div class="widget-title">
-                                <span data-tooltip="Beheiztes Druckbett. Verhindert das Ablösen des Objekts während des Drucks (Warping)." data-i18n-tooltip="tooltip.3" data-i18n="tuning.bed">Druckbett (Bed)</span>
+                                <label for="bed-input" data-tooltip="Beheiztes Druckbett. Verhindert das Ablösen des Objekts während des Drucks (Warping)." data-i18n-tooltip="tooltip.3" data-i18n="tuning.bed" style="cursor: pointer;">Druckbett (Bed)</label>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="number" id="bed-input" class="widget-num-input" value="60" min="0" max="120" step="5" inputmode="numeric" aria-label="Heizbett Temperatur">
+                                    <input type="number" id="bed-input" name="bed_input" class="widget-num-input" value="60" min="0" max="120" step="5" inputmode="numeric" aria-label="Heizbett Temperatur">
                                     <span class="widget-unit">°C</span>
                                     <span id="bed-val" class="accent" style="display:none;" data-i18n="temp.bed">60 °C</span>
                                 </div>
@@ -2199,9 +2367,9 @@ html[lang="en"] .de-only { display: none !important; }
                         <!-- Retract -->
                         <div class="widget">
                             <div class="widget-title">
-                                <span data-tooltip="Rückzug des Filaments bei Leerfahrten. Zu wenig führt zu Fäden (Stringing), zu viel zu Verstopfungen." data-i18n-tooltip="tooltip.4" data-i18n="tuning.retract">Retract (Einzug)</span>
+                                <label for="retract-input" data-tooltip="Rückzug des Filaments bei Leerfahrten. Zu wenig führt zu Fäden (Stringing), zu viel zu Verstopfungen." data-i18n-tooltip="tooltip.4" data-i18n="tuning.retract" style="cursor: pointer;">Retract (Einzug)</label>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="number" id="retract-input" class="widget-num-input" value="0.8" min="0" max="5" step="0.1" inputmode="decimal" aria-label="Retract Länge">
+                                    <input type="number" id="retract-input" name="retract_input" class="widget-num-input" value="0.8" min="0" max="5" step="0.1" inputmode="decimal" aria-label="Retract Länge">
                                     <span class="widget-unit">mm</span>
                                     <span id="retract-val" class="accent" style="display:none;" data-i18n="retract.val">0.8 mm</span>
                                 </div>
@@ -2211,9 +2379,9 @@ html[lang="en"] .de-only { display: none !important; }
                         <!-- Lüfter -->
                         <div class="widget">
                             <div class="widget-title">
-                                <span data-tooltip="Kühlung des extrudierten Materials. Wichtig für Überhänge (PLA = 100%, ABS/PETG = wenig)." data-i18n-tooltip="tooltip.5" data-i18n="widget.fan">Bauteillüfter</span>
+                                <label for="fan-input" data-tooltip="Kühlung des extrudierten Materials. Wichtig für Überhänge (PLA = 100%, ABS/PETG = wenig)." data-i18n-tooltip="tooltip.5" data-i18n="widget.fan" style="cursor: pointer;">Bauteillüfter</label>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="number" id="fan-input" class="widget-num-input" value="100" min="0" max="100" step="1" inputmode="numeric" aria-label="Lüfterdrehzahl">
+                                    <input type="number" id="fan-input" name="fan_input" class="widget-num-input" value="100" min="0" max="100" step="1" inputmode="numeric" aria-label="Lüfterdrehzahl">
                                     <span class="widget-unit">%</span>
                                     <span id="fan-val" class="accent" style="display:none;">100 %</span>
                                 </div>
@@ -2224,9 +2392,9 @@ html[lang="en"] .de-only { display: none !important; }
                         <!-- Speed -->
                         <div class="widget">
                             <div class="widget-title">
-                                <span data-tooltip="Globale Druckgeschwindigkeit. Ein Wert unter 100% verlangsamt den Druck, darüber beschleunigt ihn." data-i18n-tooltip="tooltip.6" data-i18n="speed.label">Geschwindigkeit</span>
+                                <label for="speed-input" data-tooltip="Globale Druckgeschwindigkeit. Ein Wert unter 100% verlangsamt den Druck, darüber beschleunigt ihn." data-i18n-tooltip="tooltip.6" data-i18n="speed.label" style="cursor: pointer;">Geschwindigkeit</label>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="number" id="speed-input" class="widget-num-input" value="100" min="50" max="200" step="5" inputmode="numeric" aria-label="Druckgeschwindigkeit">
+                                    <input type="number" id="speed-input" name="speed_input" class="widget-num-input" value="100" min="50" max="200" step="5" inputmode="numeric" aria-label="Druckgeschwindigkeit">
                                     <span class="widget-unit">%</span>
                                     <span id="speed-val" class="accent" style="display:none;">100 %</span>
                                 </div>
@@ -2237,9 +2405,9 @@ html[lang="en"] .de-only { display: none !important; }
                         <!-- Z-Offset -->
                         <div class="widget" id="zoffset-widget">
                             <div class="widget-title" style="display: flex; justify-content: space-between; align-items: center;">
-                                <span data-tooltip="Höhenkorrektur der Düse. Negativer Wert: Düse näher ans Bett. Positiver Wert: Düse weiter weg." data-i18n-tooltip="tooltip.7" data-i18n="widget.zoffset">Z-Offset</span>
+                                <label for="zoffset-input" data-tooltip="Höhenkorrektur der Düse. Negativer Wert: Düse näher ans Bett. Positiver Wert: Düse weiter weg." data-i18n-tooltip="tooltip.7" data-i18n="widget.zoffset" style="cursor: pointer;">Z-Offset</label>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="number" id="zoffset-input" class="widget-num-input" value="0.00" min="-2.0" max="2.0" step="0.05" inputmode="decimal" aria-label="Z-Offset">
+                                    <input type="number" id="zoffset-input" name="zoffset_input" class="widget-num-input" value="0.00" min="-2.0" max="2.0" step="0.05" inputmode="decimal" aria-label="Z-Offset">
                                     <span class="widget-unit">mm</span>
                                     <span id="zoffset-val" class="accent" style="display:none;" data-i18n="zoffset.val">0.00 mm</span>
                                 </div>
@@ -2266,6 +2434,173 @@ html[lang="en"] .de-only { display: none !important; }
                             <span style="flex: 1; height: 1px; background: var(--border-color);"></span>
                         </div>
 
+                        <!-- Stability & Bed Adhesion Check (Default Collapsed) -->
+                        <div class="widget collapsible-widget" id="stability-widget">
+                            <div class="widget-title" id="stability-widget-toggle" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="window.gcodeApp && window.gcodeApp.toggleStabilityCard()">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span id="stability-chevron" style="font-size: 0.75rem; transition: transform 0.2s; display: inline-block;">▶</span>
+                                    <span data-tooltip="Analysiert Schwerpunkt (CoM), Kippwinkel, Schlankheit und Haftfläche zur Erkennung von Kipp- und Warping-Risiken." data-i18n-tooltip="tooltip.stability" data-i18n="tuning.stability" style="font-weight: 600;">⚖️ Stabilität &amp; Haftung</span>
+                                </div>
+                                <span id="stability-header-badge" style="padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: bold; background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.35);" data-i18n="stability.badge_init">Ausstehend</span>
+                            </div>
+
+                            <!-- Collapsed Content Body (Default hidden) -->
+                            <div id="stability-content-body" style="display: none; margin-top: 10px; flex-direction: column; gap: 10px;">
+                                
+                                <!-- Verdict Traffic Light Banner -->
+                                <div id="stability-verdict-box" style="background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-color);" data-i18n="stability.verdict_title">Gesamtbewertung</span>
+                                        <span id="stability-verdict-pill" style="font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.4);" data-i18n="stability.status_green">🟢 Stabil</span>
+                                    </div>
+                                    <p id="stability-verdict-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0;" data-i18n="stability.desc_none">Keine G-Code-Datei geladen.</p>
+                                </div>
+
+                                <!-- Material Selector -->
+                                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                    <label for="stability-material-select" style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer;" data-i18n="stability.material_label">Filament-Material:</label>
+                                    <select id="stability-material-select" name="stability_material_select" aria-label="Filament Material" class="theme-select" style="padding: 2px 6px; font-size: 0.75rem; border-radius: 4px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer;" onchange="window.gcodeApp && window.gcodeApp.onMaterialChange(this.value)">
+                                        <option value="PLA" selected>PLA (1.24 g/cm³)</option>
+                                        <option value="PETG">PETG (1.27 g/cm³)</option>
+                                        <option value="ABS">ABS / ASA (1.05 g/cm³)</option>
+                                        <option value="TPU">TPU (1.21 g/cm³)</option>
+                                        <option value="PA">PA / Nylon (1.14 g/cm³)</option>
+                                        <option value="PC">PC (1.20 g/cm³)</option>
+                                        <option value="OTHER" data-i18n="stability.mat_other">Sonstiges (1.20 g/cm³)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Key Metrics Grid -->
+                                <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.74rem;">
+                                    <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                        <span data-tooltip="Höhe des Schwerpunkts über dem Druckbett. Je tiefer der Schwerpunkt, desto stabiler der Druck." data-i18n-tooltip="tooltip.com_height">🎯 <span data-i18n="stability.com_height">Schwerpunkthöhe (Z):</span></span>
+                                        <strong id="stability-com-z" style="color: var(--text-color);">-- mm</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                        <span data-tooltip="Kürzester horizontaler Abstand der Schwerpunkt-Projektion zum Rand der Auflagefläche (Stützpolygon)." data-i18n-tooltip="tooltip.margin">📐 <span data-i18n="stability.margin">Stabilitätsreserve:</span></span>
+                                        <strong id="stability-margin" style="color: #4caf50;">-- mm</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                        <span data-tooltip="Kippwinkel = atan(Randabstand / Schwerpunkthöhe). Unter 25° besteht Wackelrisiko, unter 12° akutes Kipprisiko." data-i18n-tooltip="tooltip.tip_angle">📐 <span data-i18n="stability.tipping_angle">Kippwinkel:</span></span>
+                                        <strong id="stability-tipping-angle" style="color: #4caf50;">--°</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                        <span data-tooltip="Verhältnis von Gesamthöhe zur schmalsten Breite der Auflagefläche (H:W). Über 4:1 steigt die Schwingungsneigung." data-i18n-tooltip="tooltip.slenderness">📏 <span data-i18n="stability.slenderness">Schlankheitsgrad (H:W):</span></span>
+                                        <strong id="stability-slenderness" style="color: var(--text-color);">--</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                        <span data-tooltip="Tatsächlich extrudierte Fläche des 1. Layers sowie spezifische Haftfläche pro Gramm Modellgewicht." data-i18n-tooltip="tooltip.footprint">🧲 <span data-i18n="stability.adhesion_area">Auflagefläche:</span></span>
+                                        <strong id="stability-adhesion-stat" style="color: var(--text-color);">-- mm² (-- mm²/g)</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                        <span data-tooltip="Berechnetes Bauteilgewicht (Filamentvolumen × Materialdichte)." data-i18n-tooltip="tooltip.calc_mass">⚖️ <span data-i18n="stability.weight">Gewicht (berechnet):</span></span>
+                                        <strong id="stability-weight-stat" style="color: var(--text-color);">-- g</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Advisories (Brim / Warping / Multi-Object) -->
+                                <div id="stability-advisories" style="display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
+                                    <div id="stability-brim-note" style="display: none; font-size: 0.72rem; color: #ffb300; background: rgba(255, 179, 0, 0.1); padding: 4px 6px; border-radius: 4px; border-left: 3px solid #ffb300;"></div>
+                                    <div id="stability-warping-note" style="display: none; font-size: 0.72rem; color: #ff6b6b; background: rgba(255, 107, 107, 0.1); padding: 4px 6px; border-radius: 4px; border-left: 3px solid #ff6b6b;"></div>
+                                    <div id="stability-multiobj-note" style="display: none; font-size: 0.70rem; color: var(--text-muted);"></div>
+                                </div>
+
+                                <!-- 3D Viewer Marker Toggle -->
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-color); cursor: pointer; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px; margin-top: 2px;">
+                                    <input type="checkbox" id="toggle-stability-3d" name="toggle_stability_3d" style="cursor: pointer;" onchange="window.gcodeApp && window.gcodeApp.toggleStabilityVisuals(this.checked)">
+                                    <span data-i18n="stability.show_3d_toggle">👁️ Schwerpunkt &amp; Footprint im 3D/2D-Viewer anzeigen</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- A/B Compare Widget -->
+                        <div class="widget" id="ab-compare-widget" style="grid-column: 1 / -1;">
+                            <label class="widget-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="window.gcodeApp && window.gcodeApp.toggleCompareCard()">
+                                <span data-tooltip="Vergleicht zwei G-Codes (Druckzeit, Material, Flow, Retracts, Risiken) mit 2D/3D-Überlagerung und Differenz-Ansicht." data-i18n-tooltip="tooltip.ab_compare" data-i18n="tuning.ab_compare">🔀 A/B-Vergleich (Zwei G-Codes)</span>
+                                <span id="ab-compare-chevron" style="font-size: 0.8rem; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+                            </label>
+                            <div id="ab-compare-body" style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+                                <!-- File B Upload Dropzone (shown when no File B is loaded) -->
+                                <div id="ab-compare-upload-zone" style="border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 16px; text-align: center; background: rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s;" onclick="document.getElementById('compare-file-b-input').click()" ondragover="event.preventDefault(); this.style.borderColor='var(--accent-color, #00e5ff)';" ondragleave="this.style.borderColor='rgba(255,255,255,0.2)';" ondrop="event.preventDefault(); this.style.borderColor='rgba(255,255,255,0.2)'; if(event.dataTransfer.files.length) window.gcodeApp && window.gcodeApp.handleFileBSelect(event.dataTransfer.files[0]);">
+                                    <input type="file" id="compare-file-b-input" accept=".gcode,.gco,.g,.nc,.bgcode" style="display: none;" onchange="if(this.files.length) window.gcodeApp && window.gcodeApp.handleFileBSelect(this.files[0])">
+                                    <div style="font-size: 1.5rem; margin-bottom: 4px;">📂</div>
+                                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);" data-i18n="compare.drop_zone">Zweite G-Code-Datei (B) auswählen oder hierher ziehen</div>
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;" data-i18n="compare.drop_hint">Vergleiche Slicer-Profile, Settings oder Änderungen 100% lokal im Browser</div>
+                                </div>
+
+                                <!-- Compare Content (shown when File B is loaded) -->
+                                <div id="ab-compare-content" style="display: none; flex-direction: column; gap: 12px;">
+                                    <!-- File Info & Close Header -->
+                                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.78rem;">
+                                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                            <div><span style="color: #00e5ff; font-weight: bold;">[A]</span> <span id="compare-name-a" style="color: var(--text-color);">Datei A</span></div>
+                                            <div><span style="color: #ff9800; font-weight: bold;">[B]</span> <span id="compare-name-b" style="color: var(--text-color);">Datei B</span></div>
+                                        </div>
+                                        <button class="btn btn-secondary btn-sm" onclick="window.gcodeApp && window.gcodeApp.clearFileB()" style="padding: 2px 8px; font-size: 0.72rem;" data-i18n="compare.close_btn">✕ Schließen</button>
+                                    </div>
+
+                                    <!-- Viewer Comparison Controls -->
+                                    <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                            <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-color);" data-i18n="compare.viewer_mode">Viewer-Ansicht:</span>
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;" id="compare-mode-buttons">
+                                                <button type="button" class="btn btn-xs compare-mode-btn" data-mode="onlyA" onclick="window.gcodeApp && window.gcodeApp.setCompareViewMode('onlyA')" title="Zeigt ausschließlich Datei A"><span style="color: #00e5ff; font-size: 0.9rem;">●</span> <span data-i18n="compare.mode_only_a">Nur A</span></button>
+                                                <button type="button" class="btn btn-xs compare-mode-btn" data-mode="onlyB" onclick="window.gcodeApp && window.gcodeApp.setCompareViewMode('onlyB')" title="Zeigt ausschließlich Datei B"><span style="color: #ff9800; font-size: 0.9rem;">●</span> <span data-i18n="compare.mode_only_b">Nur B</span></button>
+                                                <button type="button" class="btn btn-xs compare-mode-btn active" data-mode="overlay" onclick="window.gcodeApp && window.gcodeApp.setCompareViewMode('overlay')" title="Überlagert beide Dateien (A in Cyan, B in Orange)"><span style="color: #00e5ff; font-size: 0.8rem;">●</span><span style="color: #ff9800; font-size: 0.8rem; margin-left: -2px;">●</span> <span data-i18n="compare.mode_overlay">Überlagerung (A+B)</span></button>
+                                                <button type="button" class="btn btn-xs compare-mode-btn" data-mode="diff" onclick="window.gcodeApp && window.gcodeApp.setCompareViewMode('diff')" title="Hebt Abweichungen hervor (Cyan: Nur A, Orange: Nur B, Grau: Identisch)"><span>⚡</span> <span data-i18n="compare.mode_diff">Differenz (Δ)</span></button>
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                                            <span id="compare-align-info">ΔX: 0.0mm, ΔY: 0.0mm</span>
+                                            <button type="button" class="btn btn-xs btn-secondary" id="compare-align-btn" onclick="window.gcodeApp && window.gcodeApp.toggleAlignB()" data-i18n="compare.align_btn">🎯 B an A ausrichten</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Auto Conclusion Callout -->
+                                    <div id="compare-conclusion" style="font-size: 0.78rem; line-height: 1.4; padding: 8px 10px; border-radius: 6px; background: rgba(0, 229, 255, 0.08); border-left: 3px solid #00e5ff; color: var(--text-color);">
+                                    </div>
+
+                                    <!-- Metric Summary Table -->
+                                    <div style="overflow-x: auto; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
+                                        <table id="compare-summary-table" style="width: 100%; border-collapse: collapse; font-size: 0.72rem; text-align: left;">
+                                            <thead style="position: sticky; top: 0; background: #161b22; z-index: 1;">
+                                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                                    <th style="padding: 6px 8px;" data-i18n="compare.col_metric">Metrik</th>
+                                                    <th style="padding: 6px 8px; color: #00e5ff;" data-i18n="compare.col_a">Datei A</th>
+                                                    <th style="padding: 6px 8px; color: #ff9800;" data-i18n="compare.col_b">Datei B</th>
+                                                    <th style="padding: 6px 8px;" data-i18n="compare.col_delta">Delta (Δ)</th>
+                                                    <th style="padding: 6px 8px;" data-i18n="compare.col_diff">Diff %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="compare-summary-tbody">
+                                                <!-- Populated dynamically via JS -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Interactive Comparison Charts -->
+                                    <div style="display: flex; flex-direction: column; gap: 6px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-color);" data-i18n="compare.chart_title">Grafischer Verlauf:</span>
+                                            <div style="display: flex; gap: 4px;" id="compare-chart-tabs">
+                                                <button type="button" class="btn btn-xs compare-tab-btn active" data-chart="time" onclick="window.gcodeApp && window.gcodeApp.setCompareChartMetric('time')" data-i18n="compare.tab_time">Zeit / Layer</button>
+                                                <button type="button" class="btn btn-xs compare-tab-btn" data-chart="filament" onclick="window.gcodeApp && window.gcodeApp.setCompareChartMetric('filament')" data-i18n="compare.tab_filament">Filament / Layer</button>
+                                                <button type="button" class="btn btn-xs compare-tab-btn" data-chart="speed" onclick="window.gcodeApp && window.gcodeApp.setCompareChartMetric('speed')" data-i18n="compare.tab_speed">Speed / Layer</button>
+                                                <button type="button" class="btn btn-xs compare-tab-btn" data-chart="feature" onclick="window.gcodeApp && window.gcodeApp.setCompareChartMetric('feature')" data-i18n="compare.tab_features">Features</button>
+                                            </div>
+                                        </div>
+                                        <div style="position: relative; width: 100%; height: 160px; background: rgba(0,0,0,0.3); border-radius: 4px; overflow: hidden;">
+                                            <canvas id="compare-chart-canvas" width="400" height="160" style="width: 100%; height: 100%; display: block; cursor: crosshair;"></canvas>
+                                            <div id="compare-chart-tooltip" style="display: none; position: absolute; background: rgba(15,23,42,0.95); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 0.70rem; color: #fff; pointer-events: none; z-index: 10; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Markdown Export Button -->
+                                    <button class="btn btn-secondary btn-sm" onclick="window.gcodeApp && window.gcodeApp.exportCompareMarkdown()" style="width: 100%; font-size: 0.75rem;" data-i18n="compare.export_md_btn">📋 Vergleich als Markdown kopieren</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- VFA Radar -->
                         <div class="widget" id="vfa-widget">
                             <label class="widget-title" style="display: flex; justify-content: space-between;">
@@ -2273,23 +2608,25 @@ html[lang="en"] .de-only { display: none !important; }
                             </label>
                             <div style="display: flex; flex-direction: column; gap: 8px;">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
-                                    <span>Band 1 (mm/s):</span>
+                                    <label for="vfa1-min">Band 1 (mm/s):</label>
                                     <span id="vfa1-val" class="accent">45 - 65</span>
                                 </div>
                                 <div style="display: flex; gap: 5px;">
-                                    <input type="number" id="vfa1-min" value="45" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
-                                    <input type="number" id="vfa1-max" value="65" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
+                                    <label for="vfa1-max" class="sr-only">Band 1 Maximum (mm/s)</label>
+                                    <input type="number" id="vfa1-min" name="vfa1_min" value="45" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric" aria-label="VFA Band 1 Minimum Speed">
+                                    <input type="number" id="vfa1-max" name="vfa1_max" value="65" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric" aria-label="VFA Band 1 Maximum Speed">
                                 </div>
                                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
-                                    <span>Band 2 (mm/s):</span>
+                                    <label for="vfa2-min">Band 2 (mm/s):</label>
                                     <span id="vfa2-val" class="accent">90 - 110</span>
                                 </div>
                                 <div style="display: flex; gap: 5px;">
-                                    <input type="number" id="vfa2-min" value="90" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
-                                    <input type="number" id="vfa2-max" value="110" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric">
+                                    <label for="vfa2-max" class="sr-only">Band 2 Maximum (mm/s)</label>
+                                    <input type="number" id="vfa2-min" name="vfa2_min" value="90" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric" aria-label="VFA Band 2 Minimum Speed">
+                                    <input type="number" id="vfa2-max" name="vfa2_max" value="110" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 2px 5px; font-size: 0.8rem;" inputmode="numeric" aria-label="VFA Band 2 Maximum Speed">
                                 </div>
                                 <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 4px;">
-                                    <input type="checkbox" id="vfa-outer-only-btn" checked style="cursor: pointer;">
+                                    <input type="checkbox" id="vfa-outer-only-btn" name="vfa_outer_only" checked style="cursor: pointer;" aria-label="Focus Outer Walls Only">
                                     <span data-i18n="tuning.vfa_outer_only">Focus Outer Walls Only</span>
                                 </label>
                                 <div id="vfa-stats-box" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
@@ -2394,7 +2731,7 @@ html[lang="en"] .de-only { display: none !important; }
             </aside>
 
             <!-- CENTER: CANVAS PREVIEW -->
-            <main class="center-panel">
+            <section class="center-panel">
                 <div id="canvas-container" style="position: relative; flex: 1; display: flex; flex-direction: column; width: 100%; min-height: 0; overflow: hidden;">
                 
                 <canvas id="gcode-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
@@ -2418,7 +2755,8 @@ html[lang="en"] .de-only { display: none !important; }
                         </div>
 
                         <!-- 3D Render Style (Only visible in 3D) -->
-                        <select id="view-mode-select" class="theme-select" style="display: none; padding: 4px 8px; font-size: 0.78rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: var(--text-color); cursor: pointer;">
+                        <label for="view-mode-select" class="sr-only">3D Render Style</label>
+                        <select id="view-mode-select" name="view_mode_select" class="theme-select" aria-label="3D Render Style" style="display: none; padding: 4px 8px; font-size: 0.78rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: var(--text-color); cursor: pointer;">
                             <option value="lines" data-i18n="view.lines">⚡ Lines (Fast)</option>
                             <option value="solid" selected data-i18n="view.solid">🧊 Solid (Tubes)</option>
                         </select>
@@ -2427,7 +2765,8 @@ html[lang="en"] .de-only { display: none !important; }
 
                         <!-- Color Mode Dropdown -->
                         <div style="position: relative; display: flex; align-items: center;">
-                            <select id="color-mode-select" class="theme-select" style="padding: 4px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; border: 1px solid rgba(0, 229, 255, 0.35); background: rgba(0, 229, 255, 0.08); color: #00e5ff; cursor: pointer; outline: none;">
+                            <label for="color-mode-select" class="sr-only">Color Mode</label>
+                            <select id="color-mode-select" name="color_mode_select" class="theme-select" aria-label="Color Mode" style="padding: 4px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; border: 1px solid rgba(0, 229, 255, 0.35); background: rgba(0, 229, 255, 0.08); color: #00e5ff; cursor: pointer; outline: none;">
                                 <option value="normal" selected data-i18n="view.normal">🎨 Normal</option>
                                 <option value="feature" data-i18n="view.feature">🧱 Feature Type</option>
                                 <option value="heatmap" data-i18n="view.speed_mode">🏎️ Speed (G-Code)</option>
@@ -2460,38 +2799,38 @@ html[lang="en"] .de-only { display: none !important; }
                                     </div>
                                 </div>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
-                                    <input type="checkbox" id="filter-outer-wall" checked>
+                                    <input type="checkbox" id="filter-outer-wall" aria-label="Filter Outer Wall" checked>
                                     <span style="width: 9px; height: 9px; border-radius: 50%; background: #ff8c00;"></span>
                                     <span data-i18n="view.filter_outer">Outer Wall</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
-                                    <input type="checkbox" id="filter-inner-wall" checked>
+                                    <input type="checkbox" id="filter-inner-wall" aria-label="Filter Inner Wall" checked>
                                     <span style="width: 9px; height: 9px; border-radius: 50%; background: #ffeb3b;"></span>
                                     <span data-i18n="view.filter_inner">Inner Wall</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
-                                    <input type="checkbox" id="filter-infill" checked>
+                                    <input type="checkbox" id="filter-infill" aria-label="Filter Infill" checked>
                                     <span style="width: 9px; height: 9px; border-radius: 50%; background: #f44336;"></span>
                                     <span data-i18n="view.filter_infill">Infill</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
-                                    <input type="checkbox" id="filter-top" checked>
+                                    <input type="checkbox" id="filter-top" aria-label="Filter Top Surface" checked>
                                     <span style="width: 9px; height: 9px; border-radius: 50%; background: #e91e63;"></span>
                                     <span data-i18n="view.filter_top">Top Surface</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
-                                    <input type="checkbox" id="filter-bottom" checked>
+                                    <input type="checkbox" id="filter-bottom" aria-label="Filter Bottom Surface" checked>
                                     <span style="width: 9px; height: 9px; border-radius: 50%; background: #9c27b0;"></span>
                                     <span data-i18n="view.filter_bottom">Bottom Surface</span>
                                 </label>
                                 <div style="width: 100%; height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
-                                    <input type="checkbox" id="show-travel-btn">
+                                    <input type="checkbox" id="show-travel-btn" aria-label="Filter Travel Moves">
                                     <span style="width: 9px; height: 9px; border-radius: 50%; background: #00bcd4;"></span>
                                     <span data-i18n="view.travels">Travel Moves</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-color); cursor: pointer;">
-                                    <input type="checkbox" id="show-seam-btn" checked>
+                                    <input type="checkbox" id="show-seam-btn" aria-label="Filter Z-Seam Points" checked>
                                     <span style="width: 9px; height: 9px; border-radius: 50%; background: #00e5ff; box-shadow: 0 0 6px #00e5ff;"></span>
                                     <span data-i18n="view.filter_seam">Z-Seam Points</span>
                                 </label>
@@ -2510,6 +2849,14 @@ html[lang="en"] .de-only { display: none !important; }
                             <span id="zen-view-icon">⛶</span><span id="zen-view-text" data-i18n="view.zen_mode">Maximize View</span>
                         </button>
                     </div>
+                </div>
+
+                <!-- Middle Floating Capsule: A/B Comparison Floating Badge (Positioned cleanly below top toolbar) -->
+                <div id="canvas-compare-badge" style="display: none; position: absolute; top: 56px; right: 12px; z-index: 18; align-items: center; gap: 8px; background: rgba(18, 20, 26, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1.5px solid rgba(0, 229, 255, 0.4); border-radius: 8px; padding: 5px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: auto; font-size: 0.78rem;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #00e5ff; font-weight: bold;"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #00e5ff;"></span> A</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #ff9800; font-weight: bold;"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff9800;"></span> B</span>
+                    <span style="width: 1px; height: 14px; background: rgba(255,255,255,0.2);"></span>
+                    <span id="canvas-compare-badge-mode" style="color: #fff; font-weight: 600;">Überlagerung (A+B)</span>
                 </div>
 
                 <!-- FLOATING HUD LEGEND (Upper Left below toolbar) -->
@@ -2542,7 +2889,8 @@ html[lang="en"] .de-only { display: none !important; }
                         <button id="play-step-back" class="icon-btn" style="padding: 4px 8px; font-size: 0.85rem; border-radius: 5px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; cursor: pointer;" aria-label="Vorheriger Schritt" title="Schritt zurück">⏮️</button>
                         <button id="play-toggle" class="icon-btn" style="font-size: 0.95rem; padding: 4px 12px; border-radius: 5px; background: rgba(0, 229, 255, 0.2); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff; cursor: pointer; font-weight: bold;" aria-label="Abspielen oder Pausieren" title="Play/Pause">▶️</button>
                         <button id="play-step-fwd" class="icon-btn" style="padding: 4px 8px; font-size: 0.85rem; border-radius: 5px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; cursor: pointer;" aria-label="Nächster Schritt" title="Schritt vor">⏭️</button>
-                        <select id="playback-speed" class="theme-select" style="padding: 3px 6px; font-size: 0.75rem; border-radius: 5px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); cursor: pointer; height: 28px;">
+                        <label for="playback-speed" class="sr-only">Playback Speed</label>
+                        <select id="playback-speed" name="playback_speed" class="theme-select" aria-label="Playback Speed" style="padding: 3px 6px; font-size: 0.75rem; border-radius: 5px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color); cursor: pointer; height: 28px;">
                             <option value="0.25">0.25x</option>
                             <option value="0.5">0.5x</option>
                             <option value="1" selected>1.0x</option>
@@ -2567,7 +2915,7 @@ html[lang="en"] .de-only { display: none !important; }
                         <input type="range" class="slider" id="playback-slider" min="0" max="100" value="100" style="width: 100%; height: 5px; cursor: pointer;" aria-label="Wiedergabeposition" title="Schritt-Wiedergabe">
                     </div>
                 </div>
-            </main>
+            </section>
 
             <!-- MOBILE NAVIGATION BAR (Sticky below Canvas on Mobile) -->
             <nav id="mobile-nav-bar" class="mobile-nav-bar" aria-label="Mobile Navigation">
@@ -2605,11 +2953,13 @@ html[lang="en"] .de-only { display: none !important; }
                     
                     <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <select id="gcode-view-mode" aria-label="G-Code View Mode" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                            <label for="gcode-view-mode" class="sr-only">G-Code View Mode</label>
+                            <select id="gcode-view-mode" name="gcode_view_mode" aria-label="G-Code View Mode" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
                                 <option value="layer" data-i18n="tab.current_layer">Current Layer</option>
                                 <option value="all" data-i18n="select.file.entire">Entire File</option>
                             </select>
-                            <select id="gcode-page-size" aria-label="Lines Per Page" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                            <label for="gcode-page-size" class="sr-only">Lines Per Page</label>
+                            <select id="gcode-page-size" name="gcode_page_size" aria-label="Lines Per Page" class="upload-btn" style="padding: 4px 8px; font-size: 11px; cursor: pointer;">
                                 <option value="50" data-i18n="select.lines.50">50 Lines</option>
                                 <option value="100" data-i18n="select.lines.100">100 Lines</option>
                                 <option value="500" data-i18n="select.lines.500">500 Lines</option>
@@ -2728,10 +3078,10 @@ html[lang="en"] .de-only { display: none !important; }
                             <!-- Interactive Slider & Value -->
                             <div style="display: flex; flex-direction: column; gap: 8px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="font-size: 0.8rem; font-weight: 600;" data-i18n="pa.advance_val">Klipper ADVANCE / Marlin K:</span>
+                                    <label for="pa-interactive-slider" style="font-size: 0.8rem; font-weight: 600; cursor: pointer;" data-i18n="pa.advance_val">Klipper ADVANCE / Marlin K:</label>
                                     <span id="pa-slider-val" style="font-weight: 700; color: var(--accent-color); font-size: 0.9rem; font-family: monospace;">0.025 s</span>
                                 </div>
-                                <input type="range" class="slider" id="pa-interactive-slider" min="0.000" max="0.100" step="0.001" value="0.025" style="width: 100%;">
+                                <input type="range" class="slider" id="pa-interactive-slider" name="pa_interactive_slider" min="0.000" max="0.100" step="0.001" value="0.025" style="width: 100%;" aria-label="Pressure Advance Value Slider">
                             </div>
 
                             <!-- Action Buttons -->
@@ -2747,9 +3097,9 @@ html[lang="en"] .de-only { display: none !important; }
                             <h3 data-tooltip="Virtually shifts the entire part on the build plate" data-i18n-tooltip="tooltip.14" data-i18n="offset.heading">📐 Geometry Offsets</h3>
                             <div class="offset-group" style="margin-top: 10px;">
                                 <div class="widget-title">
-                                    <span data-tooltip="Shift left/right" data-i18n-tooltip="tooltip.15" data-i18n="offset.x">X-Offset</span>
+                                    <label for="xoffset-input" data-tooltip="Shift left/right" data-i18n-tooltip="tooltip.15" data-i18n="offset.x" style="cursor: pointer;">X-Offset</label>
                                     <div style="display: flex; align-items: center; gap: 4px;">
-                                        <input type="number" id="xoffset-input" class="widget-num-input" value="0.0" min="-100" max="100" step="1" inputmode="decimal" aria-label="X-Offset">
+                                        <input type="number" id="xoffset-input" name="xoffset_input" class="widget-num-input" value="0.0" min="-100" max="100" step="1" inputmode="decimal" aria-label="X-Offset">
                                         <span class="widget-unit">mm</span>
                                         <span id="xoffset-val" class="accent" style="display: none;">0.0 mm</span>
                                     </div>
@@ -2758,9 +3108,9 @@ html[lang="en"] .de-only { display: none !important; }
                             </div>
                             <div class="offset-group" style="margin-top: 15px;">
                                 <div class="widget-title">
-                                    <span data-tooltip="Shift front/back" data-i18n-tooltip="tooltip.16" data-i18n="offset.y">Y-Offset</span>
+                                    <label for="yoffset-input" data-tooltip="Shift front/back" data-i18n-tooltip="tooltip.16" data-i18n="offset.y" style="cursor: pointer;">Y-Offset</label>
                                     <div style="display: flex; align-items: center; gap: 4px;">
-                                        <input type="number" id="yoffset-input" class="widget-num-input" value="0.0" min="-100" max="100" step="1" inputmode="decimal" aria-label="Y-Offset">
+                                        <input type="number" id="yoffset-input" name="yoffset_input" class="widget-num-input" value="0.0" min="-100" max="100" step="1" inputmode="decimal" aria-label="Y-Offset">
                                         <span class="widget-unit">mm</span>
                                         <span id="yoffset-val" class="accent" style="display: none;">0.0 mm</span>
                                     </div>
@@ -2871,6 +3221,18 @@ html[lang="en"] .de-only { display: none !important; }
                         <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🔒</span> <span data-i18n="info.title6">100% Client-Side Privacy &amp; Offline PWA</span></h3>
                         <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc6">Zero server uploads: all file streaming, analysis, and rendering execute locally on your device. Works completely offline as an installable Progressive Web App with zero telemetry.</p>
                     </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>⚖️</span> <span data-i18n="info.title7">Center of Mass &amp; Footprint Stability Analysis</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc7">Inspect model tipping risks before long print jobs. LayerSpy calculates the 3D Center of Mass (CoM), first-layer bed contact area (Footprint mm²), aspect ratio (Height vs Footprint), and alerts you to knockover risks on fast bed-slingers.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🔀</span> <span data-i18n="info.title8">Dual G-Code A/B Comparison &amp; Differential Grid</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc8">Compare two G-Code files side-by-side to evaluate slicing changes (speed, infill, layer height, kinematics). Features synchronized Z-height slider, delta statistics tables, and a 0.5 mm spatial differential grid in the 3D viewer.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🛠️</span> <span data-i18n="info.title9">3D Printing Workflow Ecosystem</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="info.desc9">LayerSpy is part of the connected 3D printing ecosystem: Prepare &amp; repair 3D models (STL/3MF) with <a href="https://meshdoc.de" target="_blank" style="color: var(--accent-color); text-decoration: underline;">MeshDoc</a>, analyze &amp; simulate G-Code with LayerSpy, and discover tools &amp; guides at <a href="https://www.svender3d.de" target="_blank" style="color: var(--accent-color); text-decoration: underline;">Svender3D</a>.</p>
+                    </div>
                 </div>
             </details>
 
@@ -2908,12 +3270,24 @@ html[lang="en"] .de-only { display: none !important; }
                         <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🔒</span> <span data-i18n="faq.q6">Does LayerSpy upload my G-Code files or 3D models to any server?</span></h3>
                         <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a6">No, absolutely zero files or 3D geometries leave your device. LayerSpy processes everything 100% locally in your browser using Web Workers and WebGL on your local GPU. It even works completely offline as an installable Progressive Web App (PWA).</p>
                     </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🔀</span> <span data-i18n="faq.q7">How does the dual G-Code A/B Comparison work?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a7">Simply load your reference file (A) and upload a modified file (B). Both files are parsed locally via Web Workers using identical kinematics and diagnostic pipelines. You can inspect delta tables (print time, weight, flow, layer count), toggle A/B overlays, and visualize spatial toolpath differences using a 0.5 mm raster difference engine.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>⚖️</span> <span data-i18n="faq.q8">What do Center of Mass (CoM) and Knockover Risk mean?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a8">Tall or top-heavy prints with small bed contact areas (small footprint) are vulnerable to bed-adhesion failure and violent bed-slinger acceleration forces. LayerSpy analyzes the 3D center of gravity, bed footprint area, and height-to-width aspect ratio to give you a clear stability safety rating before printing.</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                        <h3 style="color: var(--text-color); margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 6px;"><span>🛠️</span> <span data-i18n="faq.q9">How do LayerSpy, MeshDoc, and Svender3D work together?</span></h3>
+                        <p style="color: var(--text-muted); font-size: 0.83rem; line-height: 1.55; margin: 0;" data-i18n="faq.a9">They form a seamless, privacy-first 3D printing workflow: Use MeshDoc (meshdoc.de) to repair and optimize STL/3MF mesh files before slicing, use LayerSpy (layerspy.de) to simulate and audit G-Code toolpaths before printing, and visit Svender3D (svender3d.de) for 3D printing calculators, guides, and tools.</p>
+                    </div>
                 </div>
             </details>
         </section>
 
         <!-- FOOTER -->
-        <footer style="background-color: var(--panel-bg); padding: 30px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto;">
+        <footer style="background-color: var(--panel-bg); padding: 25px 20px 20px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: 25px; margin-bottom: 0;">
             <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; line-height: 1.5;">
                 <button onclick="openModal('modal-datenschutz')" style="background:none; border:none; cursor:pointer; font:inherit; padding:0; color: var(--accent-color); text-decoration: none; font-size: 0.9rem;" data-i18n="footer.privacy">Datenschutz</button>
                 <span style="color: var(--border-color);">|</span>
@@ -2932,10 +3306,11 @@ html[lang="en"] .de-only { display: none !important; }
         </footer>
 </div>
 
-    <!-- Bottom Menu -->
-    <div id="modal-overlay" class="modal-overlay" onclick="closeAllModals()"></div>
+    <!-- Modals Container -->
+    <div id="modals-root" style="display: contents;">
+    <div id="modal-overlay" class="modal-overlay" hidden style="display: none !important;" onclick="closeAllModals()"></div>
 
-    <div id="modal-datenschutz" class="custom-modal">
+    <div id="modal-datenschutz" class="custom-modal" hidden style="display: none !important;">
         <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
         <div class="modal-content-scroll">
 <div class="lang-de">
@@ -3114,7 +3489,7 @@ html[lang="en"] .de-only { display: none !important; }
      </div>
     </div>
 
-    <div id="modal-impressum" class="custom-modal">
+    <div id="modal-impressum" class="custom-modal" hidden style="display: none !important;">
         <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
         <div class="modal-content-scroll">
 <div class="lang-de">
@@ -3196,7 +3571,7 @@ html[lang="en"] .de-only { display: none !important; }
     </div>
 
     <!-- UPDATE MODAL -->
-    <div id="modal-update" class="custom-modal">
+    <div id="modal-update" class="custom-modal" hidden style="display: none !important;">
         <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
         <div class="modal-content-scroll">
 <div class="lang-de">
@@ -3273,7 +3648,7 @@ html[lang="en"] .de-only { display: none !important; }
     </div>
     </div>
 
-    <div id="modal-kontakt" class="custom-modal">
+    <div id="modal-kontakt" class="custom-modal" hidden style="display: none !important;">
         <button class="close-modal" onclick="closeAllModals()" aria-label="Fenster schließen">×</button>
         <div class="modal-content-scroll">
 
@@ -3281,9 +3656,14 @@ html[lang="en"] .de-only { display: none !important; }
             <p data-i18n="kontakt.subtitle">Ihre Nachricht wird SSL-verschlüsselt übertragen.</p>
             
             <form id="contact-form" action="#" method="POST">
+                <!-- Honeypots & Time-Trap (Spam Protection) -->
                 <div class="form-group" style="display: none; visibility: hidden; opacity: 0;" aria-hidden="true">
-                    <label for="website_url">Bitte dieses Feld frei lassen</label>
-                    <input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off" aria-label="Website URL (Spam Protection)">
+                    <label for="website_url">Website</label>
+                    <input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off">
+                    <label for="company_fax">Fax</label>
+                    <input type="text" id="company_fax" name="company_fax" tabindex="-1" autocomplete="off">
+                    <input type="hidden" id="form_time" name="form_time" value="">
+                    <input type="hidden" id="math_token" name="math_token" value="">
                 </div>
                 
                 <div class="form-group">
@@ -3296,9 +3676,19 @@ html[lang="en"] .de-only { display: none !important; }
                 </div>
                 <div class="form-group">
                     <label for="message" data-i18n="kontakt.message">Ihre Nachricht</label>
-                    <textarea id="message" name="message" rows="5" required placeholder="Wie können wir helfen?" maxlength="500" data-i18n-placeholder="kontakt.messagePlaceholder"></textarea>
+                    <textarea id="message" name="message" rows="4" required placeholder="Wie können wir helfen?" maxlength="500" aria-label="Ihre Nachricht" data-i18n-placeholder="kontakt.messagePlaceholder"></textarea>
                     <div id="char-counter" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">0 / 500 Zeichen</div>
                 </div>
+
+                <!-- Math Anti-Spam Challenge -->
+                <div class="form-group" style="background: rgba(0, 188, 212, 0.08); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(0, 188, 212, 0.25); margin-bottom: 15px;">
+                    <label for="math_answer" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 600; color: #00e5ff;">
+                        <span data-i18n="kontakt.security">🔒 Sicherheitsfrage (Spamschutz):</span>
+                        <span id="math-question-text" style="font-family: monospace; font-size: 1rem; font-weight: 700; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0, 229, 255, 0.3);">-- + -- = ?</span>
+                    </label>
+                    <input type="number" id="math_answer" name="math_answer" required placeholder="Ergebnis eingeben" style="margin-top: 6px; padding: 6px 10px; font-size: 0.85rem; width: 100%; box-sizing: border-box;" data-i18n-placeholder="kontakt.calcPlaceholder">
+                </div>
+
                 <button type="submit" data-i18n="kontakt.send">Nachricht sicher senden ✉️</button>
                 <div id="form-status" style="display: none; margin-top: 10px; text-align: center; font-size: 0.9rem; font-weight: 500;"></div>
             </form>
@@ -3306,20 +3696,54 @@ html[lang="en"] .de-only { display: none !important; }
     </div>
         
         <script>
+            // Dynamic Math Captcha Generator
+            let localFallbackExpected = null;
+            function loadContactCaptcha() {
+                const timeField = document.getElementById('form_time');
+                if (timeField) timeField.value = Math.floor(Date.now() / 1000);
+
+                fetch('send_mail.php?action=captcha')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.question && data.token) {
+                            const qText = document.getElementById('math-question-text');
+                            const tokenField = document.getElementById('math_token');
+                            if (qText) qText.innerText = data.question + ' = ?';
+                            if (tokenField) tokenField.value = data.token;
+                        }
+                    })
+                    .catch(() => {
+                        // Offline / Local fallback
+                        const n1 = Math.floor(Math.random() * 8) + 2;
+                        const n2 = Math.floor(Math.random() * 8) + 1;
+                        localFallbackExpected = n1 + n2;
+                        const qText = document.getElementById('math-question-text');
+                        if (qText) qText.innerText = `${n1} + ${n2} = ?`;
+                    });
+            }
+
             document.getElementById('contact-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 const form = this;
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const formData = new FormData(form);
-                
                 const statusDiv = document.getElementById('form-status');
                 statusDiv.style.display = 'none';
                 
-                // Check honeypot
-                if (document.getElementById('website_url').value !== '') {
+                // Client-side Honeypot Check
+                if (document.getElementById('website_url').value !== '' || document.getElementById('company_fax').value !== '') {
                     console.warn('Spam submission blocked by Honeypot.');
                     form.reset();
+                    return false;
+                }
+
+                // Math Check validation
+                const ansInput = document.getElementById('math_answer');
+                if (localFallbackExpected !== null && parseInt(ansInput.value) !== localFallbackExpected) {
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.color = '#ff3d00';
+                    statusDiv.innerHTML = '❌ Bitte lösen Sie die Sicherheitsrechenaufgabe korrekt.';
                     return false;
                 }
                 
@@ -3339,11 +3763,13 @@ html[lang="en"] .de-only { display: none !important; }
                         form.reset();
                         const charCounter = document.getElementById('char-counter');
                         if (charCounter) charCounter.innerText = '0 / 500 Zeichen';
+                        loadContactCaptcha();
                     } else {
                         statusDiv.style.color = '#ff3d00';
-                        statusDiv.innerHTML = '❌ Fehler: ' + data.message;
+                        statusDiv.innerHTML = '❌ Fehler: ' + (data.message || 'Ungültige Eingabe.');
+                        loadContactCaptcha();
                     }
-                    setTimeout(() => statusDiv.style.display = 'none', 5000);
+                    setTimeout(() => statusDiv.style.display = 'none', 6000);
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -3358,7 +3784,7 @@ html[lang="en"] .de-only { display: none !important; }
                 });
             });
 
-            // Live Counter Initialization
+            // Live Counter & Captcha Initialization
             document.addEventListener('DOMContentLoaded', () => {
                 const messageInput = document.getElementById('message');
                 const charCounter = document.getElementById('char-counter');
@@ -3367,6 +3793,7 @@ html[lang="en"] .de-only { display: none !important; }
                         charCounter.innerText = `${this.value.length} / 500 Zeichen`;
                     });
                 }
+                loadContactCaptcha();
             });
             
         // Google Analytics Logic with Consent Mode v2
@@ -3418,7 +3845,6 @@ html[lang="en"] .de-only { display: none !important; }
             checkCookieConsent();
         });
         </script>
-    </div>
 
     <!-- COOKIE BANNER -->
     <div id="privacy-settings-overlay" style="display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 450px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10000; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex-direction: column; gap: 15px;">
@@ -3431,6 +3857,7 @@ html[lang="en"] .de-only { display: none !important; }
             <button onclick="acceptAllCookies()" class="upload-btn" style="flex: 1; padding: 10px; font-size: 0.9rem;" data-i18n="cookie.accept">Alles akzeptieren</button>
             <button onclick="acceptEssentialCookies()" style="flex: 1; padding: 10px; font-size: 0.9rem; background: transparent; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'" data-i18n="cookie.essential">Nur essenzielle</button>
         </div>
+    </div>
     </div>
 
     <script>
