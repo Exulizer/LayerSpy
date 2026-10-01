@@ -5,7 +5,7 @@
 [![Website](https://img.shields.io/badge/Website-layerspy.de-00bcd4?style=flat-square)](https://layerspy.de)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local%20%26%20Offline-00e676?style=flat-square)](#-100-local-processing--privacy-guarantee)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE.md)
-[![Release](https://img.shields.io/badge/Release-v2.3.8-blue?style=flat-square)](https://github.com/Exulizer/LayerSpy/releases)
+[![Release](https://img.shields.io/badge/Release-v2.3.22-blue?style=flat-square)](https://github.com/Exulizer/LayerSpy/releases)
 
 **Website:** [https://layerspy.de](https://layerspy.de)
 

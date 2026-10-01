@@ -1,42 +1,54 @@
-# LayerSpy v2.3.8 ⚡
+# LayerSpy v2.3.22 ⚡
 
 > **The Privacy-First, 100% Client-Side 3D Print G-Code Analyzer, Kinematics Simulator & A/B Comparison Engine**
 
-LayerSpy **v2.3.8** introduces the **Dual G-Code A/B Comparison Engine**, **Center of Mass (CoM) & Footprint Stability Analysis**, Tool-First SEO architecture, and ecosystem cross-linking.
+LayerSpy **v2.3.22** is a major feature & stability release bringing the **Dual G-Code A/B Comparison Engine**, **Center of Mass (CoM) & Footprint Stability Analysis**, Tool-First SEO/GEO Architecture, and a **pure single-scrollbar layout** with dynamic viewport auto-fitting.
 
 ---
 
-## 🌟 New Features in v2.3.8
+## 🌟 What's New in v2.3.22
 
-- **🔀 Dual G-Code A/B Comparison Engine:**
-  - Load a baseline file (A) and compare against a modified profile (B) 100% client-side in the browser.
-  - Comprehensive delta statistics table: Print Time, Filament Length & Weight, Layer Count, Retract Count, Travel Distance, Bulge-Risk Corners, VFA Corridors, Z-Seam Distribution, Overhangs, Bridge Length, and Volumetric Flow.
-  - **Synchronized Z-Height Slider:** Synchronously steps through layers across files with varying layer heights.
-  - **0.5 mm Spatial Differential Raster:** Visual diff engine highlighting geometric toolpath deviations directly in 3D.
-  - One-click copy for Markdown comparison reports for Discord and forum sharing.
+### 🔀 Dual G-Code A/B Comparison Engine
+- **Client-Side Comparison:** Compare baseline (A) and modified (B) slicer profiles side-by-side with zero cloud uploads.
+- **Delta Statistics Table:** Instant side-by-side delta metrics for Print Time, Filament Length & Weight, Layer Count, Retraction Count, Travel Distance, Corner Bulge Risk Points, VFA Speeds, Z-Seam Distribution, Overhangs, Bridge Length, and Volumetric Flow.
+- **Synchronized Z-Height Slider:** Accurately steps through layers across files with varying layer heights.
+- **0.5 mm Spatial Differential Raster:** Visual diff engine highlighting geometric toolpath deviations directly in 3D.
+- **One-Click Export:** Copy formatted Markdown comparison reports for Discord, GitHub, and community forums.
 
-- **⚖️ Center of Mass & Footprint Stability Analysis:**
-  - Automated 3D Center of Gravity calculation.
-  - First-layer bed contact area (Footprint in mm²) and height-to-footprint aspect ratio calculation.
-  - Real-time knockover and bed-adhesion safety warnings for high-acceleration bed-slinger 3D printers.
+### ⚖️ Center of Mass (CoM) & Footprint Stability Check
+- **3D Center of Gravity:** Calculates cumulative 3D CoM per layer.
+- **First-Layer Footprint:** Computes convex hull contact area (mm²) and slenderness/aspect ratio (Height vs Footprint).
+- **Knockover Risk Auditor:** Real-time safety ratings (Safe, Caution, High Risk) for fast bed-slinger 3D printers.
 
-- **🚀 Tool-First SEO & Rich Schema.org:**
-  - Complete JSON-LD structured data (`WebApplication`, `HowTo`, `FAQPage`) for enhanced SERP visibility and AI search discovery (GEO).
-  - High-performance semantic content and 9 comprehensive FAQ sections located cleanly below the interactive workspace.
+### 📐 Pure Single-Scroll Layout & Auto-Fit Engine
+- **Eliminated Double Scrollbar:** Replaced conflicting nested overflow rules on `.app-layout` with `overflow: visible !important`, ensuring a single clean browser scrollbar across all monitors.
+- **Zero Blank Space Below Footer:** Constrained workspace and panel containers (`position: relative; overflow: hidden`) so the document scroll ends pixel-perfect at the footer.
+- **Dynamic Workspace Sizing:** Workspace now calculates `calc(100vh - 152px)` to fit the viewport fold cleanly on desktop without cutting off bottom controls.
 
-- **🛠️ 3D Printing Workflow Ecosystem:**
-  - Seamless linking with **MeshDoc** (meshdoc.de) for pre-slicing STL/3MF mesh repair and **Svender3D** (svender3d.de) as the central 3D printing platform.
-
----
-
-## 🔧 Improvements & Optimizations
-
-- **Streaming Float32Array Pipeline:** Multi-threaded parsing of multi-hundred-megabyte G-Code files using Web Worker transferables.
-- **True Trapezoidal Motion Planner:** Real-time 2D kinematics simulation calculating acceleration, jerk, and Square Corner Velocity.
-- **Viewport Responsiveness:** Enforced 340px sidebar width limits (`min-width: 0`, `overflow-x: hidden`) eliminating horizontal overflow across all screen sizes.
+### 🔍 Tool-First SEO, FAQ & AI-Search (GEO) Architecture
+- **Schema.org JSON-LD:** Full rich snippet integration (`SoftwareApplication`, `HowTo`, `FAQPage`).
+- **Interactive FAQ Accordion:** 9 comprehensive 3D printing guide topics located cleanly below the workspace.
+- **Ecosystem Cross-Links:** Direct integration with **MeshDoc** (meshdoc.de) for mesh repair and **Svender3D** (svender3d.de) for tools & calculators.
+- **Google Consent Mode v2:** Default privacy-compliant consent handling.
 
 ---
 
-## 📦 Distribution Packages
+## 🔧 Technical Improvements
 
-- **`LayerSpy-v2.3.8.zip`** — Complete standalone release package ready for static web hosting or offline PWA deployment.
+- **Streaming Float32Array Pipeline:** Multi-threaded binary streaming parser supporting large 100MB+ G-Code files with minimal RAM footprint.
+- **2D Kinematic Motion Planner:** Real-time forward/backward trapezoid planner with Klipper Square Corner Velocity (SCV) and acceleration limits.
+- **PWA Service Worker:** Updated cache lifecycle (`v2.3.22`) with Network-First strategy for HTML navigation and offline fallback.
+
+---
+
+## 📦 Downloads & Installation
+
+- **Release Package:** [`LayerSpy-v2.3.22.zip`](https://github.com/Exulizer/LayerSpy/releases/tag/v2.3.22)
+- **Live Demo / Web App:** [https://layerspy.de](https://layerspy.de)
+- **Self-Hosting:**
+  ```bash
+  git clone https://github.com/Exulizer/LayerSpy.git
+  cd LayerSpy
+  npx serve -l 3000 .
+  ```
+
